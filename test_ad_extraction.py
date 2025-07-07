@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 import os
-import glob
+import glob 
 
 def convert_timestamp_to_date(ts):
     """Converts a UNIX timestamp to a 'YYYY-MM-DD' formatted string."""
