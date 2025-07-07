@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { differenceInDays, format, parseISO } from 'date-fns';
@@ -65,6 +65,7 @@ export function AdCard({
 }: AdCardProps) {
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [showFullContent, setShowFullContent] = useState(false);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
   
   const hasMultipleCreatives = ad.creatives && ad.creatives.length > 1;
@@ -127,6 +128,11 @@ export function AdCard({
     }
   };
 
+  const handleSeeMoreClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowFullContent(!showFullContent);
+  };
+
   return (
     <div className="group relative cursor-pointer" onClick={handleCardClick}>
       <Card className={cn(
@@ -163,9 +169,82 @@ export function AdCard({
           </div>
         )}
         
-        <CardHeader className="pb-3 relative">
+        {/* Media Section - Now at the top of the card for more prominence */}
+        {primaryMediaUrl && (
+          <div className="relative overflow-hidden">
+            {isVideo ? (
+              <div className="relative">
+                <video 
+                  src={primaryMediaUrl}
+                  className="w-full h-44 object-cover"
+                  preload="metadata"
+                  muted
+                  controls
+                  playsInline
+                />
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-200">
+                  <div className="bg-white/90 rounded-full p-2">
+                    <Play className="h-4 w-4 text-black fill-black" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={primaryMediaUrl} 
+                alt={ad.main_title || ad.page_name || 'Ad'}
+                className="w-full h-44 object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                loading="lazy"
+              />
+            )}
+            
+            {/* Carousel indicators directly overlaid on media */}
+            {hasMultipleCreatives && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                {ad.creatives.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentCardIndex(index);
+                    }}
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full transition-all duration-200",
+                      currentCardIndex === index ? "bg-white scale-110" : "bg-white/50 hover:bg-white/80"
+                    )}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Carousel navigation */}
+            {hasMultipleCreatives && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentCardIndex(prev => prev > 0 ? prev - 1 : (ad.creatives?.length || 1) - 1);
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 bg-black/30 hover:bg-black/50 rounded-full carousel-control"
+                >
+                  <ChevronLeft className="h-4 w-4 text-white" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentCardIndex(prev => prev < ((ad.creatives?.length || 1) - 1) ? prev + 1 : 0);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-black/30 hover:bg-black/50 rounded-full carousel-control"
+                >
+                  <ChevronRight className="h-4 w-4 text-white" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        
+        <CardHeader className="pb-2 relative pt-3">
           <div className="flex items-start space-x-3">
-            <Avatar className="size-11 ring-2 ring-border/20 group-hover:ring-photon-500/30 transition-all duration-300">
+            <Avatar className="size-10 ring-2 ring-border/20 group-hover:ring-photon-500/30 transition-all duration-300">
               <AvatarImage 
                 src={ad.page_profile_picture_url || ad.competitor?.page_id 
                   ? `https://graph.facebook.com/${ad.competitor.page_id}/picture?width=44&height=44`
@@ -180,7 +259,7 @@ export function AdCard({
             </Avatar>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-mono font-semibold text-sm text-foreground truncate">
                   {ad.competitor?.name || ad.page_name || 'Unknown Competitor'}
                 </h4>
@@ -208,13 +287,6 @@ export function AdCard({
                   )}
                 </div>
               )}
-              
-              {ad.display_format && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground" title={`Display Format: ${ad.display_format}`}>
-                  <Info className="h-3 w-3" />
-                  <span>{ad.display_format}</span>
-                </div>
-              )}
             </div>
             
             {/* Score Badge */}
@@ -231,165 +303,73 @@ export function AdCard({
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 px-6 pb-4">
-          {/* Media Section */}
-          {primaryMediaUrl && (
-            <div className="mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-iridium-900/30 to-iridium-800/30 border border-border/30 relative group/media">
-              {isVideo ? (
-                <div className="relative">
-                  <video 
-                    src={primaryMediaUrl}
-                    className="w-full h-36 object-cover"
-                    preload="metadata"
-                    muted
-                    controls
-                    playsInline
-                  />
-                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-200">
-                    <div className="bg-white/90 rounded-full p-2">
-                      <Play className="h-4 w-4 text-black fill-black" />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <img 
-                  src={primaryMediaUrl} 
-                  alt={ad.main_title || ad.page_name || 'Ad'}
-                  className="w-full h-36 object-cover group-hover/media:scale-[1.02] transition-transform duration-300"
-                  loading="lazy"
-                />
-              )}
-            </div>
-          )}
-          
-          {/* Card Carousel Section */}
-          {hasMultipleCreatives && currentCreative && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Creative {currentCardIndex + 1} of {ad.creatives.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentCardIndex(prev => prev > 0 ? prev - 1 : (ad.creatives?.length || 1) - 1);
-                    }}
-                    className="p-1 hover:bg-accent rounded-sm transition-colors carousel-control"
-                  >
-                    <ChevronLeft className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentCardIndex(prev => prev < ((ad.creatives?.length || 1) - 1) ? prev + 1 : 0);
-                    }}
-                    className="p-1 hover:bg-accent rounded-sm transition-colors carousel-control"
-                  >
-                    <ChevronRight className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-accent/40 to-accent/20 border border-border/50 rounded-lg p-3">
-                <div className="text-xs space-y-2">
-                  {currentCreative.title && (
-                    <div className="font-semibold text-foreground text-sm">
-                      {currentCreative.title}
-                    </div>
-                  )}
-                  {currentCreative.body && (
-                    <div className="text-muted-foreground leading-relaxed">
-                      {currentCreative.body}
-                    </div>
-                  )}
-                  {ctaText && (
-                    <div className="flex justify-start">
-                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-photon-500/10 border border-photon-500/20">
-                        <span className="text-xs text-photon-400 font-medium">
-                          {ctaText}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Card indicators */}
-              <div className="flex justify-center gap-1 mt-2">
-                {ad.creatives.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentCardIndex(index);
-                    }}
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full transition-all duration-200",
-                      currentCardIndex === index ? "bg-photon-400 scale-110" : "bg-muted-foreground/50 hover:bg-muted-foreground/80"
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Content Section */}
-          <div className="space-y-3">
-            <h5 className="font-medium text-sm text-foreground line-clamp-2 leading-relaxed">
+        <CardContent className="flex-1 px-4 py-2">
+          {/* Content Section with See More functionality */}
+          <div className="space-y-2">
+            <h5 className="font-medium text-sm text-foreground line-clamp-1 leading-relaxed">
               {ad.main_title || ad.page_name || 'Ad'}
             </h5>
+            
             {displayContent && (
-              <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                {displayContent}
-              </p>
+              <div>
+                <p className={cn(
+                  "text-xs text-muted-foreground leading-relaxed overflow-hidden",
+                  showFullContent ? "" : "line-clamp-2"
+                )}>
+                  {displayContent}
+                </p>
+                
+                {displayContent.length > 120 && (
+                  <button 
+                    onClick={handleSeeMoreClick}
+                    className="text-xs text-photon-400 hover:text-photon-300 mt-1 flex items-center gap-1 carousel-control"
+                  >
+                    {showFullContent ? 'See less' : 'See more'}
+                    <ChevronDown className={cn(
+                      "h-3 w-3 transition-transform",
+                      showFullContent ? "rotate-180" : ""
+                    )} />
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {/* CTA if present */}
+            {ctaText && (
+              <div className="mt-2">
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-photon-500/10 border border-photon-500/20">
+                  <span className="text-xs text-photon-400 font-medium">
+                    {ctaText}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
-          
-          {/* Form Details Section */}
-          {hasLeadForm && (
-            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-3 w-3 text-blue-400" />
-                <span className="text-xs text-blue-400 font-medium">Lead Form</span>
-              </div>
-              <div className="space-y-1 max-h-20 overflow-y-auto">
-                {Object.entries(ad.lead_form.questions || {}).map(([question, answer]) => (
-                  <div key={question} className="text-xs text-blue-300 leading-relaxed">
-                    {typeof answer === 'string' ? answer : JSON.stringify(answer)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
         
-        <CardFooter className="pt-3 pb-4 px-4 text-xs text-muted-foreground">
-          <div className="flex-1 flex items-center gap-4 truncate">
-            <div title="Impressions" className="flex items-center gap-1.5">
-              <Eye className="h-3.5 w-3.5" />
-              <span className="font-mono text-xs">{impressionsText}</span>
+        <CardFooter className="pt-2 pb-3 px-4 text-xs text-muted-foreground">
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Only keep the most important metrics */}
+              <div title="Impressions" className="flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
+                <span className="font-mono text-xs">{impressionsText}</span>
+              </div>
+              
+              {ad.spend && (
+                <div title="Spend" className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  <span className="font-mono text-xs">{ad.spend}</span>
+                </div>
+              )}
             </div>
-            {ad.spend && (
-              <div title="Spend" className="flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />
-                <span className="font-mono text-xs">{ad.spend}</span>
-              </div>
-            )}
-            {(countries.length > 0 || hasLeadForm) && (
-              <div className="flex-grow border-t border-border/40 mx-2"></div>
-            )}
-            {hasLeadForm && (
-              <div className="flex items-center gap-1.5" title="Has Lead Form">
-                <FileText className="h-3.5 w-3.5 text-photon-400" />
-                <span className="font-mono text-xs text-photon-400">Lead Form</span>
-              </div>
-            )}
+            
             {countries.length > 0 && (
-              <div className="flex items-center gap-1.5 truncate" title={countries.join(', ')}>
+              <div className="flex items-center gap-1 truncate" title={countries.join(', ')}>
                 <Globe2 className="h-3.5 w-3.5" />
-                <span className="font-mono text-xs truncate">{countries.join(', ')}</span>
+                <span className="font-mono text-xs truncate">
+                  {countries.length > 1 ? `${countries[0]} +${countries.length - 1}` : countries[0]}
+                </span>
               </div>
             )}
           </div>
