@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { differenceInDays, format, parseISO } from 'date-fns';
@@ -24,27 +24,35 @@ const getMainAdContent = (ad: AdWithAnalysis): string => {
   return ad.main_body_text || ad.main_title || ad.main_caption || ad.ad_copy || 'No content available';
 };
 
-const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): string | null => {
-  if (!startDateStr) return null;
+const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): { formattedDate: string | null, duration: number | null, isActive: boolean } => {
+  if (!startDateStr) return { formattedDate: null, duration: null, isActive: false };
   try {
     const startDate = parseISO(startDateStr);
     const endDate = endDateStr ? parseISO(endDateStr) : new Date();
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null, isActive: false };
     
     let duration = differenceInDays(endDate, startDate);
     duration = Math.max(duration, 1);
 
     const formattedStartDate = format(startDate, 'MMM d, yyyy');
+    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'Present';
 
     if (isActive) {
-      return `Running since ${formattedStartDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+      return { 
+        formattedDate: `Since ${formattedStartDate}`, 
+        duration, 
+        isActive: true 
+      };
     }
 
-    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'now';
-    return `Ran from ${formattedStartDate} to ${formattedEndDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+    return { 
+      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
+      duration, 
+      isActive: false 
+    };
   } catch (error) {
     console.error("Error formatting ad duration:", error);
-    return null;
+    return { formattedDate: null, duration: null, isActive: false };
   }
 };
 
@@ -99,7 +107,7 @@ export function AdCard({
 
   const countries = ad.targeting?.locations?.map(l => l.name) || [];
   const hasLeadForm = ad.lead_form?.questions && Object.keys(ad.lead_form.questions).length > 0;
-  const durationInfo = formatAdDuration(ad.start_date, ad.end_date, ad.is_active);
+  const adDuration = formatAdDuration(ad.start_date, ad.end_date, ad.is_active);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on checkbox or carousel controls
@@ -180,20 +188,33 @@ export function AdCard({
                   <Star className="h-3.5 w-3.5 text-photon-400 fill-photon-400" />
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                {durationInfo && (
-                  <div className="flex items-center gap-1" title={durationInfo}>
+              
+              {/* Improved Ad Duration Display */}
+              {adDuration.formattedDate && (
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1 text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>{durationInfo.split('(')[0]}</span>
+                    <span>{adDuration.formattedDate}</span>
                   </div>
-                )}
-                {ad.display_format && (
-                  <div className="flex items-center gap-1" title={`Display Format: ${ad.display_format}`}>
-                    <Info className="h-3 w-3" />
-                    <span>{ad.display_format}</span>
-                  </div>
-                )}
-              </div>
+                  
+                  {adDuration.duration && (
+                    <div className={cn(
+                      "flex items-center gap-1 font-medium",
+                      adDuration.isActive ? "text-photon-400" : "text-muted-foreground"
+                    )}>
+                      <Clock className="h-3 w-3" />
+                      <span>{adDuration.duration} {adDuration.duration === 1 ? 'day' : 'days'}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {ad.display_format && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground" title={`Display Format: ${ad.display_format}`}>
+                  <Info className="h-3 w-3" />
+                  <span>{ad.display_format}</span>
+                </div>
+              )}
             </div>
             
             {/* Score Badge */}

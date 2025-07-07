@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays, format, parseISO } from 'date-fns';
 
 const CreativeCard = ({ creative, index }: { creative: AdWithAnalysis['creatives'][0], index: number }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -131,27 +131,35 @@ export default function AdDetailPage() {
     );
   };
 
-  const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): string | null => {
-    if (!startDateStr) return null;
+  const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): { formattedDate: string | null, duration: number | null, isActive: boolean } => {
+    if (!startDateStr) return { formattedDate: null, duration: null, isActive: false };
     try {
-      const startDate = new Date(startDateStr);
-      const endDate = endDateStr ? new Date(endDateStr) : new Date();
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
+      const startDate = parseISO(startDateStr);
+      const endDate = endDateStr ? parseISO(endDateStr) : new Date();
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null, isActive: false };
       
       let duration = differenceInDays(endDate, startDate);
       duration = Math.max(duration, 1);
   
       const formattedStartDate = format(startDate, 'MMM d, yyyy');
+      const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'Present';
   
       if (isActive) {
-        return `Running since ${formattedStartDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+        return { 
+          formattedDate: `Running since ${formattedStartDate}`, 
+          duration, 
+          isActive: true 
+        };
       }
   
-      const formattedEndDate = endDateStr ? format(new Date(endDateStr), 'MMM d, yyyy') : 'now';
-      return `Ran from ${formattedStartDate} to ${formattedEndDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+      return { 
+        formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
+        duration, 
+        isActive: false 
+      };
     } catch (error) {
       console.error("Error formatting ad duration:", error);
-      return null;
+      return { formattedDate: null, duration: null, isActive: false };
     }
   };
 
@@ -173,7 +181,7 @@ export default function AdDetailPage() {
 
   const countries = ad.targeting?.locations?.map(l => l.name) || [];
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
-  const durationInfo = formatAdDuration(ad.start_date, ad.end_date, ad.is_active);
+  const adDuration = formatAdDuration(ad.start_date, ad.end_date, ad.is_active);
 
   return (
     <DashboardLayout>
@@ -202,10 +210,15 @@ export default function AdDetailPage() {
             </h1>
             <p className="text-sm text-muted-foreground">Ad ID: {ad.id} • Archive ID: {ad.ad_archive_id}</p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground pt-1">
-              {durationInfo && (
-                <div className="flex items-center gap-1.5" title={durationInfo}>
+              {adDuration.formattedDate && (
+                <div className="flex items-center gap-1.5" title={`${adDuration.formattedDate} (${adDuration.duration} days)`}>
                   <Calendar className="h-4 w-4" />
-                  <span>{durationInfo}</span>
+                  <span>{adDuration.formattedDate}</span>
+                  {adDuration.duration && (
+                    <span className={cn("font-medium", adDuration.isActive ? "text-photon-400" : "")}>
+                      • {adDuration.duration} {adDuration.duration === 1 ? 'day' : 'days'}
+                    </span>
+                  )}
                 </div>
               )}
               {ad.display_format && (

@@ -426,7 +426,7 @@ export default function AdIntelligencePage() {
   const renderLoadingState = () => (
     <div className="space-y-8">
       {renderStats()}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="bg-card rounded-xl border animate-pulse h-96">
             <div className="p-6">
@@ -579,7 +579,7 @@ export default function AdIntelligencePage() {
                 showSelection={true}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {ads.map((ad) => (
                   <AdCard 
                     key={`ad-${ad.id ?? 'unknown'}`} 

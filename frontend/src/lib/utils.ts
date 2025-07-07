@@ -6,8 +6,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatAdDuration(startDateStr?: string, endDateStr?: string, isActive?: boolean): string | null {
-  if (!startDateStr) return null;
+export function formatAdDuration(startDateStr?: string, endDateStr?: string, isActive?: boolean): { formattedDate: string | null, duration: number | null, isActive: boolean } {
+  if (!startDateStr) return { formattedDate: null, duration: null, isActive: false };
 
   try {
     const startDate = parseISO(startDateStr);
@@ -15,7 +15,7 @@ export function formatAdDuration(startDateStr?: string, endDateStr?: string, isA
     
     // Ensure dates are valid
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return null;
+      return { formattedDate: null, duration: null, isActive: false };
     }
     
     let duration = differenceInDays(endDate, startDate);
@@ -23,17 +23,25 @@ export function formatAdDuration(startDateStr?: string, endDateStr?: string, isA
     duration = Math.max(duration, 1); 
 
     const formattedStartDate = format(startDate, 'MMM d, yyyy');
+    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'Present';
 
     if (isActive) {
-      return `Running since ${formattedStartDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+      return {
+        formattedDate: `Since ${formattedStartDate}`,
+        duration,
+        isActive: true
+      };
     }
 
-    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'now';
-    return `Ran from ${formattedStartDate} to ${formattedEndDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
+    return {
+      formattedDate: `${formattedStartDate} - ${formattedEndDate}`,
+      duration,
+      isActive: false
+    };
 
   } catch (error) {
     console.error("Error formatting ad duration:", error);
-    return null;
+    return { formattedDate: null, duration: null, isActive: false };
   }
 }
 
