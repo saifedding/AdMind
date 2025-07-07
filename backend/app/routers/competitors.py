@@ -149,6 +149,28 @@ async def update_competitor(
         logger.error(f"Error updating competitor {competitor_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating competitor: {str(e)}")
 
+class BulkDeleteRequest(BaseModel):
+    competitor_ids: List[int]
+
+@router.delete("/")
+async def bulk_delete_competitors(
+    request: BulkDeleteRequest,
+    competitor_service: "CompetitorService" = Depends(get_competitor_service_dependency)
+) -> dict:
+    """
+    Bulk delete competitors.
+    - Soft deletes competitors with ads.
+    - Hard deletes competitors without ads.
+    """
+    try:
+        result = competitor_service.bulk_delete_competitors(request.competitor_ids)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during bulk competitor deletion: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred during bulk deletion: {str(e)}")
+
 @router.delete("/{competitor_id}")
 async def delete_competitor(
     competitor_id: int,

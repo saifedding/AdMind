@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Filter, Edit2, Trash2, Eye, Download, AlertCircle, CheckCircle, XCircle, Users, Settings, Globe, Clock, Activity } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, Download, AlertCircle, CheckCircle, XCircle, Users, Settings, Globe, Clock, Activity, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DashboardLayout } from '@/components/dashboard';
 import { 
@@ -17,6 +18,7 @@ import {
   createCompetitor, 
   updateCompetitor, 
   deleteCompetitor,
+  bulkDeleteCompetitors,
   scrapeCompetitorAds,
   getCompetitorAds,
   type Competitor, 
@@ -88,6 +90,8 @@ export default function CompetitorsPage() {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   
   // Form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -108,6 +112,9 @@ export default function CompetitorsPage() {
   });
   const [scrapingCompetitor, setScrapingCompetitor] = useState<Competitor | null>(null);
   const [scrapeLoading, setScrapeLoading] = useState(false);
+
+  const visibleCompetitorIds = useMemo(() => competitors.data.map(c => c.id), [competitors.data]);
+  const isAllVisibleSelected = useMemo(() => selectedIds.length > 0 && visibleCompetitorIds.every(id => selectedIds.includes(id)), [selectedIds, visibleCompetitorIds]);
 
   // Load data
   useEffect(() => {
@@ -188,14 +195,22 @@ export default function CompetitorsPage() {
   };
 
   const handleDeleteCompetitor = async (competitor: Competitor) => {
-    if (!confirm(`Are you sure you want to delete "${competitor.name}"?`)) return;
+    setSelectedIds([competitor.id]);
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
     
     try {
-      const result = await deleteCompetitor(competitor.id);
-      alert(result.message);
+      const result = await bulkDeleteCompetitors(selectedIds);
+      alert(`${result.message} Soft-deleted: ${result.soft_deleted_count}, Hard-deleted: ${result.hard_deleted_count}.`);
+      setSelectedIds([]);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete competitor');
+      setError(err instanceof Error ? err.message : 'Failed to delete competitors');
+    } finally {
+      setIsConfirmDialogOpen(false);
     }
   };
 
@@ -303,6 +318,22 @@ export default function CompetitorsPage() {
     setSelectedCompetitor(null);
   };
 
+  const handleSelectOne = (id: number, checked: boolean) => {
+    setSelectedIds(prev => 
+      checked ? [...prev, id] : prev.filter(i => i !== id)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allVisibleIds = competitors.data.map(c => c.id);
+      setSelectedIds(prev => [...new Set([...prev, ...allVisibleIds])]);
+    } else {
+      const allVisibleIds = competitors.data.map(c => c.id);
+      setSelectedIds(prev => prev.filter(id => !allVisibleIds.includes(id)));
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -337,7 +368,7 @@ export default function CompetitorsPage() {
               View Tasks
             </Button>
             
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
+            <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
               <Plus className="h-4 w-4 mr-2" />
               Add Competitor
             </Button>
@@ -418,7 +449,7 @@ export default function CompetitorsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.avg_ads_per_competitor}</div>
+              <div className="text-2xl font-bold">{stats.avg_ads_per_competitor.toFixed(1)}</div>
               <p className="text-xs text-muted-foreground">Per Competitor</p>
             </CardContent>
           </Card>
@@ -463,71 +494,72 @@ export default function CompetitorsPage() {
 
         {/* Competitors List */}
         <div className="grid gap-4">
-          {competitors.data.map((competitor) => (
-            <Card key={competitor.id} className="bg-card border-border hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{competitor.name}</h3>
-                      <Badge variant={competitor.is_active ? "default" : "secondary"} className={competitor.is_active ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
-                        {competitor.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                    
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p><strong>Page ID:</strong> {competitor.page_id}</p>
-                      <p><strong>Ads Count:</strong> {competitor.ads_count}</p>
-                      <p><strong>Created:</strong> {formatDate(competitor.created_at)}</p>
-                      <p><strong>Updated:</strong> {formatDate(competitor.updated_at)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewCompetitor(competitor)}
-                      className="flex items-center gap-1 border-border"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(competitor)}
-                      className="flex items-center gap-1 border-border"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleScrape(competitor)}
-                      className="flex items-center gap-1 border-border"
-                    >
-                      <Download className="h-4 w-4" />
-                      Scrape
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteCompetitor(competitor)}
-                      className="flex items-center gap-1 border-border text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {selectedIds.length > 0 && (
+            <div className="bg-muted p-2 rounded-md mb-4 flex justify-between items-center">
+              <span className="text-sm font-medium">{selectedIds.length} competitor(s) selected</span>
+              <Button variant="destructive" size="sm" onClick={() => setIsConfirmDialogOpen(true)}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Selected
+              </Button>
+            </div>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2 w-10 text-left">
+                    <Checkbox
+                      checked={isAllVisibleSelected}
+                      onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th className="p-2 text-left font-semibold">Name</th>
+                  <th className="p-2 text-left font-semibold">Page ID</th>
+                  <th className="p-2 text-left font-semibold">Status</th>
+                  <th className="p-2 text-left font-semibold">Ads</th>
+                  <th className="p-2 text-left font-semibold">Last Updated</th>
+                  <th className="p-2 text-left font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={7} className="text-center p-4">Loading...</td></tr>
+                ) : error ? (
+                  <tr><td colSpan={7} className="text-center p-4 text-red-500">{error}</td></tr>
+                ) : competitors.data.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center p-4">No competitors found.</td></tr>
+                ) : (
+                  competitors.data.map(c => (
+                    <tr key={c.id} className="border-b">
+                       <td className="p-2">
+                        <Checkbox
+                          checked={selectedIds.includes(c.id)}
+                          onCheckedChange={(checked) => handleSelectOne(c.id, Boolean(checked))}
+                          aria-label={`Select ${c.name}`}
+                        />
+                      </td>
+                      <td className="p-2 font-medium">{c.name}</td>
+                      <td className="p-2 text-muted-foreground">{c.page_id}</td>
+                      <td className="p-2">
+                        <Badge variant={c.is_active ? 'default' : 'secondary'}>
+                          {c.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                      <td className="p-2">{c.ads_count}</td>
+                      <td className="p-2 text-muted-foreground">{formatDate(c.updated_at)}</td>
+                      <td className="p-2 flex items-center space-x-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleViewCompetitor(c)}><Eye className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(c)}><Edit2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleScrape(c)}><Download className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteCompetitor(c)}><Trash2 className="h-4 w-4" /></Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}
@@ -557,256 +589,103 @@ export default function CompetitorsPage() {
           </div>
         )}
 
-        {/* Add Competitor Dialog */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+        {/* Add/Edit Dialog */}
+        <Dialog open={isAddDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsAddDialogOpen(false);
+            setIsEditDialogOpen(false);
+            setSelectedCompetitor(null);
+          }
+        }}>
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Competitor</DialogTitle>
+              <DialogTitle>{isEditDialogOpen ? 'Edit Competitor' : 'Add New Competitor'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreateCompetitor} className="space-y-4">
+            <form onSubmit={isEditDialogOpen ? handleUpdateCompetitor : handleCreateCompetitor} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Competitor Name
-                </label>
-                <Input
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter competitor name"
-                  className="bg-card border-border"
-                />
+                <Label htmlFor="name">Competitor Name</Label>
+                <Input id="name" value={formData.name} onChange={(e) => setFormData(f => ({...f, name: e.target.value}))} required />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Facebook Page ID
-                </label>
-                <Input
-                  required
-                  value={formData.page_id}
-                  onChange={(e) => setFormData({ ...formData, page_id: e.target.value })}
-                  placeholder="Enter Facebook page ID"
-                  className="bg-card border-border"
-                />
+                <Label htmlFor="page_id">Facebook Page ID</Label>
+                <Input id="page_id" value={formData.page_id} onChange={(e) => setFormData(f => ({...f, page_id: e.target.value}))} required />
               </div>
-              
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="rounded border-border"
-                />
-                <label htmlFor="is_active" className="text-sm text-muted-foreground">
-                  Active competitor
-                </label>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="is_active" checked={formData.is_active} onCheckedChange={(checked) => setFormData(f => ({...f, is_active: Boolean(checked)}))} />
+                <Label htmlFor="is_active">Active</Label>
               </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={formLoading} className="flex-1 bg-photon-500 text-photon-950 hover:bg-photon-400">
-                  {formLoading ? 'Creating...' : 'Create Competitor'}
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsAddDialogOpen(false);
-                    resetForm();
-                  }}
-                  className="flex-1 border-border"
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => { setIsAddDialogOpen(false); setIsEditDialogOpen(false); }}>Cancel</Button>
+                <Button type="submit" disabled={formLoading}>{formLoading ? 'Saving...' : 'Save'}</Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
 
-        {/* Edit Competitor Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Competitor</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleUpdateCompetitor} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Competitor Name
-                </label>
-                <Input
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter competitor name"
-                  className="bg-card border-border"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Facebook Page ID
-                </label>
-                <Input
-                  required
-                  value={formData.page_id}
-                  onChange={(e) => setFormData({ ...formData, page_id: e.target.value })}
-                  placeholder="Enter Facebook page ID"
-                  className="bg-card border-border"
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active_edit"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="rounded border-border"
-                />
-                <label htmlFor="is_active_edit" className="text-sm text-muted-foreground">
-                  Active competitor
-                </label>
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={formLoading} className="flex-1 bg-photon-500 text-photon-950 hover:bg-photon-400">
-                  {formLoading ? 'Updating...' : 'Update Competitor'}
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    resetForm();
-                  }}
-                  className="flex-1 border-border"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Scraping Dialog */}
+        {/* Scrape Dialog */}
         <Dialog open={showScrapeDialog} onOpenChange={setShowScrapeDialog}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-photon-400" />
-                Scraping Configuration
-              </DialogTitle>
+              <DialogTitle>Scrape Ads for {scrapingCompetitor?.name}</DialogTitle>
               <DialogDescription>
-                Configure scraping for {scrapingCompetitor?.name}
+                Configure scraping parameters for this competitor.
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-6">
-              {/* Countries */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-photon-400" />
-                  <h3 className="text-lg font-semibold">Target Countries</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                  {COUNTRY_OPTIONS.map((country) => (
-                    <div key={country.value} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={country.value}
-                        checked={scrapeConfig.countries.includes(country.value)}
-                        onChange={() => toggleCountry(country.value)}
-                        className="rounded border-border"
-                      />
-                      <label htmlFor={country.value} className="text-sm">
-                        {country.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Scraping Parameters */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-photon-400" />
-                  <h3 className="text-lg font-semibold">Scraping Parameters</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max_pages">Max Pages</Label>
-                    <Input
-                      id="max_pages"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={scrapeConfig.max_pages}
-                      onChange={(e) => setScrapeConfig(prev => ({ ...prev, max_pages: parseInt(e.target.value) || 10 }))}
-                      className="bg-card border-border"
-                    />
-                    <p className="text-xs text-muted-foreground">Pages to scrape (1-100)</p>
+            <div className="space-y-4">
+              <div>
+                  <Label>Countries</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                      {COUNTRY_OPTIONS.map(country => (
+                          <div key={country.value} className="flex items-center space-x-2">
+                              <Checkbox
+                                  id={`country-${country.value}`}
+                                  checked={scrapeConfig.countries.includes(country.value)}
+                                  onCheckedChange={() => toggleCountry(country.value)}
+                              />
+                              <Label htmlFor={`country-${country.value}`}>{country.label}</Label>
+                          </div>
+                      ))}
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="delay_between_requests">Delay (seconds)</Label>
-                    <Input
-                      id="delay_between_requests"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={scrapeConfig.delay_between_requests}
-                      onChange={(e) => setScrapeConfig(prev => ({ ...prev, delay_between_requests: parseInt(e.target.value) || 2 }))}
-                      className="bg-card border-border"
-                    />
-                    <p className="text-xs text-muted-foreground">Delay between requests (1-10s)</p>
-                  </div>
-                </div>
               </div>
-
-              {/* Summary */}
-              <div className="bg-card border border-border rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Scraping Summary</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>• Target: {scrapingCompetitor?.name}</p>
-                  <p>• Countries: {scrapeConfig.countries.join(', ')}</p>
-                  <p>• Max pages: {scrapeConfig.max_pages} pages</p>
-                  <p>• Estimated ads: ~{scrapeConfig.max_pages * 30} ads</p>
-                  <p>• Estimated time: ~{Math.ceil((scrapeConfig.max_pages * scrapeConfig.delay_between_requests) / 60)} minutes</p>
-                </div>
+              <div>
+                <Label htmlFor="max_pages">Max Pages to Scrape</Label>
+                <Input 
+                  id="max_pages" 
+                  type="number" 
+                  value={scrapeConfig.max_pages} 
+                  onChange={(e) => setScrapeConfig(s => ({...s, max_pages: parseInt(e.target.value, 10) || 1}))} 
+                />
               </div>
-              
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  onClick={startScrape} 
-                  disabled={scrapeLoading || scrapeConfig.countries.length === 0}
-                  className="flex-1 bg-photon-500 text-photon-950 hover:bg-photon-400"
-                >
-                  {scrapeLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Starting...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Start Scraping
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowScrapeDialog(false)}
-                  className="flex-1 border-border"
-                >
-                  Cancel
-                </Button>
+               <div>
+                <Label htmlFor="delay">Delay Between Requests (seconds)</Label>
+                <Input 
+                  id="delay" 
+                  type="number" 
+                  value={scrapeConfig.delay_between_requests} 
+                  onChange={(e) => setScrapeConfig(s => ({...s, delay_between_requests: parseInt(e.target.value, 10) || 1}))}
+                />
               </div>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowScrapeDialog(false)}>Cancel</Button>
+              <Button onClick={startScrape} disabled={scrapeLoading}>{scrapeLoading ? 'Starting...' : 'Start Scraping'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you absolutely sure?</DialogTitle>
+              <DialogDescription>
+                This action will delete {selectedIds.length} competitor(s). This may be a soft or hard delete depending on whether they have associated ads. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleBulkDelete}>Yes, delete</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

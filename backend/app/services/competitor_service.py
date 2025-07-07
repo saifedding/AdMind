@@ -205,6 +205,86 @@ class CompetitorService:
             logger.error(f"Error fetching competitor {competitor_id}: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error fetching competitor: {str(e)}")
     
+    def bulk_delete_competitors(self, competitor_ids: List[int]) -> dict:
+        """
+        Bulk delete competitors.
+        - Soft delete competitors with ads.
+        - Hard delete competitors without ads.
+        """
+        if not competitor_ids:
+            raise HTTPException(status_code=400, detail="No competitor IDs provided")
+
+        soft_deleted_count = 0
+        hard_deleted_count = 0
+        not_found_count = 0
+        
+        try:
+            competitors_to_process = self.db.query(Competitor).filter(
+                Competitor.id.in_(competitor_ids)
+            ).all()
+            
+            found_ids = {c.id for c in competitors_to_process}
+            not_found_count = len(competitor_ids) - len(found_ids)
+
+            ids_to_check_ads = [comp.id for comp in competitors_to_process]
+            
+            ads_counts_query = self.db.query(
+                Ad.competitor_id,
+                func.count(Ad.id).label('ads_count')
+            ).filter(
+                Ad.competitor_id.in_(ids_to_check_ads)
+            ).group_by(Ad.competitor_id).all()
+
+            ads_counts = {comp_id: count for comp_id, count in ads_counts_query}
+            
+            ids_for_soft_delete = []
+            ids_for_hard_delete = []
+
+            for comp_id in ids_to_check_ads:
+                if ads_counts.get(comp_id, 0) > 0:
+                    ids_for_soft_delete.append(comp_id)
+                else:
+                    ids_for_hard_delete.append(comp_id)
+            
+            # Perform soft deletes
+            if ids_for_soft_delete:
+                self.db.query(Competitor).filter(
+                    Competitor.id.in_(ids_for_soft_delete)
+                ).update(
+                    {'is_active': False, 'updated_at': datetime.utcnow()},
+                    synchronize_session=False
+                )
+                soft_deleted_count = len(ids_for_soft_delete)
+            
+            # Perform hard deletes
+            if ids_for_hard_delete:
+                self.db.query(Competitor).filter(
+                    Competitor.id.in_(ids_for_hard_delete)
+                ).delete(synchronize_session=False)
+                hard_deleted_count = len(ids_for_hard_delete)
+            
+            self.db.commit()
+            
+            logger.info(
+                f"Bulk delete completed. Soft deleted: {soft_deleted_count}, "
+                f"Hard deleted: {hard_deleted_count}, Not found: {not_found_count}"
+            )
+            
+            return {
+                "message": "Bulk delete operation completed.",
+                "soft_deleted_count": soft_deleted_count,
+                "hard_deleted_count": hard_deleted_count,
+                "not_found_count": not_found_count
+            }
+
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error during bulk competitor deletion: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred during bulk deletion: {str(e)}"
+            )
+    
     def update_competitor(
         self, 
         competitor_id: int, 

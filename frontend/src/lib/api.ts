@@ -467,10 +467,24 @@ export async function deleteCompetitor(competitorId: number): Promise<{ message:
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || `Failed to delete competitor: ${response.statusText}`);
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to delete competitor');
   }
+  return response.json();
+}
 
+export async function bulkDeleteCompetitors(competitorIds: number[]): Promise<{ message: string; soft_deleted_count: number; hard_deleted_count: number; not_found_count: number; }> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ competitor_ids: competitorIds }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to bulk delete competitors');
+  }
   return response.json();
 }
 
