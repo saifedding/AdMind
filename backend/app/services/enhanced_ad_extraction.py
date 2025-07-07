@@ -349,7 +349,7 @@ class EnhancedAdExtractionService:
         return stats
     
     def _find_or_create_competitor_from_advertiser(self, advertiser_info: Dict) -> Optional[Competitor]:
-        """Find or create competitor from advertiser info"""
+        """Find existing competitor from advertiser info (no longer creates new ones)"""
         page_id = advertiser_info.get('page_id')
         page_name = advertiser_info.get('page_name')
         page_url = advertiser_info.get('page_url')
@@ -368,20 +368,9 @@ class EnhancedAdExtractionService:
             existing_competitor.updated_at = datetime.utcnow()
             return existing_competitor
         
-        # Create new competitor
-        logger.info(f"Creating new competitor: {page_name}")
-        new_competitor = Competitor(
-            name=page_name,
-            page_id=page_id,
-            page_url=page_url,
-            is_active=True
-        )
-        new_competitor._is_new = True
-        
-        self.db.add(new_competitor)
-        self.db.flush()
-        
-        return new_competitor
+        # No longer create new competitors
+        logger.info(f"Competitor not found with page_id: {page_id}, skipping")
+        return None
     
     def _create_or_update_enhanced_ad(self, ad_data: Dict, competitor_id: int, 
                                      campaign_id: str, platforms: List[str], 

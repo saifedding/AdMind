@@ -813,15 +813,17 @@ def _run_competitor_ads_scraper_task(
         # Get competitor
         competitor = db.query(Competitor).filter_by(page_id=competitor_page_id).first()
         if not competitor:
-            # Create new competitor if not exists
-            competitor = Competitor(
-                name=f"Unknown ({competitor_page_id})",
-                page_id=competitor_page_id,
-                is_active=True
+            # Don't create new competitor, exit early
+            logger.warning(f"Competitor with page_id {competitor_page_id} not found, skipping scraping")
+            # Update task status with warning
+            task_status = TaskStatus(
+                task_id=task_id,
+                status="completed",
+                result={"warning": f"Competitor with page_id {competitor_page_id} not found, skipping scraping"}
             )
-            db.add(competitor)
+            db.add(task_status)
             db.commit()
-            db.refresh(competitor)
+            return
         
         # Create configuration
         scraper_config = FacebookAdsScraperConfig(

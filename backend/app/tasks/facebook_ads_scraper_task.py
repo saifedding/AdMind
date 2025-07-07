@@ -117,6 +117,19 @@ def scrape_competitor_ads_task(
     db = next(get_db())
     
     try:
+        # Check if competitor exists in database
+        from app.models.competitor import Competitor
+        competitor = db.query(Competitor).filter_by(page_id=competitor_page_id).first()
+        if not competitor:
+            logger.warning(f"Competitor with page_id {competitor_page_id} not found, skipping scraping")
+            return {
+                'success': False,
+                'warning': f"Competitor with page_id {competitor_page_id} not found, skipping scraping",
+                'competitor_page_id': competitor_page_id,
+                'task_id': task_id,
+                'completion_time': datetime.utcnow().isoformat()
+            }
+        
         # Create scraper service
         scraper_service = FacebookAdsScraperService(db)
         
