@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { adsApi, ApiError } from '@/lib/api';
 import { AdWithAnalysis } from '@/types/ad';
 import { transformAdsWithAnalysis } from '@/lib/transformers';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 
 const CreativeCard = ({ creative, index }: { creative: AdWithAnalysis['creatives'][0], index: number }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -56,7 +56,8 @@ const CreativeCard = ({ creative, index }: { creative: AdWithAnalysis['creatives
 };
 
 export default function AdDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const [ad, setAd] = useState<AdWithAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,8 +134,8 @@ export default function AdDetailPage() {
   const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): string | null => {
     if (!startDateStr) return null;
     try {
-      const startDate = parseISO(startDateStr);
-      const endDate = endDateStr ? parseISO(endDateStr) : new Date();
+      const startDate = new Date(startDateStr);
+      const endDate = endDateStr ? new Date(endDateStr) : new Date();
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
       
       let duration = differenceInDays(endDate, startDate);
@@ -146,7 +147,7 @@ export default function AdDetailPage() {
         return `Running since ${formattedStartDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
       }
   
-      const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'now';
+      const formattedEndDate = endDateStr ? format(new Date(endDateStr), 'MMM d, yyyy') : 'now';
       return `Ran from ${formattedStartDate} to ${formattedEndDate} (${duration} ${duration > 1 ? 'days' : 'day'})`;
     } catch (error) {
       console.error("Error formatting ad duration:", error);

@@ -65,7 +65,7 @@ export default function AdIntelligencePage() {
   // Clear selection when ads change (e.g., after deletion)
   useEffect(() => {
     if (selectedAds.size > 0) {
-      const currentAdIds = new Set(ads.map(ad => ad.id));
+      const currentAdIds = new Set(ads.map(ad => ad.id).filter((id): id is number => id !== undefined));
       const validSelectedAds = new Set(
         Array.from(selectedAds).filter(id => currentAdIds.has(id))
       );
@@ -107,60 +107,69 @@ export default function AdIntelligencePage() {
       setTotalPages(response.pagination.total_pages);
       
       // Apply client-side filtering for complex filter types that the backend doesn't support
-      let filteredAds = transformedAds;
+      let filteredAds = transformedAds.filter(ad => ad.id !== undefined);
       
       // Client-side score filtering
-      if (filters.min_overall_score !== undefined) {
+      if (filters.min_overall_score !== undefined && filters.min_overall_score !== null) {
         filteredAds = filteredAds.filter(ad => 
           ad.analysis?.overall_score !== undefined && 
-          ad.analysis.overall_score >= filters.min_overall_score!
+          ad.analysis.overall_score >= (filters.min_overall_score as number)
         );
       }
       
-      if (filters.max_overall_score !== undefined) {
+      if (filters.max_overall_score !== undefined && filters.max_overall_score !== null) {
         filteredAds = filteredAds.filter(ad => 
           ad.analysis?.overall_score !== undefined && 
-          ad.analysis.overall_score <= filters.max_overall_score!
+          ad.analysis.overall_score <= (filters.max_overall_score as number)
         );
       }
       
-      if (filters.min_hook_score !== undefined) {
+      if (filters.min_hook_score !== undefined && filters.min_hook_score !== null) {
         filteredAds = filteredAds.filter(ad => 
           ad.analysis?.hook_score !== undefined && 
-          ad.analysis.hook_score >= filters.min_hook_score!
+          ad.analysis.hook_score >= (filters.min_hook_score as number)
         );
       }
       
-      if (filters.max_hook_score !== undefined) {
+      if (filters.max_hook_score !== undefined && filters.max_hook_score !== null) {
         filteredAds = filteredAds.filter(ad => 
           ad.analysis?.hook_score !== undefined && 
-          ad.analysis.hook_score <= filters.max_hook_score!
+          ad.analysis.hook_score <= (filters.max_hook_score as number)
         );
       }
       
       // Date filtering
       if (filters.date_from) {
         const fromDate = new Date(filters.date_from);
-        filteredAds = filteredAds.filter(ad => {
-          const adDate = new Date(ad.date_found);
-          return adDate >= fromDate;
-        });
+        if (!isNaN(fromDate.getTime())) {
+          filteredAds = filteredAds.filter(ad => {
+            if (!ad.date_found) return false;
+            const adDate = new Date(ad.date_found);
+            return !isNaN(adDate.getTime()) && adDate >= fromDate;
+          });
+        }
       }
       
       if (filters.date_to) {
         const toDate = new Date(filters.date_to);
-        filteredAds = filteredAds.filter(ad => {
-          const adDate = new Date(ad.date_found);
-          return adDate <= toDate;
-        });
+        if (!isNaN(toDate.getTime())) {
+          filteredAds = filteredAds.filter(ad => {
+            if (!ad.date_found) return false;
+            const adDate = new Date(ad.date_found);
+            return !isNaN(adDate.getTime()) && adDate <= toDate;
+          });
+        }
       }
       
       setAds(filteredAds);
       
       // Calculate stats based on filtered ads
-      const highScoreCount = filteredAds.filter(ad => ad.analysis?.overall_score && ad.analysis.overall_score > 8).length;
-      const activeCount = filteredAds.filter(ad => ad.is_active).length;
-      const adsWithAnalysis = filteredAds.filter(ad => ad.analysis?.overall_score);
+      const highScoreCount = filteredAds.filter(ad => 
+        ad.analysis?.overall_score !== undefined && 
+        ad.analysis.overall_score > 8).length;
+      const activeCount = filteredAds.filter(ad => ad.is_active === true).length;
+      const adsWithAnalysis = filteredAds.filter(ad => 
+        ad.analysis?.overall_score !== undefined);
       const avgScore = adsWithAnalysis.length > 0 
         ? adsWithAnalysis.reduce((sum, ad) => sum + (ad.analysis?.overall_score || 0), 0) / adsWithAnalysis.length 
         : 0;
@@ -261,7 +270,8 @@ export default function AdIntelligencePage() {
 
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
-      setSelectedAds(new Set(ads.map(ad => ad.id)));
+      // Filter out ads with undefined id before creating the Set
+      setSelectedAds(new Set(ads.map(ad => ad.id).filter((id): id is number => id !== undefined)));
     } else {
       setSelectedAds(new Set());
     }
@@ -294,7 +304,7 @@ export default function AdIntelligencePage() {
       setSelectedAds(new Set());
       
       // Optimistically remove deleted ads from current state
-      setAds(prevAds => prevAds.filter(ad => !adIds.includes(ad.id)));
+      setAds(prevAds => prevAds.filter(ad => !adIds.includes(ad.id as number)));
       
       // Small delay to show the deletion animation
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -572,10 +582,10 @@ export default function AdIntelligencePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {ads.map((ad) => (
                   <AdCard 
-                    key={ad.id} 
+                    key={`ad-${ad.id ?? 'unknown'}`} 
                     ad={ad} 
-                    isSelected={selectedAds.has(ad.id)}
-                    isDeleting={deletingAds.has(ad.id)}
+                    isSelected={ad.id !== undefined && selectedAds.has(ad.id)}
+                    isDeleting={ad.id !== undefined && deletingAds.has(ad.id)}
                     onSelectionChange={handleAdSelection}
                     showSelection={true}
                   />
