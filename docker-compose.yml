@@ -1,0 +1,118 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    container_name: ads_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ads_db}
+      POSTGRES_USER: ${POSTGRES_USER:-ads_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ads_password}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ads_network
+    restart: unless-stopped
+
+  # Redis for caching and Celery task brokerage
+  redis:
+    image: redis:7-alpine
+    container_name: ads_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - ads_network
+    restart: unless-stopped
+
+  # FastAPI Backend
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ads_api
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ads_user}:${POSTGRES_PASSWORD:-ads_password}@db:5432/${POSTGRES_DB:-ads_db}
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DEBUG=${DEBUG:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ads_network
+    volumes:
+      - ./backend:/app
+      - backend_cache:/app/.cache
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/requirements.txt
+        - action: sync
+          path: ./backend
+          target: /app
+    
+
+
+  # Celery Worker (for background tasks)
+  worker:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ads_worker
+    command: celery -A app.celery_worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ads_user}:${POSTGRES_PASSWORD:-ads_password}@db:5432/${POSTGRES_DB:-ads_db}
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ads_network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  # Celery Beat (for scheduled tasks)
+  beat:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ads_beat
+    command: celery -A app.celery_worker beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ads_user}:${POSTGRES_PASSWORD:-ads_password}@db:5432/${POSTGRES_DB:-ads_db}
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ads_network
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_cache:
+
+networks:
+  ads_network:
+    driver: bridge 

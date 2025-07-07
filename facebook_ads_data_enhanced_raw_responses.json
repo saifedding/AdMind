@@ -1,0 +1,1394 @@
+[
+  {
+    "data": {
+      "ad_library_main": {
+        "search_results_connection": {
+          "edges": [
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1423223488873097",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/511596439_2272081109890488_8429887408289243682_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-n_KUN7cu3QQ7kNvwHiSXV0&_nc_oc=Admi9BVBXIUVhDBZArx1C_4BUqj129zG8INT5lcuzZlc6DGcYMjp6RLiCqdPJP2nyjM&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfTqvTuOasC6CsP_ANXC5eLGpviCV-m88p0XgckkauXbDg&oe=68709322",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "Own a 1-bedroom apartment in Binghatti Circle,  a 60-storey high-rise redefining Jumeirah Village Circle’s skyline. Enjoy full-length balconies, skyline views, and a smart design built for modern Dubai living.\n\nLocated just minutes from Circle Mall, Dubai Hills, and direct exits to Al Khail and Hessa Street, this is the ultimate blend of comfort and location.\nPrices start from AED 1,049,999.\n\nSign up now for more details!\nor call 80015",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.35426-6/512689006_1775019806774846_5830838704068969490_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=gEvgs5QAJDUQ7kNvwGp4pVC&_nc_oc=AdnoFuyl1DiYxCCA2hQJkmSjW9l91nsRjATG-77VvLGpsiX3klXBOavWzGmXh8Oc9Ns&_nc_zt=14&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfT5AmBkhj6MfyG5INecuNtOmzaQufhwW0RrRrLn0867cA&oe=6870B242",
+                          "resized_image_url": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.35426-6/511521278_2262453770883335_3017559081881032885_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=XTaBMq1uhpcQ7kNvwGMG4mg&_nc_oc=AdmxNBWJumey8l3MF4tcKfsjrsyjtALLQYn6xRNJaIpzzoVwebuYcOsYlQzQKfQIlIU&_nc_zt=14&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfSF82p8A35a6bbSh9uXXPHtjuCl3jJ9cfD23p70vXXlmw&oe=68709D9F",
+                          "watermarked_resized_image_url": "",
+                          "title": "Buy Direct From the Developer!",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "Own a 1-bedroom apartment in Binghatti Circle,  a 60-storey high-rise redefining Jumeirah Village Circle’s skyline. Enjoy full-length balconies, skyline views, and a smart design built for modern Dubai living.\n\nLocated just minutes from Circle Mall, Dubai Hills, and direct exits to Al Khail and Hessa Street, this is the ultimate blend of comfort and location.\nPrices start from AED 1,049,999.\n\nSign up now for more details!\nor call 80015",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-4.fna.fbcdn.net/v/t39.35426-6/511686711_30215546371423239_3125935112626173433_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-3BDxf4bq0oQ7kNvwGLd2NL&_nc_oc=AdlopMAugTOX9afGiICMM9vkoj_1aZajevL095fas3uXobZBLM3dwFFtEwAv7_dNpqI&_nc_zt=14&_nc_ht=scontent.fdxb3-4.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQ-oVazfyJ-rTpoSht8CKhCGbJoJF5-bnS_1ow16laA7g&oe=6870A244",
+                          "resized_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/511322306_1189453446290374_268866740268486093_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Hw4vJZ4CxAUQ7kNvwGEU73d&_nc_oc=AdmJjiQ4mZIBm8vYPRML1Q95NIYdG9R7taPeErD3jQLjCq-MHYEcF6paw6Fec7BChCo&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQZe7M2EmyLoU4roYMQY6ICx5GMZ35jXL8j9wkeocm4QA&oe=68709290",
+                          "watermarked_resized_image_url": "",
+                          "title": "Buy Direct From the Developer!",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Learn more",
+                      "cta_type": "LEARN_MORE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54135,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/",
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Welcome to Binghatti"
+                        },
+                        {
+                          "text": "> Sign up below for more details.\n\nBinghatti is Dubai's most popular luxury developer, known for its fast completion of projects and deliveries in the UAE."
+                        },
+                        {
+                          "text": "Verify the following information before completing the registration process."
+                        },
+                        {
+                          "text": "Select the type of unit required:"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 bedroom apartment"
+                        },
+                        {
+                          "text": "2 bedroom apartment"
+                        },
+                        {
+                          "text": "3 bedroom apartment"
+                        },
+                        {
+                          "text": "Retail shop"
+                        },
+                        {
+                          "text": "Select preferred language:"
+                        },
+                        {
+                          "text": "Arabic"
+                        },
+                        {
+                          "text": "English"
+                        },
+                        {
+                          "text": "French"
+                        },
+                        {
+                          "text": "Hindi"
+                        },
+                        {
+                          "text": "Russian"
+                        },
+                        {
+                          "text": "Turkish"
+                        },
+                        {
+                          "text": "German"
+                        },
+                        {
+                          "text": "Italian"
+                        },
+                        {
+                          "text": "Chinese"
+                        },
+                        {
+                          "text": "Confirm your phone number or whatsapp:"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Country"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "View Binghatti's Privacy Policy."
+                        },
+                        {
+                          "text": "Your request has been sent."
+                        },
+                        {
+                          "text": "Expect a call from our sales representative In the coming hours to clarify all the details.\n\nYou can visit our website or exit the form."
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "UNKNOWN"
+                    ],
+                    "collation_count": 8,
+                    "collation_id": "1053947429701812",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751785200,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1750921200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 545355,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63991,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwH_QMiR&_nc_oc=Adl1c5Rn6J5GdRxfo6j-AqwK_2aSXxg4QOzkU9Fn31K8SB9L-TKtt7xF2xSaWKgUQxg&_nc_zt=23&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=X2VQD7k274o8LwEddXIAuw&oh=00_AfQ80uuw-JLz1iHs6DRxxaGtxqemR15nARYDQei6nZzTdg&oe=6870AA2D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHKQlIW&_nc_oc=AdkOCavWTdz2YbduawsA6ZQV0S_JzOy5kmB1TpARWmoZBUGiEgmviNv08aMu1hI8LzU&_nc_zt=24&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=X2VQD7k274o8LwEddXIAuw&oh=00_AfR9Grk64b45sZDg60yDp1zRQN2VFpiQ6c2jFOxVIeXktA&oe=68708C9E",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            },
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1868767063975838",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/511258986_1279079804001291_2033392811197137324_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=taDMK5WoT_MQ7kNvwEYVPJO&_nc_oc=AdmS4vPFdan4Fx3DQVMo35k7dK8Jfj5yoDZWv2DNsxHLHKbJ6fKzVWHXWu0Pjy-l5Ik&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfRvAos1y_IuUIoKQskKErYGt5ayZmE7dWFZQO5U8DyXXQ&oe=6870A84F",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "Own a studio in Binghatti Circle,  the tallest residential tower in JVC, rising 60 floors high in the heart of Dubai. Enjoy smart layouts, premium finishes, and open skyline views in a project just 5 minutes from Circle Mall and 10 minutes from Dubai Hills Mall. \n\nWith direct access to Al Khail Road and Sheikh Zayed Road, this is elevated living with unbeatable connectivity. Prices start from AED 674,999.\n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-4.fna.fbcdn.net/v/t39.35426-6/509441670_1390928815521339_5782073535176499791_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-O4OiLrDJhIQ7kNvwGfiy3w&_nc_oc=AdnVsQ6VCQVXnsVCbeWu2yUelNVAV93sf-Hc06zmaeVN-ZU_PU10Klu2E0xaJ6eYO9c&_nc_zt=14&_nc_ht=scontent.fdxb3-4.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfTL-KQjtWv8Tvnhwl4pFZMOaOSXkXY3zLJ45zltefvT8w&oe=6870AB5E",
+                          "resized_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/509439149_1455211015927371_1778631654147127025_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7nY0vPvGqUoQ7kNvwGdUJK7&_nc_oc=Adn-0EOcNrxi4od94mI_UUwXbB_Mza3QQl417xOEUI60C7xr9vVnnZt_Nf4gNFg1lZ0&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfS-CuQwjeMdw5MVz4mOOyO8vOHb3Ml_KPOIiTzfICQ7Xg&oe=6870A3FA",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "Own a studio in Binghatti Circle,  the tallest residential tower in JVC, rising 60 floors high in the heart of Dubai. Enjoy smart layouts, premium finishes, and open skyline views in a project just 5 minutes from Circle Mall and 10 minutes from Dubai Hills Mall. \n\nWith direct access to Al Khail Road and Sheikh Zayed Road, this is elevated living with unbeatable connectivity. Prices start from AED 674,999.\n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/510667386_1211246484111331_7889687889438580199_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nhpa3cMwu1sQ7kNvwHyCFdZ&_nc_oc=AdkRrEo_t0MbUp9ONyPMsPB56yxFD6vLqkgkE45FNgH5gN5fMCzLkDHv76A7fFOuJ40&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfS4SadSvpBL23L-KZR0A-w5DPGa9fpNyGdG16rQ6ly1HQ&oe=6870A337",
+                          "resized_image_url": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.35426-6/508669035_1731553360795218_907131246211658991_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=bYBk2BiWfBoQ7kNvwGfeLL-&_nc_oc=AdkjFXGxWiezXP_whl75zE6HPvJp8VNpXVmgH6ieEf0kEhwO3kZ5JSNGnR6_ikVstqM&_nc_zt=14&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfRfYzfWSBcFZjbVMU481bMtcFrq2j5N2qvMANTA3VmOFA&oe=6870C314",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Learn more",
+                      "cta_type": "LEARN_MORE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54135,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/",
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Welcome to Binghatti"
+                        },
+                        {
+                          "text": "> Sign up below for more details.\n\nBinghatti is Dubai's most popular luxury developer, known for its fast completion of projects and deliveries in the UAE."
+                        },
+                        {
+                          "text": "Verify the following information before completing the registration process."
+                        },
+                        {
+                          "text": "Select the type of unit required:"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 bedroom apartment"
+                        },
+                        {
+                          "text": "2 bedroom apartment"
+                        },
+                        {
+                          "text": "3 bedroom apartment"
+                        },
+                        {
+                          "text": "Retail shop"
+                        },
+                        {
+                          "text": "Select preferred language:"
+                        },
+                        {
+                          "text": "Arabic"
+                        },
+                        {
+                          "text": "English"
+                        },
+                        {
+                          "text": "French"
+                        },
+                        {
+                          "text": "Hindi"
+                        },
+                        {
+                          "text": "Russian"
+                        },
+                        {
+                          "text": "Turkish"
+                        },
+                        {
+                          "text": "German"
+                        },
+                        {
+                          "text": "Italian"
+                        },
+                        {
+                          "text": "Chinese"
+                        },
+                        {
+                          "text": "Confirm your phone number or whatsapp:"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Country"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "View Binghatti's Privacy Policy."
+                        },
+                        {
+                          "text": "Your request has been sent."
+                        },
+                        {
+                          "text": "Expect a call from our sales representative In the coming hours to clarify all the details.\n\nYou can visit our website or exit the form."
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "UNKNOWN"
+                    ],
+                    "collation_count": 8,
+                    "collation_id": "1671910800238595",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751785200,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1750921200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 545355,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63991,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwH_QMiR&_nc_oc=Adl1c5Rn6J5GdRxfo6j-AqwK_2aSXxg4QOzkU9Fn31K8SB9L-TKtt7xF2xSaWKgUQxg&_nc_zt=23&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=YFRd6AHtsqoBWj1XB7HaOw&oh=00_AfROR1e7elcrBVWhZ4_ASOPC-CxStDCB2j7QeP8RARw-Qw&oe=6870AA2D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHKQlIW&_nc_oc=AdkOCavWTdz2YbduawsA6ZQV0S_JzOy5kmB1TpARWmoZBUGiEgmviNv08aMu1hI8LzU&_nc_zt=24&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=YFRd6AHtsqoBWj1XB7HaOw&oh=00_AfSDR1_2rbc81Gy9K1ZO5Rm_S6hTurQliwYRPTdB5bWLLQ&oe=68708C9E",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            },
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1228174241852358",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/513224817_744337974832678_8410836815245439423_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=FL-BM0tt95QQ7kNvwGM4GRT&_nc_oc=Adkl3OpTjPXwO-CyXjUM-BA9RySN0p7bsyccvCWZILsG4noWhyyEEEXBBFE_4-9diY0&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfS8wU4DQw0Lj29Nvp-UpS_JTncSX9S6XurRoRRFSGHYSA&oe=68709625",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "احجز شقتك الآن في مشروع \"بن غاطي سيركل\"\nأطول مشروع سكني في قرية جميرا الدائرية!\n\nواستمتع بعيش بتجربة مميزة وموقع استراتيجي وخدمات راقية\nالأسعار تبدأ من 674,999 درهم إماراتي للاستوديو\n\nاتصل الآن على 97180015+\nأو سجل اهتمامك أسفل الشاشة",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/512705952_1623722604985746_176737173114267307_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Vr3rCkHK6JIQ7kNvwGCVGs-&_nc_oc=AdkEUpvp_dyg0zVLfkD2yPT9tQ1Vyf8x1es-N5jZYzWdE68nrwP_sLpk4q3Zdovaj3I&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfS1KIsYDwahsqphARXX7ktuEE56TKu0ae38ANtdWRAypQ&oe=6870C277",
+                          "resized_image_url": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.35426-6/512170474_1146083554223345_7254033581998437756_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=WfxX140WOpgQ7kNvwEnsxEt&_nc_oc=Adm99zuiWh95Em8EMHi8Caq8_PGJbOsUbKTBKX2glw2mFTAClDEeN-uoIGUW4b8H9dE&_nc_zt=14&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQXj37kvwFvKV6E04tPFG1LDbZmqv5iW18xR-IYbM3bEQ&oe=68709F8C",
+                          "watermarked_resized_image_url": "",
+                          "title": "أسعار تبدأ من 674,999 درهم إماراتي للاستوديو - سجل الأن للتفاصيل!",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "احجز شقتك الآن في مشروع \"بن غاطي سيركل\"\nأطول مشروع سكني في قرية جميرا الدائرية!\n\nواستمتع بعيش بتجربة مميزة وموقع استراتيجي وخدمات راقية\nالأسعار تبدأ من 674,999 درهم إماراتي للاستوديو\n\nاتصل الآن على 97180015+\nأو سجل اهتمامك أسفل الشاشة",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/513835223_593809907099673_421641197228890460_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Em42P9J-_kUQ7kNvwFtX254&_nc_oc=AdmVuCYpcK1YcOP4ST4rCMXL06Dcv6gAippmnQk_EWQ98y-GYgyMFP9PQsDR4hqpWpU&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfRbQEvt7UzheZxKsnL_mG5HTOFofcr7gsuz3cpFMSD4-Q&oe=6870B3E3",
+                          "resized_image_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/513084383_2196496427466611_342181406932515103_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=2yL1GAN7QLwQ7kNvwFfu0X-&_nc_oc=Adk7O6QZOSEyCkIebexzxeZPhS6ndDuVSc4163DIvUHBSV08Yz5Q43pIqFotV4Xhgx0&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQ8ZLH_Ds2_rZM3ZF4ZilJbEA95a3Tdwgscrxh8uymP2Q&oe=68709235",
+                          "watermarked_resized_image_url": "",
+                          "title": "أسعار تبدأ من 674,999 درهم إماراتي للاستوديو - سجل الأن للتفاصيل!",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Learn more",
+                      "cta_type": "LEARN_MORE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54135,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/",
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Welcome to Binghatti"
+                        },
+                        {
+                          "text": "سجل الأن للمزيد من التفاصيل \n\nبن غاطي هي شركة تطوير العقارات الفاخرة الأكثر شهرة في دبي، والمعروفة بسرعة إنجاز مشاريعها وتسليمها في دولة الإمارات العربية المتحدة."
+                        },
+                        {
+                          "text": "يرجى التأكد من المعلومات التالية قبل إتمام عملية التسجيل لضمان التواصل معك بكافة التفاصيل"
+                        },
+                        {
+                          "text": "يرجى إختيار نوع الوحدة المطلوبة :"
+                        },
+                        {
+                          "text": "ستوديو"
+                        },
+                        {
+                          "text": "غرفة نوم وصالة"
+                        },
+                        {
+                          "text": "غرفتين نوم وصالة"
+                        },
+                        {
+                          "text": "ثلاثة غرف نوم وصالة"
+                        },
+                        {
+                          "text": "محل تجاري"
+                        },
+                        {
+                          "text": "يرجى إدخال رقم الهاتف أو الواتساب مع كود الدولة :"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Country"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "View Binghatti's Privacy Policy."
+                        },
+                        {
+                          "text": "شكراً، تم ارسال طلبك"
+                        },
+                        {
+                          "text": "ترقب مكالمة من مسئول مبيعات بن غاطي\nخلال الساعات القادمة لتوضيح كافة التفاصيل"
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "UNKNOWN"
+                    ],
+                    "collation_count": 8,
+                    "collation_id": "1472663470422330",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751785200,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1750921200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 545355,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63991,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwH_QMiR&_nc_oc=Adl1c5Rn6J5GdRxfo6j-AqwK_2aSXxg4QOzkU9Fn31K8SB9L-TKtt7xF2xSaWKgUQxg&_nc_zt=23&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=XL1Ift2QegDGlGsNLJVtjA&oh=00_AfTHnbYt-XHKjgih07__bcM9VkOYHTAxpAAm0ETsGPIkLQ&oe=6870AA2D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHKQlIW&_nc_oc=AdkOCavWTdz2YbduawsA6ZQV0S_JzOy5kmB1TpARWmoZBUGiEgmviNv08aMu1hI8LzU&_nc_zt=24&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=XL1Ift2QegDGlGsNLJVtjA&oh=00_AfT2Gh-zYf0dYdBlok3y13_miq5nDd6tJjY-HrGLPkOQDw&oe=68708C9E",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            },
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1506543756997388",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/512867543_2237853236673901_5170816263861522813_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=QhmVxg5q0woQ7kNvwHEp4ao&_nc_oc=AdlHehrpFnRXOvRgYdDyeDNZm0se7r4YqpjX0m1ZbkEjEs7LLhg64b2SMp3Q0FhO5sw&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQV5EY0qpt9SRlxbFPiZfLpWT07ZTBNjSueQNIIn2jLTg&oe=6870C2FF",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "Looking for an affordable luxury studio in Dubai’s landmark location? Binghatti Circle offers high-rise living in JVC’s tallest tower with panoramic views, modern interiors, and a central location minutes from Dubai Marina.\nIdeal for residents and investors alike. Studios starting from AED 674,999. \n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-4.fna.fbcdn.net/v/t39.35426-6/512671741_1284848483650730_8802565793806151_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=H5b9Co3Q4KcQ7kNvwF6DeL8&_nc_oc=AdmxtQfTv_fH0jOq9TIns_ytFhQwZFCrp02lLCV93oV8WB4D0QEVjh0BO6MfGr_uQDk&_nc_zt=14&_nc_ht=scontent.fdxb3-4.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfR5S8tN3K4thzf3dY8nTpMs6h9UFgQF01XqzszwS19UMw&oe=68709D23",
+                          "resized_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/513245306_1148973050584626_171346274643422542_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=bZUwEkDYS5wQ7kNvwHAAJKb&_nc_oc=AdkAhQcY5RsQFM_RBsPuLuwNn7AIQlGd1cng6lwgEZsudRng8D-Si0h3osw00RSQ3-c&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfSRo6FSh7eK0Jx5bGppqNWPshuO0R3mojitifwqlIICkQ&oe=6870956B",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "Looking for an affordable luxury studio in Dubai’s landmark location? Binghatti Circle offers high-rise living in JVC’s tallest tower with panoramic views, modern interiors, and a central location minutes from Dubai Marina.\nIdeal for residents and investors alike. Studios starting from AED 674,999. \n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-1.fna.fbcdn.net/v/t39.35426-6/513089603_9725117157597553_5166130422622447815_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=rT7hk-DSkRcQ7kNvwG5tr6T&_nc_oc=AdmTU1CuJXu3l1GzdFnAoWp_q2D9u6JL7gd4FAYH80AtemoLjRXJyTjYAKcppx9HVAQ&_nc_zt=14&_nc_ht=scontent.fdxb3-1.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfSZUfQv9mh6NWmVTa2D50M_rc1gRJf3hcytNA8hPy6WuA&oe=6870959D",
+                          "resized_image_url": "https://scontent.fdxb3-4.fna.fbcdn.net/v/t39.35426-6/512945367_709895034976494_9178919381953704765_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=iIYMdt-ocMcQ7kNvwEhs15U&_nc_oc=AdlbSZ4CqlWfh5amxCKp3FJ-FT0C2VQ3BE-Z_GLf8vePUsbhlZTeawM1nmxFOMzZ6CA&_nc_zt=14&_nc_ht=scontent.fdxb3-4.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfTOBWYSMERUI3Ltkuje_z7uSY2Xd73FHLda9p_mN4uvBg&oe=6870B56F",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Learn more",
+                      "cta_type": "LEARN_MORE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54135,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/",
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Welcome to Binghatti"
+                        },
+                        {
+                          "text": "> Sign up below for more details.\n\nBinghatti is Dubai's most popular luxury developer, known for its fast completion of projects and deliveries in the UAE."
+                        },
+                        {
+                          "text": "Verify the following information before completing the registration process."
+                        },
+                        {
+                          "text": "Select the type of unit required:"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 bedroom apartment"
+                        },
+                        {
+                          "text": "2 bedroom apartment"
+                        },
+                        {
+                          "text": "3 bedroom apartment"
+                        },
+                        {
+                          "text": "Retail shop"
+                        },
+                        {
+                          "text": "Select preferred language:"
+                        },
+                        {
+                          "text": "Arabic"
+                        },
+                        {
+                          "text": "English"
+                        },
+                        {
+                          "text": "French"
+                        },
+                        {
+                          "text": "Hindi"
+                        },
+                        {
+                          "text": "Russian"
+                        },
+                        {
+                          "text": "Turkish"
+                        },
+                        {
+                          "text": "German"
+                        },
+                        {
+                          "text": "Italian"
+                        },
+                        {
+                          "text": "Chinese"
+                        },
+                        {
+                          "text": "Confirm your phone number or whatsapp:"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Country"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "View Binghatti's Privacy Policy."
+                        },
+                        {
+                          "text": "Your request has been sent."
+                        },
+                        {
+                          "text": "Expect a call from our sales representative In the coming hours to clarify all the details.\n\nYou can visit our website or exit the form."
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "UNKNOWN"
+                    ],
+                    "collation_count": 8,
+                    "collation_id": "1353229962429266",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751785200,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1750921200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 545355,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63991,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwH_QMiR&_nc_oc=Adl1c5Rn6J5GdRxfo6j-AqwK_2aSXxg4QOzkU9Fn31K8SB9L-TKtt7xF2xSaWKgUQxg&_nc_zt=23&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=jWs3H1DXPX7081vfqf0YuQ&oh=00_AfSZH7zjqx8kM0cr4KVhtf40VDpHiX5yiRY95grQn_fDcg&oe=6870AA2D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHKQlIW&_nc_oc=AdkOCavWTdz2YbduawsA6ZQV0S_JzOy5kmB1TpARWmoZBUGiEgmviNv08aMu1hI8LzU&_nc_zt=24&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=jWs3H1DXPX7081vfqf0YuQ&oh=00_AfQumcCl6ptEpDRIhaaVp9ZzcS7MLFpauEPcpwc2N2Hz1A&oe=68708C9E",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            },
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1090232469621615",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/511270786_1030029425852122_8415363346169776475_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=cZ2Il4_9a5oQ7kNvwExTosk&_nc_oc=AdkFIY3FQagnDSCRCEFf7cylTbXJs1d8Nrt1zawTWl7AKkCcDelWJG-TOSWVCYGJlu4&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfTqikpX7DL9RLZ7qkk68LfUYZrmqos_LXifBlNMDstLSg&oe=6870B604",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "Own a studio in Binghatti Circle,  the tallest residential tower in JVC, rising 60 floors high in the heart of Dubai. Enjoy smart layouts, premium finishes, and open skyline views in a project just 5 minutes from Circle Mall and 10 minutes from Dubai Hills Mall. \n\nWith direct access to Al Khail Road and Sheikh Zayed Road, this is elevated living with unbeatable connectivity. Prices start from AED 674,999.\n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/513081097_1087385969929640_309297104570567313_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=taQ8LoCedwgQ7kNvwE33983&_nc_oc=AdlQQ1XGnA4HwISzwrMgjVOyCpNlmeexzg5VgwYiQCBSUrAT9kaHg-oyRumcd4MgYaA&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQN9JirhpfwejEdWHngheC9XxMfP3cg-WpHrVdOPMaxLA&oe=68708BF8",
+                          "resized_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/513118854_1422378432409509_2676260112008249947_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=DSA7PPF9cSwQ7kNvwHXsCTN&_nc_oc=AdmVqgwQWsYiwvoSyeGQRNflwtQPgEALlW7wSk6GqNFqQ9P0QkZJDqSssP0sA1duJN8&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfR5uDigUiuDn6aacryQbfGVKN9iASrruE6dRqnsJbXXuw&oe=6870904D",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "Own a studio in Binghatti Circle,  the tallest residential tower in JVC, rising 60 floors high in the heart of Dubai. Enjoy smart layouts, premium finishes, and open skyline views in a project just 5 minutes from Circle Mall and 10 minutes from Dubai Hills Mall. \n\nWith direct access to Al Khail Road and Sheikh Zayed Road, this is elevated living with unbeatable connectivity. Prices start from AED 674,999.\n\nCall 800 15 or register your interest.",
+                          "caption": "",
+                          "cta_text": "Learn More",
+                          "cta_type": "LEARN_MORE",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/513696794_728965519674613_3309279402731332427_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RNmp1ycEETsQ7kNvwHe7iCx&_nc_oc=Adl37YtdNwgcr3-xEgnaStY1ivMX00lKMSdUplRtjcJixuHEYbK_9f4SW7ieC58N6Fo&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfQJ_07Ubr2uK1y32nZytJQAEEIRbQTi2d3NIlQcDneITQ&oe=6870B471",
+                          "resized_image_url": "https://scontent.fdxb3-3.fna.fbcdn.net/v/t39.35426-6/511309492_1069736804518275_5367957354177963889_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=x7yCZmCO1zQQ7kNvwFQGlky&_nc_oc=Adm-EwcVvwwhGZ0-TE9TUfKGTBEjxxHuJSGs6EkDo78zdp8jdMYJ4P9BfwWblt82jf4&_nc_zt=14&_nc_ht=scontent.fdxb3-3.fna&_nc_gid=KjS1t58u9NWb94ksAY6CBw&oh=00_AfSqdNT0WvznELJE6D5Xzc1sQgLwmHOfL_J5TvdZZgbxkg&oe=68709C47",
+                          "watermarked_resized_image_url": "",
+                          "title": "Starting from AED 674,999.",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Learn more",
+                      "cta_type": "LEARN_MORE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54135,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/",
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Welcome to Binghatti"
+                        },
+                        {
+                          "text": "> Sign up below for more details.\n\nBinghatti is Dubai's most popular luxury developer, known for its fast completion of projects and deliveries in the UAE."
+                        },
+                        {
+                          "text": "Verify the following information before completing the registration process."
+                        },
+                        {
+                          "text": "Select the type of unit required:"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 bedroom apartment"
+                        },
+                        {
+                          "text": "2 bedroom apartment"
+                        },
+                        {
+                          "text": "3 bedroom apartment"
+                        },
+                        {
+                          "text": "Retail shop"
+                        },
+                        {
+                          "text": "Select preferred language:"
+                        },
+                        {
+                          "text": "Arabic"
+                        },
+                        {
+                          "text": "English"
+                        },
+                        {
+                          "text": "French"
+                        },
+                        {
+                          "text": "Hindi"
+                        },
+                        {
+                          "text": "Russian"
+                        },
+                        {
+                          "text": "Turkish"
+                        },
+                        {
+                          "text": "German"
+                        },
+                        {
+                          "text": "Italian"
+                        },
+                        {
+                          "text": "Chinese"
+                        },
+                        {
+                          "text": "Confirm your phone number or whatsapp:"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Country"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "View Binghatti's Privacy Policy."
+                        },
+                        {
+                          "text": "Your request has been sent."
+                        },
+                        {
+                          "text": "Expect a call from our sales representative In the coming hours to clarify all the details.\n\nYou can visit our website or exit the form."
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "UNKNOWN"
+                    ],
+                    "collation_count": 8,
+                    "collation_id": "1690957681533054",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751785200,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1750921200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 545355,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63991,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwH_QMiR&_nc_oc=Adl1c5Rn6J5GdRxfo6j-AqwK_2aSXxg4QOzkU9Fn31K8SB9L-TKtt7xF2xSaWKgUQxg&_nc_zt=23&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KMa3tsCBVLon4svEiP0Zeg&oh=00_AfSlmhDv0KprK7s56fJSuQFKSNPNhqWowwV27-308eyvbw&oe=6870AA2D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb3-2.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHKQlIW&_nc_oc=AdkOCavWTdz2YbduawsA6ZQV0S_JzOy5kmB1TpARWmoZBUGiEgmviNv08aMu1hI8LzU&_nc_zt=24&_nc_ht=scontent.fdxb3-2.fna&_nc_gid=KMa3tsCBVLon4svEiP0Zeg&oh=00_AfTPZdiHdlWQqPMtc1r-79m0BnSGTAfewRVXkVvRD0Daaw&oe=68708C9E",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            }
+          ],
+          "page_info": {
+            "end_cursor": "AQHRjqEfVFx_aJkFeFCAasVLUh8DGzDhzdGkMGjfx5xY80Qam5CkmH3NqZARnNaahm2Y",
+            "has_next_page": true
+          }
+        }
+      }
+    },
+    "extensions": {
+      "is_final": true
+    }
+  }
+]

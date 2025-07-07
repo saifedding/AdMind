@@ -1,0 +1,2540 @@
+[
+  {
+    "data": {
+      "ad_library_main": {
+        "search_results_connection": {
+          "edges": [
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "2259906994458760",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514129975_1410682243304965_4927233158774445560_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ezgzehSHKUoQ7kNvwG2oGRO&_nc_oc=AdmZwfdUwYCvyiZXjNUFRXxPTcIvZJ46z9Yj34lNrxj561xYZk-ZfU4Wr6qyqnhpu_k&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRXbAvQYaDLaltCkU5fMc3ywTBwsm3jOJp5XPvpmg-TaQ&oe=686EEE7F",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514489023_629885689482371_7627928963601180862_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=9iMIdvteoeYQ7kNvwEaY8KB&_nc_oc=Adk9y3xi7KEWRwoQ76aUGeCyd_KGnhDYvYMchY9yKf3zQ5gOgYVCsrN9j3Rz1GNcTEQ&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfSzJL5wV9teZL9Vz2BMS2k-XL-8-5349pUNPyq9Pmucow&oe=686F023B",
+                          "resized_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/515584633_1771290363823989_1984621440018905067_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IlVNC3N0z18Q7kNvwF_kAun&_nc_oc=AdltW_AB6gLNXN1TXnScTwj5ouNO194dqGy2C_9wmdO6jqSEspyP6iu10oHp-0oxVOE&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQ4_IQZZC1GLDdkTEHIqGlpcCOdMOx8oDRO7gATaveIeg&oe=686ED5E2",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/514825013_1893267608188776_5743751591896389978_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=GZ9Ncocp0_wQ7kNvwH4uAEf&_nc_oc=Adm5zLAfvCAQ_ycepBvsa41kGG-8HCKTXfPy5vcGH_tqmqmTRQsJ2523JvFpkIMgUvo&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfSjJJTFNoHBxn6IuCefk9NSm15XHWf0NDQsMWYWmEl-hA&oe=686EE89B",
+                          "resized_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514404714_1031802585817809_4359223273244465232_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=NevHAaPYNMUQ7kNvwHXu-Ho&_nc_oc=AdkATFNPoH1Dud0sbCMWyO4IJNzQvVbV21oDziWCkqIcySK3ll04ppLLjhrxU0h0Nl8&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfSszNW4WIO3RZ4EXM8_XTMuFjlFrZgXEzG7uuiXvjQnYg&oe=686EDC15",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Sign up",
+                      "cta_type": "SIGN_UP",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54077,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Grand Opening of Binghatti London Boutique"
+                        },
+                        {
+                          "text": "Join us on 16th July, 2025 at Brompton Road, London\n\nExplore High ROI Properties and UAE Golden Visa Opportunities with Binghatti"
+                        },
+                        {
+                          "text": "Sharing your complete information will be easier for us to get in touch with you"
+                        },
+                        {
+                          "text": "I would like to be a part of this Grand Opening Event"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested to obtain the Golden Visa in the UAE"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested in buying"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 Bedroom Apartment"
+                        },
+                        {
+                          "text": "2 Bedroom Apartment"
+                        },
+                        {
+                          "text": "3 Bedroom Apartment"
+                        },
+                        {
+                          "text": "4 Bedroom Apartment"
+                        },
+                        {
+                          "text": "Other"
+                        },
+                        {
+                          "text": "My contact or WhatsApp number is"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "Privacy Policy"
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "HOUSING"
+                    ],
+                    "collation_count": 4,
+                    "collation_id": "719962604101788",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751612400,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1751353200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 544991,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63933,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwHg-k8Q&_nc_oc=AdnJmgvR1XFOvQCcA37K7PZCPAEB3LMjMui_cQ5RkKp4XHDiacIlE2-aCqksVrs4Q7c&_nc_zt=23&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=AXm9lXwYI-rbay_7iBUavg&oh=00_AfQCV_YvUwm_V0dfw2F_PNGff2JTEILJC9rYxrDu3_NOQA&oe=686EE82D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHNj5_3&_nc_oc=AdmHQjIkldSC0k4YlUcukmOT4YnM4n88puxRR8dSSDSVD1r6hG0JwBneHO62ilpcQgg&_nc_zt=24&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=AXm9lXwYI-rbay_7iBUavg&oh=00_AfT2z0sQlI6M_sR8VGZ0vxmOz1J9lTO9_l90t5nuaaYRzg&oe=686F02DE",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": {
+                                "location_audience": [
+                                  {
+                                    "name": "London, United Kingdom",
+                                    "num_obfuscated": 0,
+                                    "type": "CITY",
+                                    "excluded": false
+                                  }
+                                ],
+                                "gender_audience": "All",
+                                "age_audience": {
+                                  "min": 18,
+                                  "max": 65
+                                },
+                                "total_reach": 16189,
+                                "age_country_gender_reach_breakdown": [
+                                  {
+                                    "country": "GB",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 928,
+                                        "female": 302,
+                                        "unknown": 14
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1525,
+                                        "female": 835,
+                                        "unknown": 70
+                                      },
+                                      {
+                                        "age_range": "65+",
+                                        "male": 259,
+                                        "female": 110,
+                                        "unknown": 12
+                                      },
+                                      {
+                                        "age_range": "55-64",
+                                        "male": 479,
+                                        "female": 220,
+                                        "unknown": 26
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 3701,
+                                        "female": 1778,
+                                        "unknown": 94
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 3905,
+                                        "female": 1747,
+                                        "unknown": 48
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  },
+                  {
+                    "ad_archive_id": "1083415513704050",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514362609_1229033775039257_3099645145134059236_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_NnoAuMYH-gQ7kNvwEJNROX&_nc_oc=Adk-iciva8Zjy0tMRPOWwAB6xEbnljBjxrUTX5XnPjwg-0YaOwGyyzm6jIWE8SQtCug&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRiiC4dBvTlxjwgulXF4LBh7ynvWUN_AYcPizIcpefSDQ&oe=686EDB4C",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/515054578_733407629227522_1341888010521269053_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=uiP1N5JYMR8Q7kNvwGdDhdy&_nc_oc=AdkIxHhrFCkj17mC3hYfiM8PIVs_AH7VP7LWU96NkIYMzLLqd862JgMVoBKFnICi-kM&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQiFaggxE5EEFRYR2qWunJGSa_CemuLdchiyphiZfn5Qw&oe=686EF658",
+                          "resized_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/514400754_615769808206667_4224915700871597565_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=NIfUyoPPQt8Q7kNvwHYxmhx&_nc_oc=AdmLPybJkV3hnNXrIIvQdnMPmKcnJQsxyXEO3lGEzmNf3PaVmLo1L7oCvs7h6PaQHyg&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQ58hsWHrOCF9sDal1hoboKKMTy1tW939m_Sq3VXCDiAw&oe=686ED807",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/514397129_752196894165607_164511541378777482_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_qHC8UaJQCIQ7kNvwFxDAW1&_nc_oc=Adkvav9nBsZV8vDcFHpnNOSNvedCc9tA-41U8vwXvz63zs3kpncz5QgVzkCypJfPoFU&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRFvAzhXD2hwvQdUWlbBvtneC6bFG9F4iLGbAZtjw7Cag&oe=686EE0EB",
+                          "resized_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514413708_1051820753757044_3696219412108950531_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=xCVW04mR8CoQ7kNvwF1IEiP&_nc_oc=AdlqkZ2j2KQztj9eZAK8p6WqmSOHmYUd7zOCa38AcLldzz9tUjtIbkBbIQaLwaODNUA&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfTRzOZ9Q3N1SmsjBJuEczLGiRzH26UwLVrKyz2R7jOCzw&oe=686EFC3C",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Sign up",
+                      "cta_type": "SIGN_UP",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54077,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Grand Opening of Binghatti London Boutique"
+                        },
+                        {
+                          "text": "Join us on 16th July, 2025 at Brompton Road, London\n\nExplore High ROI Properties and UAE Golden Visa Opportunities with Binghatti"
+                        },
+                        {
+                          "text": "Sharing your complete information will be easier for us to get in touch with you"
+                        },
+                        {
+                          "text": "I would like to be a part of this Grand Opening Event"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested to obtain the Golden Visa in the UAE"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested in buying"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 Bedroom Apartment"
+                        },
+                        {
+                          "text": "2 Bedroom Apartment"
+                        },
+                        {
+                          "text": "3 Bedroom Apartment"
+                        },
+                        {
+                          "text": "4 Bedroom Apartment"
+                        },
+                        {
+                          "text": "Other"
+                        },
+                        {
+                          "text": "My contact or WhatsApp number is"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "Privacy Policy"
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "HOUSING"
+                    ],
+                    "collation_count": null,
+                    "collation_id": "719962604101788",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751612400,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1751353200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 544991,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63933,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwHg-k8Q&_nc_oc=AdnJmgvR1XFOvQCcA37K7PZCPAEB3LMjMui_cQ5RkKp4XHDiacIlE2-aCqksVrs4Q7c&_nc_zt=23&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=mCPVdLYfBy9nzSKxobj6rQ&oh=00_AfTXAnm_AzhARDtLY0Lso7yRdG2FRcSC7GBNzaAkY9wYsA&oe=686EE82D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHNj5_3&_nc_oc=AdmHQjIkldSC0k4YlUcukmOT4YnM4n88puxRR8dSSDSVD1r6hG0JwBneHO62ilpcQgg&_nc_zt=24&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=mCPVdLYfBy9nzSKxobj6rQ&oh=00_AfSMwumaikGiZ31nkO6FBsURtftYd5MTYxQvCyNaNHPb1g&oe=686F02DE",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": {
+                                "location_audience": [
+                                  {
+                                    "name": "London, United Kingdom",
+                                    "num_obfuscated": 0,
+                                    "type": "CITY",
+                                    "excluded": false
+                                  }
+                                ],
+                                "gender_audience": "All",
+                                "age_audience": {
+                                  "min": 18,
+                                  "max": 65
+                                },
+                                "total_reach": 28086,
+                                "age_country_gender_reach_breakdown": [
+                                  {
+                                    "country": "GB",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2594,
+                                        "female": 1292,
+                                        "unknown": 31
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1140,
+                                        "female": 879,
+                                        "unknown": 44
+                                      },
+                                      {
+                                        "age_range": "65+",
+                                        "male": 181,
+                                        "female": 118,
+                                        "unknown": 7
+                                      },
+                                      {
+                                        "age_range": "55-64",
+                                        "male": 286,
+                                        "female": 217,
+                                        "unknown": 12
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 3880,
+                                        "female": 2790,
+                                        "unknown": 80
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 8990,
+                                        "female": 5801,
+                                        "unknown": 54
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  },
+                  {
+                    "ad_archive_id": "578599161751105",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/514712279_660865233633655_8500533753113677156_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JIPlxEyLaAkQ7kNvwGhd_6T&_nc_oc=Adnt4mieEyasCd2525cB3giKgC0wcVSvc3I0ETn1G__g6i3vunFxS-SD_sdLG1JDu6s&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfT6L3hjeXO0UztMU0WuJ2s7eUQeX9Xpnz96N7RM5Ij20w&oe=686EEF72",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/514092570_1044651034517069_6176677556733922836_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=jYH-1gXf21kQ7kNvwHkBxYh&_nc_oc=AdlOuoUkhWl9oHeYoY5V8r9E68JvWFiZGnPpnKGhttJ8AimILnA7NM9x6FQShEqm7uw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfSe04vmtTx9T2bK-RrbzJTM8NiQGURRAHhbOkPxAIQBTg&oe=686EF5EA",
+                          "resized_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514371849_1069667307927415_116788009543128060_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=mosETyBrr3oQ7kNvwF9eDCX&_nc_oc=AdmnaFGE9HizSUo-rsDRb4FObPDSnwJGpNuaLRMEXUau09oVz4kPwVBgUC70lUUDAfA&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfTqTM3onyGHawkvpBGdqVWchLYuVa0Gonf3Ofb_5d8wuA&oe=686EF2DA",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514723821_1042222584679180_7080477402337125206_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=bxpFlUoZqTwQ7kNvwF_Qow2&_nc_oc=AdnvT9VGePGGY8onDCo2eDt0zAyXeqkxo08sTf_OMtGUSu36uRleJI399lrJQzqp774&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfTZBRoyLMd-4Ks7KU8rVXTZ8VGn-P6EiLwG3KPnciGP7g&oe=686EE930",
+                          "resized_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/515436022_1699287107626786_8230322431552265819_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=pBtmfhjkNY0Q7kNvwHsNA3A&_nc_oc=AdlB5gmj5aWpPHvedqvr7xEn2ca9iUUxP-M405BOrxAQ2VTKZ8q4tJOtnB9R9u8yr3o&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRSEwzi09V6-2E0GGXu2AY0wNP_QRHYH2F17Bfa5_pWfA&oe=686F04D4",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Sign up",
+                      "cta_type": "SIGN_UP",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54077,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Grand Opening of Binghatti London Boutique"
+                        },
+                        {
+                          "text": "Join us on 16th July, 2025 at Brompton Road, London\n\nExplore High ROI Properties and UAE Golden Visa Opportunities with Binghatti"
+                        },
+                        {
+                          "text": "Sharing your complete information will be easier for us to get in touch with you"
+                        },
+                        {
+                          "text": "I would like to be a part of this Grand Opening Event"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested to obtain the Golden Visa in the UAE"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested in buying"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 Bedroom Apartment"
+                        },
+                        {
+                          "text": "2 Bedroom Apartment"
+                        },
+                        {
+                          "text": "3 Bedroom Apartment"
+                        },
+                        {
+                          "text": "4 Bedroom Apartment"
+                        },
+                        {
+                          "text": "Other"
+                        },
+                        {
+                          "text": "My contact or WhatsApp number is"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "Privacy Policy"
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "HOUSING"
+                    ],
+                    "collation_count": null,
+                    "collation_id": "719962604101788",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751612400,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1751353200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 544991,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63933,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwHg-k8Q&_nc_oc=AdnJmgvR1XFOvQCcA37K7PZCPAEB3LMjMui_cQ5RkKp4XHDiacIlE2-aCqksVrs4Q7c&_nc_zt=23&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=iCnnUjvAzv4tuLQVTAJXXA&oh=00_AfQ0rGabHwgCd9DBbltUemLrM3ULCpPjNQ5P8KnjzwweJQ&oe=686EE82D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHNj5_3&_nc_oc=AdmHQjIkldSC0k4YlUcukmOT4YnM4n88puxRR8dSSDSVD1r6hG0JwBneHO62ilpcQgg&_nc_zt=24&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=iCnnUjvAzv4tuLQVTAJXXA&oh=00_AfTsjspa7dOqHSX6pVSvF3JSs7v3AvT2wRGEIQR-aFgSPw&oe=686F02DE",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": {
+                                "location_audience": [
+                                  {
+                                    "name": "London, United Kingdom",
+                                    "num_obfuscated": 0,
+                                    "type": "CITY",
+                                    "excluded": false
+                                  }
+                                ],
+                                "gender_audience": "All",
+                                "age_audience": {
+                                  "min": 18,
+                                  "max": 65
+                                },
+                                "total_reach": 23858,
+                                "age_country_gender_reach_breakdown": [
+                                  {
+                                    "country": "GB",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2223,
+                                        "female": 629,
+                                        "unknown": 26
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1341,
+                                        "female": 560,
+                                        "unknown": 51
+                                      },
+                                      {
+                                        "age_range": "65+",
+                                        "male": 161,
+                                        "female": 60,
+                                        "unknown": 10
+                                      },
+                                      {
+                                        "age_range": "55-64",
+                                        "male": 311,
+                                        "female": 111,
+                                        "unknown": 11
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 4432,
+                                        "female": 1860,
+                                        "unknown": 80
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 8692,
+                                        "female": 3113,
+                                        "unknown": 68
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  },
+                  {
+                    "ad_archive_id": "603481232370681",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514322962_766159659075163_7551297438576964859_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-sP0zQamgagQ7kNvwHNUuiO&_nc_oc=AdktIe2-buY3HIRJDQZJpcMVd4reF62iCWk6Yl3kfP5FQbWbS8kKEhMTDUz2Cdy79mk&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQkGGATGF1axVLY3aW6vsFZBYbpZqXbAorcN_KSYRbXAg&oe=686EE6E2",
+                      "body": {
+                        "text": "{{product.brand}}"
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "fb.me",
+                      "cards": [
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/515093907_1011277861080321_3403343391744201538_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=5wAljU5FKiQQ7kNvwEe7o7o&_nc_oc=Adm1G4q5fzbsnOEMtqWrgpEthIMdI37Q68WY0f0GGYm__8pIZhQykMlyTubbWlzUtIU&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRdZ_LZpG9Op-E_bc_vgUKWGdpMb4BEk8a0_lfWT8Kr8Q&oe=686EF1C9",
+                          "resized_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/515223487_695456330138459_1680709821913576423_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JSh9kpA0f40Q7kNvwFkQ561&_nc_oc=AdnxvGrEv__vTNHJ0pf4VGWwwgnYT4Vnqc_2Zpnfpx8MOkW2GGxcIGKvv9Tyg-7nAso&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRRL1HjA4Legx8nPM9BYgzZSz58DFp9dv5tZJ3xsIxmkQ&oe=686EDA5B",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        },
+                        {
+                          "body": "The Binghatti London Boutique is officially opening soon!\n\nLocated on prestigious Brompton Road, the Boutique offers UK investors a direct connection to Dubai’s leading real estate portfolio, including branded projects such as Bugatti Residences, Mercedes-Benz Places, and Burj Binghatti Jacob & Co.\n\nOur expert team is on-site to guide you through exclusive opportunities with: Tax-Free Income, Flexible Payment Plans, Golden Visa-Eligible Units\n\nVisit the Binghatti London Boutique today and unlock access to Dubai’s most sought-after properties.\n\nSign up below for more information\nOr call +971 800 15 to know more",
+                          "caption": "",
+                          "cta_text": "Sign Up",
+                          "cta_type": "SIGN_UP",
+                          "image_crops": [],
+                          "link_description": " ",
+                          "link_url": "http://fb.me/",
+                          "original_image_url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/514477804_737673311999643_5970445321837546393_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sb1Bt7Xnhy8Q7kNvwG656ax&_nc_oc=AdmFdVgZamxpCSCWnw8fvrTBuqt-3sPa0Rh-5XPhjmYs1ZuIipLyQF006mSa9rlUl-0&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfTs27prYXIP5AXusIFttGbLPIQWy2vFHltK1YatecSDNQ&oe=686ED8C0",
+                          "resized_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/515374463_598546909963821_6359902863258785276_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ftUIxnrrIbIQ7kNvwH2coFm&_nc_oc=AdlxZChneWD9NHfZWjZN5OShsp2Yq3M9Ua8NEFX_tk9qTZZXE-vi-4kQLdQFK2b3YJs&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQp3omk2LYVSrX9wp5LxuDOk6hRJV3dwUacRfO9HLXtZA&oe=686EEC25",
+                          "watermarked_resized_image_url": "",
+                          "title": "Explore Binghatti’s Top Projects in Dubai",
+                          "video_hd_url": null,
+                          "video_preview_image_url": null,
+                          "video_sd_url": null,
+                          "watermarked_video_hd_url": null,
+                          "watermarked_video_sd_url": null
+                        }
+                      ],
+                      "cta_text": "Sign up",
+                      "cta_type": "SIGN_UP",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "DCO",
+                      "event": null,
+                      "images": [],
+                      "link_description": "{{product.description}}",
+                      "link_url": "http://fb.me/",
+                      "page_categories": [
+                        "Real Estate"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54077,
+                      "title": "{{product.name}}",
+                      "videos": [],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [
+                        "https://www.binghatti.com/privacy-policy/",
+                        "https://www.binghatti.com/"
+                      ],
+                      "extra_texts": [
+                        {
+                          "text": "Grand Opening of Binghatti London Boutique"
+                        },
+                        {
+                          "text": "Join us on 16th July, 2025 at Brompton Road, London\n\nExplore High ROI Properties and UAE Golden Visa Opportunities with Binghatti"
+                        },
+                        {
+                          "text": "Sharing your complete information will be easier for us to get in touch with you"
+                        },
+                        {
+                          "text": "I would like to be a part of this Grand Opening Event"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested to obtain the Golden Visa in the UAE"
+                        },
+                        {
+                          "text": "Yes"
+                        },
+                        {
+                          "text": "No"
+                        },
+                        {
+                          "text": "I'm interested in buying"
+                        },
+                        {
+                          "text": "Studio"
+                        },
+                        {
+                          "text": "1 Bedroom Apartment"
+                        },
+                        {
+                          "text": "2 Bedroom Apartment"
+                        },
+                        {
+                          "text": "3 Bedroom Apartment"
+                        },
+                        {
+                          "text": "4 Bedroom Apartment"
+                        },
+                        {
+                          "text": "Other"
+                        },
+                        {
+                          "text": "My contact or WhatsApp number is"
+                        },
+                        {
+                          "text": "Full name"
+                        },
+                        {
+                          "text": "Email"
+                        },
+                        {
+                          "text": "Phone number"
+                        },
+                        {
+                          "text": "Terms and Conditions for Binghatti"
+                        },
+                        {
+                          "text": "Privacy Policy"
+                        }
+                      ],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "HOUSING"
+                    ],
+                    "collation_count": null,
+                    "collation_id": "719962604101788",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1751612400,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": false,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "FACEBOOK",
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1751353200,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 544991,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63933,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwHg-k8Q&_nc_oc=AdnJmgvR1XFOvQCcA37K7PZCPAEB3LMjMui_cQ5RkKp4XHDiacIlE2-aCqksVrs4Q7c&_nc_zt=23&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=PnuEoGqpVwycArv_LwzBTQ&oh=00_AfQ2jS0hm4IB_Zaw89H4xNiLY768PI6va6c5S1LuZVzfXA&oe=686EE82D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHNj5_3&_nc_oc=AdmHQjIkldSC0k4YlUcukmOT4YnM4n88puxRR8dSSDSVD1r6hG0JwBneHO62ilpcQgg&_nc_zt=24&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=PnuEoGqpVwycArv_LwzBTQ&oh=00_AfRYRp_wd_RQUIpbQjfhVKVA3RueDiHlcIS4y8b-W-KJEw&oe=686F02DE",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": null,
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": null,
+                              "uk_transparency": {
+                                "location_audience": [
+                                  {
+                                    "name": "London, United Kingdom",
+                                    "num_obfuscated": 0,
+                                    "type": "CITY",
+                                    "excluded": false
+                                  }
+                                ],
+                                "gender_audience": "All",
+                                "age_audience": {
+                                  "min": 18,
+                                  "max": 65
+                                },
+                                "total_reach": 20839,
+                                "age_country_gender_reach_breakdown": [
+                                  {
+                                    "country": "GB",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1157,
+                                        "female": 409,
+                                        "unknown": 18
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1419,
+                                        "female": 828,
+                                        "unknown": 71
+                                      },
+                                      {
+                                        "age_range": "65+",
+                                        "male": 198,
+                                        "female": 98,
+                                        "unknown": 13
+                                      },
+                                      {
+                                        "age_range": "55-64",
+                                        "male": 335,
+                                        "female": 163,
+                                        "unknown": 22
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 4097,
+                                        "female": 2246,
+                                        "unknown": 102
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 5719,
+                                        "female": 2806,
+                                        "unknown": 53
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            },
+            {
+              "node": {
+                "collated_results": [
+                  {
+                    "ad_archive_id": "1301233694906764",
+                    "page_id": "1591077094491398",
+                    "snapshot": {
+                      "branded_content": null,
+                      "page_id": "1591077094491398",
+                      "page_is_deleted": false,
+                      "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                      "root_reshared_post": null,
+                      "byline": null,
+                      "disclaimer_label": null,
+                      "page_name": "Binghatti",
+                      "page_profile_picture_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499518348_1242351804162848_3392687683340594340_n.jpg?stp=dst-jpg_s60x60_tt6&_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=X8_9f2WSc54Q7kNvwEeRnnt&_nc_oc=Adm18JjmHJZAHiXosH3793XpZNZPWgLmw9xktkHIEXjxQ6dcOqK7nR-WGpI_Z9NNKtM&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfTugZdjIbxVLHsjgxQn4j7huV7C2xq7GZ7LfqYBYpAtnQ&oe=686EEBAE",
+                      "body": {
+                        "text": "Unmatched sophistication and timeless elegance converge at Bugatti Residences by Binghatti. A sanctuary in the heart of Dubai, where French artistry meets modern opulence. Experience the pinnacle of luxury living, crafted to elevate your lifestyle and inspired by Bugatti’s legacy of automotive excellence."
+                      },
+                      "is_reshared": false,
+                      "brazil_tax_id": null,
+                      "caption": "instagram.com",
+                      "cards": [],
+                      "cta_text": "Visit Instagram profile",
+                      "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                      "country_iso_code": null,
+                      "current_page_name": "Binghatti",
+                      "display_format": "VIDEO",
+                      "event": null,
+                      "images": [],
+                      "link_description": null,
+                      "link_url": "http://instagram.com/binghatti",
+                      "page_categories": [
+                        "عقارات"
+                      ],
+                      "page_entity_type": "PERSON_PROFILE",
+                      "page_is_profile_page": false,
+                      "page_like_count": 54077,
+                      "title": null,
+                      "videos": [
+                        {
+                          "video_hd_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/499499640_1384935476173281_5050100764543964482_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JQnpYNtmWXkQ7kNvwG8go_9&_nc_oc=Adm1B1Vers6FxcU3KifVOQXYzp8I5w4e-dU_K9zlOsNCDe-wNGwTVnr6d6sjIfeTg2I&_nc_zt=28&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQ9P_sxm5egtSPRZvy5_hqkpHuqv6EDU2kkfNC8FWjpxA&oe=686F06BB",
+                          "video_preview_image_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499712728_2151329821980123_1148764172280602250_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=jZP_3oESWo0Q7kNvwGi5kVK&_nc_oc=AdmNdMsA1d_kc5sGaxIwYCg9WjoeNxj7o3NV1PHhiYoxMoa8o-I9COpmHyy_3hOX1z4&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfRVWM_XRg7Wf5VDAUEtRBtRWSDSjn1HtWh5JwD07tvNTQ&oe=686EF3C1",
+                          "video_sd_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/499709462_1384935479506614_9204600782451212237_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=cKuIN4J_FOMQ7kNvwGlx5nl&_nc_oc=AdnRMGpnI8vydR0gKrzbF0Tp8Ee7Ttr6CsobLW6i3YJTz01bTcB6ZsgaT-kYcrDJNRw&_nc_zt=28&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=f89OTE2DBbNvCKppbtV6UQ&oh=00_AfQRrj7lJbm5iwAdliq0JWitf2F5eqb0dqxSgHLEFISGAA&oe=686EF548",
+                          "watermarked_video_hd_url": "",
+                          "watermarked_video_sd_url": ""
+                        }
+                      ],
+                      "additional_info": null,
+                      "ec_certificates": [],
+                      "extra_images": [],
+                      "extra_links": [],
+                      "extra_texts": [],
+                      "extra_videos": []
+                    },
+                    "is_active": true,
+                    "has_user_reported": false,
+                    "report_count": null,
+                    "menu_items": [],
+                    "state_media_run_label": null,
+                    "page_is_deleted": false,
+                    "page_name": "Binghatti",
+                    "ad_id": null,
+                    "archive_types": [],
+                    "categories": [
+                      "HOUSING"
+                    ],
+                    "collation_count": 4,
+                    "collation_id": "1031928775564571",
+                    "contains_digital_created_media": false,
+                    "contains_sensitive_content": false,
+                    "currency": "",
+                    "end_date": 1749279600,
+                    "entity_type": "PERSON_PROFILE",
+                    "fev_info": null,
+                    "gated_type": "ELIGIBLE",
+                    "hidden_safety_data": false,
+                    "hide_data_status": "NONE",
+                    "impressions_with_index": {
+                      "impressions_text": null,
+                      "impressions_index": -1
+                    },
+                    "is_aaa_eligible": true,
+                    "is_profile_page": false,
+                    "political_countries": [],
+                    "publisher_platform": [
+                      "INSTAGRAM"
+                    ],
+                    "reach_estimate": null,
+                    "regional_regulation_data": {
+                      "finserv": {
+                        "is_deemed_finserv": false,
+                        "is_limited_delivery": false
+                      },
+                      "tw_anti_scam": {
+                        "is_limited_delivery": false
+                      }
+                    },
+                    "spend": null,
+                    "start_date": 1747810800,
+                    "targeted_or_reached_countries": [],
+                    "total_active_time": null,
+                    "enrichment_response": {
+                      "data": {
+                        "ad_library_main": {
+                          "ad_details": {
+                            "advertiser": {
+                              "page": {
+                                "about": {
+                                  "text": "Binghatti is one of the largest holding companies in the UAE, based in Dubai International Financial Center (DIFC)"
+                                },
+                                "is_delegate_page_with_linked_primary_profile": false,
+                                "id": "1591077094491398"
+                              },
+                              "ad_library_page_info": {
+                                "page_spend": {
+                                  "current_week": null,
+                                  "lifetime_by_disclaimer": [],
+                                  "weekly_by_disclaimer": [],
+                                  "is_political_page": false
+                                },
+                                "page_info": {
+                                  "entity_type": "PERSON_PROFILE",
+                                  "ig_followers": 544991,
+                                  "ig_username": "binghatti",
+                                  "ig_verification": true,
+                                  "likes": 63933,
+                                  "page_alias": "Binghatti",
+                                  "page_category": "Real Estate Developer",
+                                  "page_cover_photo": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.30808-6/482250771_1059192182991436_6304171500433678503_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=957871&_nc_ohc=7sC4afhpq2gQ7kNvwHg-k8Q&_nc_oc=AdnJmgvR1XFOvQCcA37K7PZCPAEB3LMjMui_cQ5RkKp4XHDiacIlE2-aCqksVrs4Q7c&_nc_zt=23&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=8umABSi8lHlqnA6Feb1kSw&oh=00_AfRfhvvGbh0IymH0gvajgxnzWO2spQt_ep_JetrB1_YRng&oe=686EE82D",
+                                  "page_id": "1591077094491398",
+                                  "page_is_deleted": false,
+                                  "page_is_restricted": false,
+                                  "page_name": "Binghatti",
+                                  "page_profile_uri": "https://www.facebook.com/Binghatti/",
+                                  "page_verification": "BLUE_VERIFIED",
+                                  "profile_photo": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.30808-1/324409171_1197626457522951_6802601792602083728_n.jpg?stp=dst-jpg_s148x148_tt6&_nc_cat=1&ccb=1-7&_nc_sid=418b77&_nc_ohc=TAe4yODFXdkQ7kNvwHNj5_3&_nc_oc=AdmHQjIkldSC0k4YlUcukmOT4YnM4n88puxRR8dSSDSVD1r6hG0JwBneHO62ilpcQgg&_nc_zt=24&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=8umABSi8lHlqnA6Feb1kSw&oh=00_AfQ3S6cLiGFDTBXm8zhpB4fhgaWQYk1YDGOibQtiLW3WEg&oe=686F02DE",
+                                  "is_profile_page": false
+                                }
+                              }
+                            },
+                            "aaa_info": {
+                              "targets_eu": true,
+                              "location_audience": [
+                                {
+                                  "name": "Ireland",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Italy",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Netherlands",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Spain",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Sweden",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Finland",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Denmark",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Belgium",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Greece",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Austria",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Croatia",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Poland",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Portugal",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Luxembourg",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Bulgaria",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Czech Republic",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Slovenia",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Slovakia",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Lithuania",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Hungary",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Cyprus",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Romania",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "France",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Germany",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Malta",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Estonia",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                },
+                                {
+                                  "name": "Latvia",
+                                  "num_obfuscated": 0,
+                                  "type": "countries",
+                                  "excluded": false
+                                }
+                              ],
+                              "gender_audience": "All",
+                              "age_audience": {
+                                "min": 18,
+                                "max": 65
+                              },
+                              "eu_total_reach": 94,
+                              "age_country_gender_reach_breakdown": [
+                                {
+                                  "country": "AT",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 2,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "RO",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 2,
+                                      "female": 1,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 2,
+                                      "female": 1,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "45-54",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "FI",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "FR",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": null,
+                                      "female": 1,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "35-44",
+                                      "male": null,
+                                      "female": 1,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 1,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "GR",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 1,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "HU",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 2,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 3,
+                                      "female": 3,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "IE",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "IT",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 5,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 3,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "LT",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "PL",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": null,
+                                      "female": 1,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "45-54",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 3,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "PT",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 3,
+                                      "female": 2,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 3,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "SE",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "DK",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 2,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "SI",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 2,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "BG",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 3,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 2,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 5,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "CY",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 2,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "45-54",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 2,
+                                      "female": 1,
+                                      "unknown": 1
+                                    },
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 3,
+                                      "female": 2,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "NL",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "35-44",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    },
+                                    {
+                                      "age_range": "18-24",
+                                      "male": null,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "SK",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "35-44",
+                                      "male": null,
+                                      "female": 3,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "ES",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "HR",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 1,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "DE",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": 2,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "LV",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "18-24",
+                                      "male": 1,
+                                      "female": null,
+                                      "unknown": null
+                                    }
+                                  ]
+                                },
+                                {
+                                  "country": "CZ",
+                                  "age_gender_breakdowns": [
+                                    {
+                                      "age_range": "25-34",
+                                      "male": null,
+                                      "female": 1,
+                                      "unknown": null
+                                    }
+                                  ]
+                                }
+                              ],
+                              "payer_beneficiary_data": [
+                                {
+                                  "payer": "Binghatti",
+                                  "beneficiary": "Binghatti"
+                                }
+                              ],
+                              "has_violating_payer_beneficiary": false,
+                              "is_ad_taken_down": false
+                            },
+                            "violation_types": [],
+                            "verified_voice_context": null,
+                            "transparency_by_location": {
+                              "br_transparency": null,
+                              "eu_transparency": {
+                                "targets_eu": true,
+                                "location_audience": [
+                                  {
+                                    "name": "Ireland",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Italy",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Netherlands",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Spain",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Sweden",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Finland",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Denmark",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Belgium",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Greece",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Austria",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Croatia",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Poland",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Portugal",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Luxembourg",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Bulgaria",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Czech Republic",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Slovenia",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Slovakia",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Lithuania",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Hungary",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Cyprus",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Romania",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "France",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Germany",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Malta",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Estonia",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  },
+                                  {
+                                    "name": "Latvia",
+                                    "num_obfuscated": 0,
+                                    "type": "countries",
+                                    "excluded": false
+                                  }
+                                ],
+                                "gender_audience": "All",
+                                "age_audience": {
+                                  "min": 18,
+                                  "max": 65
+                                },
+                                "eu_total_reach": 94,
+                                "age_country_gender_reach_breakdown": [
+                                  {
+                                    "country": "AT",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "RO",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 2,
+                                        "female": 1,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2,
+                                        "female": 1,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "FI",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "FR",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": null,
+                                        "female": 1,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": null,
+                                        "female": 1,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "GR",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "HU",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 2,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 3,
+                                        "female": 3,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "IE",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "IT",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 5,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 3,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "LT",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "PL",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": null,
+                                        "female": 1,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 3,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "PT",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 3,
+                                        "female": 2,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 3,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "SE",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "DK",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 2,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "SI",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 2,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "BG",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 3,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 5,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "CY",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 2,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "45-54",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 2,
+                                        "female": 1,
+                                        "unknown": 1
+                                      },
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 3,
+                                        "female": 2,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "NL",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "35-44",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      },
+                                      {
+                                        "age_range": "18-24",
+                                        "male": null,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "SK",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "35-44",
+                                        "male": null,
+                                        "female": 3,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "ES",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "HR",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "DE",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": 2,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "LV",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "18-24",
+                                        "male": 1,
+                                        "female": null,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "country": "CZ",
+                                    "age_gender_breakdowns": [
+                                      {
+                                        "age_range": "25-34",
+                                        "male": null,
+                                        "female": 1,
+                                        "unknown": null
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              "uk_transparency": null
+                            }
+                          }
+                        }
+                      },
+                      "extensions": {
+                        "is_final": true
+                      }
+                    }
+                  }
+                ],
+                "__typename": "CollatedSearchResults"
+              },
+              "cursor": null
+            }
+          ],
+          "page_info": {
+            "end_cursor": "AQHRMUsvTuKh9Ez_kdLWBlGTXJC2uIzlob3MR8h_uyf0unNkiL8T1UQItL5uAqH_tLDN",
+            "has_next_page": true
+          }
+        }
+      }
+    },
+    "extensions": {
+      "dtsg_token": "NAfvA21wsCe7h4bgpB_U4dHVOPDdCeiihBIFs4zWjBBuh8BKajoB-yg:17:1750148998",
+      "is_final": true
+    }
+  }
+]
