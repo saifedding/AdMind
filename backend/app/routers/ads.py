@@ -87,6 +87,10 @@ class ReprocessAdsRequest(BaseModel):
     """
     ad_ids: Optional[List[str]] = None
 
+class DeleteAllAdsResponse(BaseModel):
+    message: str
+    deleted_count: int
+
 # Dependency factory to avoid circular imports
 def get_ad_service_dependency(db: Session = Depends(get_db)) -> "AdService":
     """Factory function to create AdService instance for dependency injection."""
@@ -273,15 +277,12 @@ async def delete_ad(
     ad_service: "AdService" = Depends(get_ad_service_dependency)
 ):
     """
-    Delete a specific ad by ID.
+    Delete an ad by ID.
     """
     try:
-        success = ad_service.delete_ad(ad_id)
-        
-        if not success:
-            raise HTTPException(status_code=404, detail="Ad not found")
-        
-        return {"message": f"Ad {ad_id} deleted successfully"}
+        result = ad_service.delete_ad(ad_id)
+        logger.info(f"Deleted ad ID {ad_id}")
+        return result
         
     except HTTPException:
         raise
@@ -289,19 +290,22 @@ async def delete_ad(
         logger.error(f"Error deleting ad {ad_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting ad: {str(e)}")
 
-@router.delete("/ads/all")
+@router.delete("/ads/all", response_model=DeleteAllAdsResponse)
 async def delete_all_ads(
     ad_service: "AdService" = Depends(get_ad_service_dependency)
 ):
     """
-    Delete ALL ads from the database.
+    Delete all ads from the database.
     
     DANGER: This endpoint is for development purposes only!
     It will delete all ads and their analyses from the database.
     """
     try:
         count = ad_service.delete_all_ads()
-        return {"message": f"Successfully deleted all {count} ads", "count": count}
+        return DeleteAllAdsResponse(
+            message=f"Successfully deleted all {count} ads",
+            deleted_count=count
+        )
     except Exception as e:
         logger.error(f"Error deleting all ads: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting all ads: {str(e)}")
