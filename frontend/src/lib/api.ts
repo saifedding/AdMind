@@ -271,10 +271,22 @@ class ApiClient {
   }
 
   async bulkDeleteAds(ids: number[]): Promise<{ message: string; deleted_count: number; requested_count: number }> {
-    return this.request<{ message: string; deleted_count: number; requested_count: number }>('/ads/bulk', {
-      method: 'DELETE',
-      body: JSON.stringify({ ad_ids: ids }),
-    });
+    return this.request<{ message: string; deleted_count: number; requested_count: number }>(
+      `/ads/bulk`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ ad_ids: ids }),
+      }
+    );
+  }
+
+  async deleteAllAds(): Promise<{ message: string; count: number }> {
+    return this.request<{ message: string; count: number }>(
+      `/ads/all`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   async getCompetitors(skip: number = 0, limit: number = 100, isActive?: boolean): Promise<ApiCompetitor[]> {
@@ -295,15 +307,16 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
+// Create and export API client instance
 export const apiClient = new ApiClient();
 
-// Ads API wrapper
+// Ads API wrapper for backwards compatibility
 export const adsApi = {
   getAds: (filters?: AdFilterParams) => apiClient.getAds(filters),
   getAdById: (id: number) => apiClient.getAdById(id),
   deleteAd: (id: number) => apiClient.deleteAd(id),
   bulkDeleteAds: (ids: number[]) => apiClient.bulkDeleteAds(ids),
+  deleteAllAds: () => apiClient.deleteAllAds(),
   getTopPerformingAds: (limit?: number) => apiClient.getTopPerformingAds(limit),
   searchAds: (query: string, limit?: number) => apiClient.searchAds(query, limit),
   getCompetitorAds: (competitorId: number, limit?: number) => apiClient.getCompetitorAds(competitorId, limit),
