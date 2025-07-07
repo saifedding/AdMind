@@ -55,6 +55,8 @@ export default function AdIntelligencePage() {
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingAds, setDeletingAds] = useState<Set<number>>(new Set());
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const isDevMode = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
     fetchAds();
@@ -314,6 +316,24 @@ export default function AdIntelligencePage() {
     }
   };
 
+  const handleDropAllAds = async () => {
+    if (!window.confirm('WARNING: This will delete ALL ads in the database. This action cannot be undone. Are you sure?')) {
+      return;
+    }
+    
+    try {
+      setIsDeletingAll(true);
+      const result = await adsApi.deleteAllAds();
+      alert(`Successfully deleted ${result.count} ads`);
+      fetchAds(); // Refresh the ads list
+    } catch (error) {
+      console.error('Error deleting all ads:', error);
+      alert(`Error deleting all ads: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const renderStats = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-8">
       <Card>
@@ -370,6 +390,26 @@ export default function AdIntelligencePage() {
           <p className="text-xs text-muted-foreground">Currently Running</p>
         </CardContent>
       </Card>
+      
+      {/* Add the drop all ads button - only visible in development mode */}
+      {isDevMode && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Dev Tools</CardTitle>
+            <CardDescription>For development use only</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full" 
+              onClick={handleDropAllAds}
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? 'Deleting All Ads...' : 'Drop All Ads'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 

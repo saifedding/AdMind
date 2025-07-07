@@ -512,6 +512,30 @@ class AdService:
             end_date=ad.meta.get('end_date') if ad.meta else None,
         )
 
+    def delete_all_ads(self) -> int:
+        """
+        Delete all ads and their analyses from the database.
+        
+        Returns:
+            Number of ads deleted
+        """
+        try:
+            # First delete all analyses
+            analyses_deleted = self.db.query(AdAnalysis).delete(synchronize_session=False)
+            
+            # Then delete all ads
+            ads_deleted = self.db.query(Ad).delete(synchronize_session=False)
+            
+            self.db.commit()
+            
+            logger.info(f"Successfully deleted ALL {ads_deleted} ads and {analyses_deleted} analyses")
+            return ads_deleted
+            
+        except Exception as e:
+            logger.error(f"Error deleting all ads: {str(e)}")
+            self.db.rollback()
+            raise
+
 
 def get_ad_service(db: Session) -> AdService:
     """
