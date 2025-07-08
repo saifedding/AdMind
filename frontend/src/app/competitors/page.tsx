@@ -42,6 +42,9 @@ interface ScrapeConfig {
   countries: string[];
   max_pages: number;
   delay_between_requests: number;
+  active_status: 'active' | 'inactive' | 'all';
+  date_from?: string;
+  date_to?: string;
 }
 
 const COUNTRY_OPTIONS = [
@@ -109,6 +112,7 @@ export default function CompetitorsPage() {
     countries: ['AE'],
     max_pages: 10,
     delay_between_requests: 2,
+    active_status: 'active',
   });
   const [scrapingCompetitor, setScrapingCompetitor] = useState<Competitor | null>(null);
   const [scrapeLoading, setScrapeLoading] = useState(false);
@@ -229,13 +233,16 @@ export default function CompetitorsPage() {
     try {
       setScrapeLoading(true);
       
-      const scrapeRequest: CompetitorScrapeRequest = {
+      const payload: CompetitorScrapeRequest = {
         countries: scrapeConfig.countries,
         max_pages: scrapeConfig.max_pages,
         delay_between_requests: scrapeConfig.delay_between_requests,
+        active_status: scrapeConfig.active_status,
+        date_from: scrapeConfig.date_from,
+        date_to: scrapeConfig.date_to,
       };
       
-      const result = await scrapeCompetitorAds(scrapingCompetitor.id, scrapeRequest);
+      const result = await scrapeCompetitorAds(scrapingCompetitor.id, payload);
       
       // Store task in localStorage for tracking
       const taskItem = {
@@ -664,6 +671,27 @@ export default function CompetitorsPage() {
                   value={scrapeConfig.delay_between_requests} 
                   onChange={(e) => setScrapeConfig(s => ({...s, delay_between_requests: parseInt(e.target.value, 10) || 1}))}
                 />
+              </div>
+              <div>
+                <Label htmlFor="status">Ad Status</Label>
+                <Select value={scrapeConfig.active_status} onValueChange={(v)=> setScrapeConfig(s=>({...s, active_status: v as 'active' | 'inactive' | 'all'}))}>
+                  <SelectTrigger id="status" className="bg-card border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Date Range</Label>
+                <div className="flex gap-2">
+                  <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(s=>({...s, date_from: e.target.value}))} className="bg-card border-border flex-1" />
+                  <span className="self-center">-</span>
+                  <Input type="date" value={scrapeConfig.date_to || ''} onChange={(e)=> setScrapeConfig(s=>({...s, date_to: e.target.value}))} className="bg-card border-border flex-1" />
+                </div>
               </div>
             </div>
             <DialogFooter>

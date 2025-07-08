@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@radix-ui/react-collapsible": "^1.1.11"
+  }
+}

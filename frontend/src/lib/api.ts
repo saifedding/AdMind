@@ -386,6 +386,9 @@ export interface CompetitorScrapeRequest {
   countries?: string[];
   max_pages?: number;
   delay_between_requests?: number;
+  active_status?: 'active' | 'inactive' | 'all';
+  date_from?: string; // YYYY-MM-DD
+  date_to?: string;   // YYYY-MM-DD
 }
 
 export interface TaskResponse {

@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useRef } from 'react';
 import { AdWithAnalysis } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -71,6 +71,9 @@ export function AdCard({
   const hasMultipleCreatives = ad.creatives && ad.creatives.length > 1;
   const currentCreative = ad.creatives?.[currentCardIndex];
   
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  
   // Get the primary media URL from the current creative, with fallbacks
   const getPrimaryMedia = () => {
     if (currentCreative?.media && currentCreative.media.length > 0) {
@@ -108,7 +111,22 @@ export function AdCard({
 
   const countries = ad.targeting?.locations?.map(l => l.name) || [];
   const hasLeadForm = ad.lead_form?.questions && Object.keys(ad.lead_form.questions).length > 0;
-  const adDuration = formatAdDuration(ad.start_date, ad.end_date, ad.is_active);
+  // Determine active status more reliably
+  const isActive = ad.is_active !== undefined ? ad.is_active
+    : (ad.meta?.is_active !== undefined ? ad.meta.is_active
+      : !ad.end_date || new Date(ad.end_date) >= new Date());
+
+  const adDuration = formatAdDuration(ad.start_date, ad.end_date, isActive);
+
+  // Duration badge logic
+  const durationDays = adDuration.duration;
+  const durationBadgeClass = durationDays !== null ? (
+    durationDays >= 60
+      ? "bg-green-500/90 text-white"
+      : durationDays >= 30
+      ? "bg-yellow-400/90 text-black"
+      : "bg-red-500/90 text-white"
+  ) : "bg-gray-500/90 text-white";
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on checkbox or carousel controls
@@ -136,7 +154,7 @@ export function AdCard({
   return (
     <div className="group relative cursor-pointer" onClick={handleCardClick}>
       <Card className={cn(
-        "h-full flex flex-col relative overflow-hidden transition-all duration-300",
+        "h-full flex flex-col relative overflow-hidden transition-all duration-300 p-0",
         "hover:translate-y-[-2px] hover:bg-card/80 backdrop-blur-sm",
         "border-border/50 hover:border-border",
         hasHighScore && "border-photon-500/30 bg-gradient-to-br from-card via-card to-photon-950/10",
@@ -150,7 +168,7 @@ export function AdCard({
         
         {/* Selection Checkbox */}
         {showSelection && (
-          <div className="absolute top-2 right-2 z-10 checkbox-container">
+          <div className="absolute top-0.5 right-0.5 z-10 checkbox-container">
             <input
               type="checkbox"
               checked={isSelected}
@@ -171,35 +189,96 @@ export function AdCard({
         
         {/* Media Section - Now at the top of the card for more prominence */}
         {primaryMediaUrl && (
-          <div className="relative overflow-hidden">
+          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-t-lg">
+            {/* Gradient overlay at bottom for readability */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+            
+            {/* Score Badge Overlay */}
+            {ad.analysis?.overall_score !== undefined && (
+              <div
+                className={cn(
+                  "absolute top-2 right-2 z-20 px-2 py-0.5 rounded-md text-xs font-bold shadow-md backdrop-blur-sm",
+                  ad.analysis.overall_score >= 8
+                    ? "bg-green-500/90 text-white"
+                    : ad.analysis.overall_score >= 6
+                    ? "bg-yellow-400/90 text-black"
+                    : "bg-red-500/90 text-white"
+                )}
+                title={`Overall Score: ${ad.analysis.overall_score.toFixed(1)}`}
+              >
+                {ad.analysis.overall_score.toFixed(1)}
+              </div>
+            )}
+
+            {/* Media Type, Status & Duration Badges */}
+            <div className="absolute top-3 left-3 z-20 flex gap-1">
+              {ad.media_type && (
+                <div className="px-1.5 py-0.5 rounded-md bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide shadow-sm">
+                  {ad.media_type}
+                </div>
+              )}
+              {/* Status Badge */}
+              <div className={cn(
+                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide shadow-sm",
+                isActive 
+                  ? "bg-green-500/90 text-white" 
+                  : "bg-gray-500/90 text-white"
+              )}
+              title={isActive ? "Ad is currently active" : "Ad has ended"}>
+                {isActive ? "ACTIVE" : "ENDED"}
+              </div>
+              {durationDays !== null && (
+                <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide shadow-sm ${durationBadgeClass}`}
+                     title={`${durationDays} days running`}>
+                  {durationDays}d
+                </div>
+              )}
+            </div>
+            
             {isVideo ? (
-              <div className="relative">
+              <div className="relative h-full w-full">
                 <video 
                   src={primaryMediaUrl}
-                  className="w-full h-44 object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                   preload="metadata"
-                  muted
-                  controls
                   playsInline
+                  controls
+                  ref={videoRef}
+                  onPlay={() => setIsVideoPlaying(true)}
+                  onPause={() => setIsVideoPlaying(false)}
+                  onEnded={() => setIsVideoPlaying(false)}
                 />
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity duration-200">
-                  <div className="bg-white/90 rounded-full p-2">
-                    <Play className="h-4 w-4 text-black fill-black" />
-                  </div>
+                <div className={cn(
+                  "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-200",
+                  isVideoPlaying ? "opacity-0" : "opacity-100"
+                )}
+                >
+                  <button
+                    type="button"
+                    className="bg-white/90 rounded-full p-3 shadow-lg pointer-events-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!videoRef.current) return;
+                      videoRef.current.play();
+                      setIsVideoPlaying(true);
+                    }}
+                  >
+                    <Play className="h-5 w-5 text-black fill-black" />
+                  </button>
                 </div>
               </div>
             ) : (
               <img 
                 src={primaryMediaUrl} 
                 alt={ad.main_title || ad.page_name || 'Ad'}
-                className="w-full h-44 object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 loading="lazy"
               />
             )}
             
             {/* Carousel indicators directly overlaid on media */}
             {hasMultipleCreatives && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+              <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-1 z-20">
                 {ad.creatives.map((_, index) => (
                   <button
                     key={index}
@@ -208,7 +287,7 @@ export function AdCard({
                       setCurrentCardIndex(index);
                     }}
                     className={cn(
-                      "h-1.5 w-1.5 rounded-full transition-all duration-200",
+                      "h-2 w-2 rounded-full transition-all duration-200",
                       currentCardIndex === index ? "bg-white scale-110" : "bg-white/50 hover:bg-white/80"
                     )}
                   />
@@ -224,7 +303,7 @@ export function AdCard({
                     e.stopPropagation();
                     setCurrentCardIndex(prev => prev > 0 ? prev - 1 : (ad.creatives?.length || 1) - 1);
                   }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 bg-black/30 hover:bg-black/50 rounded-full carousel-control"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full carousel-control z-20 backdrop-blur-md"
                 >
                   <ChevronLeft className="h-4 w-4 text-white" />
                 </button>
@@ -233,7 +312,7 @@ export function AdCard({
                     e.stopPropagation();
                     setCurrentCardIndex(prev => prev < ((ad.creatives?.length || 1) - 1) ? prev + 1 : 0);
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-black/30 hover:bg-black/50 rounded-full carousel-control"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full carousel-control z-20 backdrop-blur-md"
                 >
                   <ChevronRight className="h-4 w-4 text-white" />
                 </button>
@@ -350,12 +429,6 @@ export function AdCard({
         <CardFooter className="pt-2 pb-3 px-4 text-xs text-muted-foreground">
           <div className="flex-1 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Only keep the most important metrics */}
-              <div title="Impressions" className="flex items-center gap-1.5">
-                <Eye className="h-3.5 w-3.5" />
-                <span className="font-mono text-xs">{impressionsText}</span>
-              </div>
-              
               {ad.spend && (
                 <div title="Spend" className="flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5" />

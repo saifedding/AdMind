@@ -250,6 +250,7 @@ class CompetitorScrapeRequest(BaseModel):
     countries: Optional[List[str]] = ["AE"]
     max_pages: Optional[int] = 5
     delay_between_requests: Optional[int] = 1
+    active_status: Optional[str] = "active"
 
 class TaskResponse(BaseModel):
     """Response model for task operations"""
@@ -286,7 +287,8 @@ async def scrape_competitor_ads(
             competitor_page_id=competitor.page_id,
             countries=scrape_request.countries,
             max_pages=scrape_request.max_pages,
-            delay_between_requests=scrape_request.delay_between_requests
+            delay_between_requests=scrape_request.delay_between_requests,
+            active_status=scrape_request.active_status
         )
         
         logger.info(f"Started scraping task for competitor {competitor.name} (ID: {competitor_id})")

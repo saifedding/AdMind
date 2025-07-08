@@ -28,6 +28,7 @@ import { AdFilters } from '@/features/dashboard/components/AdFilters';
 import { AdSearch } from '@/features/dashboard/components/AdSearch';
 import { ActiveFilterBadges } from '@/features/dashboard/components/ActiveFilterBadges';
 import { AdFilterParams } from '@/lib/api';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 export default function AdIntelligencePage() {
   const [ads, setAds] = useState<AdWithAnalysis[]>([]);
@@ -42,14 +43,53 @@ export default function AdIntelligencePage() {
     activeAds: 0,
     analyzedAds: 0,
   });
-  const [filters, setFilters] = useState<AdFilterParams>({
-    page: 1,
-    page_size: 24,
-    // has_analysis: true, // Removed - let users see all ads
-    sort_by: 'created_at',
-    sort_order: 'desc',
-  });
-  
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const storageKey = 'adsFilters';
+
+  const parseInitialFilters = (): AdFilterParams => {
+    // If URL has any search params, use them.
+    if (searchParams?.toString()) {
+      const params: AdFilterParams = {
+        page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
+        page_size: searchParams.get('page_size') ? Number(searchParams.get('page_size')) : 24,
+        sort_by: (searchParams.get('sort_by') as any) || 'created_at',
+        sort_order: (searchParams.get('sort_order') as any) || 'desc',
+      };
+      if (searchParams.get('search')) params.search = searchParams.get('search')!;
+      if (searchParams.get('media_type')) params.media_type = searchParams.get('media_type')!;
+      if (searchParams.get('is_active')) params.is_active = searchParams.get('is_active') === 'true';
+      if (searchParams.get('min_overall_score')) params.min_overall_score = Number(searchParams.get('min_overall_score'));
+      if (searchParams.get('max_overall_score')) params.max_overall_score = Number(searchParams.get('max_overall_score'));
+      if (searchParams.get('min_hook_score')) params.min_hook_score = Number(searchParams.get('min_hook_score'));
+      if (searchParams.get('max_hook_score')) params.max_hook_score = Number(searchParams.get('max_hook_score'));
+      if (searchParams.get('date_from')) params.date_from = searchParams.get('date_from')!;
+      if (searchParams.get('date_to')) params.date_to = searchParams.get('date_to')!;
+      if (searchParams.get('competitor_id')) params.competitor_id = Number(searchParams.get('competitor_id'));
+      return params;
+    }
+
+    // Fallback to sessionStorage if available (e.g., navigating back without query string)
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem(storageKey);
+        if (stored) return JSON.parse(stored) as AdFilterParams;
+      } catch (_) {}
+    }
+
+    // Default filters
+    return {
+      page: 1,
+      page_size: 24,
+      sort_by: 'created_at',
+      sort_order: 'desc',
+    };
+  };
+
+  const [filters, setFilters] = useState<AdFilterParams>(parseInitialFilters);
+
   // New state for view and selection
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
@@ -61,6 +101,19 @@ export default function AdIntelligencePage() {
   useEffect(() => {
     fetchAds();
   }, [filters]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) params.set(key, String(value));
+    });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
+    // Persist to sessionStorage for navigation without query params
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(storageKey, JSON.stringify(filters));
+    }
+  }, [filters, router, pathname]);
 
   // Clear selection when ads change (e.g., after deletion)
   useEffect(() => {
@@ -96,86 +149,34 @@ export default function AdIntelligencePage() {
       if (filters.search) safeFilters.search = filters.search;
       if (filters.media_type) safeFilters.media_type = filters.media_type;
       if (filters.is_active !== undefined) safeFilters.is_active = filters.is_active;
+      if (filters.competitor_id) safeFilters.competitor_id = filters.competitor_id;
       
       // Fetch ads with analysis using simplified filters
       const response = await adsApi.getAds(safeFilters);
-      
-      const transformedAds = transformAdsWithAnalysis(response.data);
       
       // Use actual pagination metadata from backend
       setTotalItems(response.pagination.total_items);
       setTotalPages(response.pagination.total_pages);
       
-      // Apply client-side filtering for complex filter types that the backend doesn't support
-      let filteredAds = transformedAds.filter(ad => ad.id !== undefined);
+      const transformedAds = transformAdsWithAnalysis(response.data);
+      setAds(transformedAds);
       
-      // Client-side score filtering
-      if (filters.min_overall_score !== undefined && filters.min_overall_score !== null) {
-        filteredAds = filteredAds.filter(ad => 
-          ad.analysis?.overall_score !== undefined && 
-          ad.analysis.overall_score >= (filters.min_overall_score as number)
-        );
-      }
+      // The client-side filtering was removed for debugging.
+      // The stats are now calculated on the transformed ads.
       
-      if (filters.max_overall_score !== undefined && filters.max_overall_score !== null) {
-        filteredAds = filteredAds.filter(ad => 
-          ad.analysis?.overall_score !== undefined && 
-          ad.analysis.overall_score <= (filters.max_overall_score as number)
-        );
-      }
-      
-      if (filters.min_hook_score !== undefined && filters.min_hook_score !== null) {
-        filteredAds = filteredAds.filter(ad => 
-          ad.analysis?.hook_score !== undefined && 
-          ad.analysis.hook_score >= (filters.min_hook_score as number)
-        );
-      }
-      
-      if (filters.max_hook_score !== undefined && filters.max_hook_score !== null) {
-        filteredAds = filteredAds.filter(ad => 
-          ad.analysis?.hook_score !== undefined && 
-          ad.analysis.hook_score <= (filters.max_hook_score as number)
-        );
-      }
-      
-      // Date filtering
-      if (filters.date_from) {
-        const fromDate = new Date(filters.date_from);
-        if (!isNaN(fromDate.getTime())) {
-          filteredAds = filteredAds.filter(ad => {
-            if (!ad.date_found) return false;
-            const adDate = new Date(ad.date_found);
-            return !isNaN(adDate.getTime()) && adDate >= fromDate;
-          });
-        }
-      }
-      
-      if (filters.date_to) {
-        const toDate = new Date(filters.date_to);
-        if (!isNaN(toDate.getTime())) {
-          filteredAds = filteredAds.filter(ad => {
-            if (!ad.date_found) return false;
-            const adDate = new Date(ad.date_found);
-            return !isNaN(adDate.getTime()) && adDate <= toDate;
-          });
-        }
-      }
-      
-      setAds(filteredAds);
-      
-      // Calculate stats based on filtered ads
-      const highScoreCount = filteredAds.filter(ad => 
+      // Calculate stats based on transformed ads
+      const highScoreCount = transformedAds.filter(ad => 
         ad.analysis?.overall_score !== undefined && 
         ad.analysis.overall_score > 8).length;
-      const activeCount = filteredAds.filter(ad => ad.is_active === true).length;
-      const adsWithAnalysis = filteredAds.filter(ad => 
+      const activeCount = transformedAds.filter(ad => ad.is_active === true).length;
+      const adsWithAnalysis = transformedAds.filter(ad => 
         ad.analysis?.overall_score !== undefined);
       const avgScore = adsWithAnalysis.length > 0 
         ? adsWithAnalysis.reduce((sum, ad) => sum + (ad.analysis?.overall_score || 0), 0) / adsWithAnalysis.length 
         : 0;
       
       setStats({
-        totalAds: filteredAds.length,
+        totalAds: response.pagination.total_items,
         highScoreAds: highScoreCount,
         avgScore: avgScore,
         activeAds: activeCount,
@@ -401,25 +402,7 @@ export default function AdIntelligencePage() {
         </CardContent>
       </Card>
       
-      {/* Add the drop all ads button - only visible in development mode */}
-      {isDevMode && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Dev Tools</CardTitle>
-            <CardDescription>For development use only</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="destructive" 
-              className="w-full" 
-              onClick={handleDropAllAds}
-              disabled={isDeletingAll}
-            >
-              {isDeletingAll ? 'Deleting All Ads...' : 'Drop All Ads'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Dev Tools card removed as per requirements */}
     </div>
   );
 
@@ -486,6 +469,22 @@ export default function AdIntelligencePage() {
   const renderEmptyState = () => (
     <div className="space-y-8">
       {renderStats()}
+
+      {/* Filter controls still available when no ads */}
+      <AdFilters
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={handleResetFilters}
+        currentFilters={filters}
+        inline
+        disabled={loading}
+      />
+
+      {/* Active filter badges with ability to remove */}
+      <ActiveFilterBadges
+        filters={filters}
+        onRemoveFilter={handleRemoveFilter}
+      />
+
       <div className="text-center py-12">
         <Card className="max-w-md mx-auto">
           <CardHeader>
@@ -494,17 +493,26 @@ export default function AdIntelligencePage() {
               No Ads Found
             </CardTitle>
             <CardDescription>
-              No ads with AI analysis were found in the database.
+              No ads match the current filters.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-iridium-400">
-              Try running the scraper or adding some test data to the backend.
+              Adjust or clear filters to broaden your search.
             </p>
-            <Button onClick={handleRefresh} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Data
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={handleRefresh} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+              {/* Clear all filters button appears only if any extra filters are active */}
+              {Object.keys(filters).some(k => !['page','page_size','sort_by','sort_order'].includes(k)) && (
+                <Button onClick={handleResetFilters} variant="secondary">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -536,11 +544,6 @@ export default function AdIntelligencePage() {
               onViewChange={setViewMode}
               disabled={loading}
             />
-            <AdFilters 
-              onApplyFilters={handleApplyFilters} 
-              onResetFilters={handleResetFilters}
-              disabled={loading}
-            />
             <AdSearch 
               onSearch={handleSearch} 
               disabled={loading}
@@ -556,6 +559,15 @@ export default function AdIntelligencePage() {
         {loading ? renderLoadingState() : error ? renderErrorState() : ads.length === 0 ? renderEmptyState() : (
           <div className="space-y-8">
             {renderStats()}
+            
+            {/* Inline Filters Section */}
+            <AdFilters 
+              onApplyFilters={handleApplyFilters} 
+              onResetFilters={handleResetFilters}
+              currentFilters={filters}
+              inline
+              disabled={loading}
+            />
             
             {/* Active Filters */}
             <ActiveFilterBadges filters={filters} onRemoveFilter={handleRemoveFilter} />

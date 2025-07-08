@@ -82,6 +82,9 @@ interface ScrapeConfig {
   countries: string[];
   max_pages: number;
   delay_between_requests: number;
+  active_status: 'active' | 'inactive' | 'all';
+  date_from?: string; // YYYY-MM-DD
+  date_to?: string;   // YYYY-MM-DD
 }
 
 const COUNTRY_OPTIONS = [
@@ -119,6 +122,7 @@ export default function CompetitorDetailPage() {
     countries: ['AE'],
     max_pages: 10,
     delay_between_requests: 2,
+    active_status: 'active',
   });
 
   useEffect(() => {
@@ -164,6 +168,9 @@ export default function CompetitorDetailPage() {
         countries: scrapeConfig.countries,
         max_pages: scrapeConfig.max_pages,
         delay_between_requests: scrapeConfig.delay_between_requests,
+        active_status: scrapeConfig.active_status,
+        date_from: scrapeConfig.date_from,
+        date_to: scrapeConfig.date_to,
       };
       
       const result = await scrapeCompetitorAds(competitorId, scrapeRequest);
@@ -429,6 +436,44 @@ export default function CompetitorDetailPage() {
                     </div>
                   </div>
 
+                  {/* Active Status & Date Range */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-photon-400" />
+                      <h3 className="text-lg font-semibold">Ad Status & Date Range</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Active Only Switch */}
+                      <div className="space-y-2 flex flex-col">
+                        <Label htmlFor="active_only">Active Ads Only</Label>
+                        <Select
+                          value={scrapeConfig.active_status}
+                          onValueChange={(value) => setScrapeConfig(prev => ({ ...prev, active_status: value as 'active' | 'inactive' | 'all'}))}
+                        >
+                          <SelectTrigger id="active_only" className="bg-card border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active Only</SelectItem>
+                            <SelectItem value="inactive">Inactive Only</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">Choose which ads to scrape.</p>
+                      </div>
+                      {/* Date range inputs */}
+                      <div className="space-y-2">
+                        <Label>Date Range</Label>
+                        <div className="flex gap-2">
+                          <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_from: e.target.value}))} className="bg-card border-border flex-1" />
+                          <span className="self-center">-</span>
+                          <Input type="date" value={scrapeConfig.date_to || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_to: e.target.value}))} className="bg-card border-border flex-1" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Leave blank for no date filtering.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Summary */}
                   <div className="bg-card border border-border rounded-lg p-4">
                     <h4 className="font-semibold mb-2">Scraping Summary</h4>
@@ -436,6 +481,8 @@ export default function CompetitorDetailPage() {
                       <p>• Target: {competitor.name} ({competitor.page_id})</p>
                       <p>• Countries: {scrapeConfig.countries.join(', ')}</p>
                       <p>• Max pages: {scrapeConfig.max_pages} pages</p>
+                      <p>• Active status: {scrapeConfig.active_status}</p>
+                      <p>• Date range: {scrapeConfig.date_from || 'Any'} to {scrapeConfig.date_to || 'Any'}</p>
                       <p>• Estimated ads: ~{scrapeConfig.max_pages * 30} ads</p>
                       <p>• Estimated time: ~{Math.ceil((scrapeConfig.max_pages * scrapeConfig.delay_between_requests) / 60)} minutes</p>
                     </div>

@@ -70,6 +70,8 @@ class CompetitorAdsScraperRequest(BaseModel):
     active_status: Optional[str] = "active"
     ad_type: Optional[str] = "ALL"
     media_type: Optional[str] = "all"
+    date_from: Optional[str] = None  # YYYY-MM-DD
+    date_to: Optional[str] = None
     save_json: Optional[bool] = False
 
 class AddNumbersRequest(BaseModel):
@@ -590,6 +592,8 @@ def scrape_competitor_ads(
         active_status=request.active_status,
         ad_type=request.ad_type,
         media_type=request.media_type,
+        date_from=request.date_from,
+        date_to=request.date_to,
         save_json=request.save_json,
         db=db
     )
@@ -823,6 +827,8 @@ def _run_competitor_ads_scraper_task(
     active_status: str,
     ad_type: str,
     media_type: str,
+    date_from: Optional[str],
+    date_to: Optional[str],
     save_json: bool,
     db: Session
 ):
@@ -855,6 +861,8 @@ def _run_competitor_ads_scraper_task(
             active_status=active_status,
             ad_type=ad_type,
             media_type=media_type,
+            date_from=date_from,
+            date_to=date_to,
             save_json=save_json
         )
         

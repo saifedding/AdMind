@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@radix-ui/react-collapsible": "^1.1.11",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/postcss": "^4",
     "@types/date-fns": "^2.6.3",
     "@types/node": "^20",

@@ -29,7 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 // });
 
 export const metadata: Metadata = {
-  title: "Iridium & Photon Design System",
+  title: "AdMind By Saif",
   description: "Modern design system with Iridium & Photon color palette, featuring dark-first approach and professional typography.",
 };
 

@@ -363,23 +363,23 @@ class AdService:
             raise
     
     def _apply_filters(self, query, filters: AdFilterParams):
-        """Apply filters to the query."""
+        """Apply filters to the ad query."""
+        
         if filters.competitor_id:
             query = query.filter(Ad.competitor_id == filters.competitor_id)
-        
+            
         if filters.competitor_name:
-            query = query.join(Ad.competitor).filter(
-                Competitor.name.ilike(f"%{filters.competitor_name}%")
-            )
-        
-        if filters.media_type:
+            query = query.join(Ad.competitor).filter(Competitor.name.ilike(f"%{filters.competitor_name}%"))
+            
+        if filters.media_type and filters.media_type != 'all':
             query = query.filter(Ad.creatives.cast(String).ilike(f'%"type": "{filters.media_type}"%'))
-        
+
+        if filters.is_active is not None:
+            query = query.filter(cast(Ad.meta['is_active'], String) == str(filters.is_active).lower())
+
         if filters.has_analysis is not None:
             if filters.has_analysis:
-                query = query.filter(Ad.analysis.has())
-            else:
-                query = query.filter(Ad.analysis == None)
+                query = query.join(Ad.analysis).filter(AdAnalysis.id.isnot(None))
         
         if filters.min_overall_score is not None:
             query = query.join(Ad.analysis).filter(AdAnalysis.overall_score >= filters.min_overall_score)
@@ -388,9 +388,6 @@ class AdService:
             query = query.filter(Ad.date_found >= filters.date_from)
         if filters.date_to:
             query = query.filter(Ad.date_found <= filters.date_to)
-        
-        if filters.is_active is not None:
-            query = query.filter(Ad.meta['is_active'].astext == str(filters.is_active).lower())
         
         if filters.search:
             search_query = f"%{filters.search}%"
