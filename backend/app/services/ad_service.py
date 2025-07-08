@@ -367,13 +367,13 @@ class AdService:
         
         if filters.competitor_id:
             query = query.filter(Ad.competitor_id == filters.competitor_id)
-            
+        
         if filters.competitor_name:
             query = query.join(Ad.competitor).filter(Competitor.name.ilike(f"%{filters.competitor_name}%"))
-            
+        
         if filters.media_type and filters.media_type != 'all':
             query = query.filter(Ad.creatives.cast(String).ilike(f'%"type": "{filters.media_type}"%'))
-
+        
         if filters.is_active is not None:
             query = query.filter(cast(Ad.meta['is_active'], String) == str(filters.is_active).lower())
 
@@ -383,6 +383,12 @@ class AdService:
         
         if filters.min_overall_score is not None:
             query = query.join(Ad.analysis).filter(AdAnalysis.overall_score >= filters.min_overall_score)
+            
+        # Duration filters
+        if filters.min_duration_days is not None:
+            query = query.filter(Ad.duration_days >= filters.min_duration_days)
+        if filters.max_duration_days is not None:
+            query = query.filter(Ad.duration_days <= filters.max_duration_days)
             
         if filters.date_from:
             query = query.filter(Ad.date_found >= filters.date_from)
@@ -405,12 +411,14 @@ class AdService:
         sort_mapping = {
             'created_at': Ad.created_at,
             'date_found': Ad.date_found,
-            'overall_score': AdAnalysis.overall_score
+            'duration_days': Ad.duration_days,
+            'overall_score': AdAnalysis.overall_score,
+            'hook_score': AdAnalysis.hook_score
         }
         
         column = sort_mapping.get(sort_by, Ad.created_at)
         
-        if sort_by == 'overall_score':
+        if sort_by in ['overall_score', 'hook_score']:
             query = query.outerjoin(Ad.analysis)
         
         order_func = asc if sort_order.lower() == 'asc' else desc
@@ -461,6 +469,7 @@ class AdService:
             is_active=ad.meta.get('is_active') if ad.meta else None,
             start_date=ad.meta.get('start_date') if ad.meta else None,
             end_date=ad.meta.get('end_date') if ad.meta else None,
+            duration_days=ad.duration_days,
         )
     
     def _convert_to_detail_dto(self, ad: Ad) -> AdDetailResponseDTO:

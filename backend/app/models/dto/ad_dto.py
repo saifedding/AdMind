@@ -195,6 +195,8 @@ class AdFilterParams(BaseModel):
     max_hook_score: Optional[float] = None
     min_overall_score: Optional[float] = None
     max_overall_score: Optional[float] = None
+    min_duration_days: Optional[int] = None
+    max_duration_days: Optional[int] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
     is_active: Optional[bool] = None
@@ -320,6 +322,7 @@ class AdResponseDTO(BaseModel):
     start_date: Optional[str] = Field(None, description="Ad start date")
     end_date: Optional[str] = Field(None, description="Ad end date")
     is_active: Optional[bool] = Field(None, description="Whether ad is active")
+    duration_days: Optional[int] = Field(None, description="Duration in days the ad has been running")
     
     # Timestamps
     created_at: datetime = Field(..., description="Creation timestamp")

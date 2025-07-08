@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, date
 from typing import Dict, List, Optional, Any, Tuple
 import logging
 from sqlalchemy.orm import Session
@@ -27,6 +27,27 @@ class EnhancedAdExtractionService:
         try:
             return datetime.fromtimestamp(ts).strftime('%Y-%m-%d')
         except (ValueError, TypeError):
+            return None
+    
+    def calculate_duration_days(self, start_date_str: Optional[str], end_date_str: Optional[str], is_active: bool = False) -> Optional[int]:
+        """Calculate duration in days between start_date and end_date (or current date if active)"""
+        if not start_date_str:
+            return None
+        
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            
+            if is_active or not end_date_str:
+                # If ad is active or no end date, calculate up to today
+                end_date = date.today()
+            else:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            
+            duration = (end_date - start_date).days
+            return max(duration, 1)  # Ensure minimum of 1 day
+            
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Error calculating duration: start={start_date_str}, end={end_date_str}, error={e}")
             return None
     
     def parse_dynamic_lead_form(self, extra_texts: List[Dict]) -> Dict:
@@ -387,9 +408,18 @@ class EnhancedAdExtractionService:
         existing_ad = session.query(Ad).filter(Ad.ad_archive_id == ad_archive_id).first()
         
         # Prepare the data for insertion/update
+        meta_data = ad_data.get("meta", {})
+        start_date = meta_data.get("start_date")
+        end_date = meta_data.get("end_date") 
+        is_active = meta_data.get("is_active", False)
+        
+        # Calculate duration in days
+        duration_days = self.calculate_duration_days(start_date, end_date, is_active)
+        
         db_data = {
             "competitor_id": competitor_id,
             "ad_archive_id": ad_archive_id,
+            "duration_days": duration_days,
             "meta": ad_data.get("meta"),
             "targeting": ad_data.get("targeting"),
             "lead_form": ad_data.get("lead_form"),

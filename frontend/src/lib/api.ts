@@ -128,6 +128,7 @@ export interface ApiAd {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
+  duration_days?: number;
   created_at: string;
   updated_at: string;
   analysis?: ApiAdAnalysis;
@@ -164,6 +165,8 @@ export interface AdFilterParams {
   max_hook_score?: number;
   min_overall_score?: number;
   max_overall_score?: number;
+  min_duration_days?: number;
+  max_duration_days?: number;
   date_from?: string;
   date_to?: string;
   is_active?: boolean;

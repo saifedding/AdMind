@@ -108,6 +108,10 @@ export function AdFilters({
     currentFilters.min_hook_score || 0,
     currentFilters.max_hook_score || 10
   ]);
+  const [durationRange, setDurationRange] = useState<number[]>([
+    currentFilters.min_duration_days || 1,
+    currentFilters.max_duration_days || 365
+  ]);
 
   // Competitors
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -123,6 +127,10 @@ export function AdFilters({
     setHookScoreRange([
       currentFilters.min_hook_score || 0,
       currentFilters.max_hook_score || 10
+    ]);
+    setDurationRange([
+      currentFilters.min_duration_days || 1,
+      currentFilters.max_duration_days || 365
     ]);
   }, [currentFilters]);
 
@@ -152,7 +160,10 @@ export function AdFilters({
       min_overall_score: overallScoreRange[0] !== 0 ? overallScoreRange[0] : undefined,
       max_overall_score: overallScoreRange[1] !== 10 ? overallScoreRange[1] : undefined,
       min_hook_score: hookScoreRange[0] !== 0 ? hookScoreRange[0] : undefined,
-      max_hook_score: hookScoreRange[1] !== 10 ? hookScoreRange[1] : undefined
+      max_hook_score: hookScoreRange[1] !== 10 ? hookScoreRange[1] : undefined,
+      // Send duration filters if user has moved away from the full range [1, 365]
+      min_duration_days: durationRange[0] !== 1 || durationRange[1] !== 365 ? durationRange[0] : undefined,
+      max_duration_days: durationRange[0] !== 1 || durationRange[1] !== 365 ? durationRange[1] : undefined
     };
     
     onApplyFilters(appliedFilters);
@@ -163,6 +174,7 @@ export function AdFilters({
     setFilters({});
     setOverallScoreRange([0, 10]);
     setHookScoreRange([0, 10]);
+    setDurationRange([1, 365]);
     onResetFilters();
     setOpen(false);
   };
@@ -171,7 +183,7 @@ export function AdFilters({
   return (
       <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 space-y-6">
         {/* Row 1: Main Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 gap-4">
           {/* Competitor */}
           <div className="space-y-2 min-w-0 xl:col-span-2">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
@@ -282,6 +294,25 @@ export function AdFilters({
             </div>
           </div>
 
+          {/* Duration Range */}
+          <div className="space-y-2 min-w-0">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Duration (Days)</label>
+            <div className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md">
+              <Slider 
+                value={durationRange} 
+                min={1} 
+                max={365} 
+                step={1}
+                onValueChange={setDurationRange}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                <span>{durationRange[0]}d</span>
+                <span>{durationRange[1]}d</span>
+              </div>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="space-y-2 min-w-0">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Actions</label>
@@ -354,9 +385,10 @@ export function AdFilters({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Created At</SelectItem>
+                    <SelectItem value="date_found">Date Found</SelectItem>
+                    <SelectItem value="duration_days">Duration (Days)</SelectItem>
                     <SelectItem value="overall_score">Overall Score</SelectItem>
                     <SelectItem value="hook_score">Hook Score</SelectItem>
-                    <SelectItem value="date_found">Date Found</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -387,9 +419,9 @@ export function AdFilters({
   return (
     <div>
       <Button variant="outline" disabled={disabled} onClick={() => setOpen(!open)}>
-        <Filter className="mr-2 h-4 w-4" />
+          <Filter className="mr-2 h-4 w-4" />
         {open ? 'Hide Filters' : 'Show Filters'}
-      </Button>
+        </Button>
 
       {open && (
         <div className="mt-4 rounded-lg border border-border bg-card p-4 max-h-[80vh] overflow-y-auto w-full sm:w-96 space-y-6">
@@ -401,7 +433,7 @@ export function AdFilters({
           {/* Legacy form content for non-inline mode */}
           <div className="space-y-6">
             {/* Competitor Dropdown */}
-            <div className="space-y-2">
+          <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Competitor</label>
               <Select
                 value={filters.competitor_id ? String(filters.competitor_id) : 'all'}
@@ -531,9 +563,10 @@ export function AdFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="created_at">Created At</SelectItem>
+                  <SelectItem value="date_found">Date Found</SelectItem>
+                  <SelectItem value="duration_days">Duration (Days)</SelectItem>
                   <SelectItem value="overall_score">Overall Score</SelectItem>
                   <SelectItem value="hook_score">Hook Score</SelectItem>
-                  <SelectItem value="date_found">Date Found</SelectItem>
                 </SelectContent>
               </Select>
               <Select 

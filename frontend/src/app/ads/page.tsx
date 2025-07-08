@@ -65,6 +65,8 @@ export default function AdIntelligencePage() {
       if (searchParams.get('max_overall_score')) params.max_overall_score = Number(searchParams.get('max_overall_score'));
       if (searchParams.get('min_hook_score')) params.min_hook_score = Number(searchParams.get('min_hook_score'));
       if (searchParams.get('max_hook_score')) params.max_hook_score = Number(searchParams.get('max_hook_score'));
+      if (searchParams.get('min_duration_days')) params.min_duration_days = Number(searchParams.get('min_duration_days'));
+      if (searchParams.get('max_duration_days')) params.max_duration_days = Number(searchParams.get('max_duration_days'));
       if (searchParams.get('date_from')) params.date_from = searchParams.get('date_from')!;
       if (searchParams.get('date_to')) params.date_to = searchParams.get('date_to')!;
       if (searchParams.get('competitor_id')) params.competitor_id = Number(searchParams.get('competitor_id'));
@@ -81,15 +83,15 @@ export default function AdIntelligencePage() {
 
     // Default filters
     return {
-      page: 1,
-      page_size: 24,
-      sort_by: 'created_at',
-      sort_order: 'desc',
+    page: 1,
+    page_size: 24,
+    sort_by: 'created_at',
+    sort_order: 'desc',
     };
   };
 
   const [filters, setFilters] = useState<AdFilterParams>(parseInitialFilters);
-
+  
   // New state for view and selection
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
@@ -150,6 +152,20 @@ export default function AdIntelligencePage() {
       if (filters.media_type) safeFilters.media_type = filters.media_type;
       if (filters.is_active !== undefined) safeFilters.is_active = filters.is_active;
       if (filters.competitor_id) safeFilters.competitor_id = filters.competitor_id;
+      
+      // Add duration filters
+      if (filters.min_duration_days !== undefined) safeFilters.min_duration_days = filters.min_duration_days;
+      if (filters.max_duration_days !== undefined) safeFilters.max_duration_days = filters.max_duration_days;
+      
+      // Add score filters
+      if (filters.min_overall_score !== undefined) safeFilters.min_overall_score = filters.min_overall_score;
+      if (filters.max_overall_score !== undefined) safeFilters.max_overall_score = filters.max_overall_score;
+      if (filters.min_hook_score !== undefined) safeFilters.min_hook_score = filters.min_hook_score;
+      if (filters.max_hook_score !== undefined) safeFilters.max_hook_score = filters.max_hook_score;
+      
+      // Add date filters
+      if (filters.date_from) safeFilters.date_from = filters.date_from;
+      if (filters.date_to) safeFilters.date_to = filters.date_to;
       
       // Fetch ads with analysis using simplified filters
       const response = await adsApi.getAds(safeFilters);
@@ -501,8 +517,8 @@ export default function AdIntelligencePage() {
               Adjust or clear filters to broaden your search.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleRefresh} variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
+            <Button onClick={handleRefresh} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
               {/* Clear all filters button appears only if any extra filters are active */}
@@ -510,7 +526,7 @@ export default function AdIntelligencePage() {
                 <Button onClick={handleResetFilters} variant="secondary">
                   <Filter className="mr-2 h-4 w-4" />
                   Clear Filters
-                </Button>
+            </Button>
               )}
             </div>
           </CardContent>

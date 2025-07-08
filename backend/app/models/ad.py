@@ -16,6 +16,9 @@ class Ad(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
+    # Duration field - calculated during scraping
+    duration_days = Column(Integer, nullable=True, index=True)  # Number of days the ad has been running
+    
     # Raw data from initial scrape
     raw_data = Column(JSON, nullable=True)
     
