@@ -88,6 +88,7 @@ interface ScrapeConfig {
 }
 
 const COUNTRY_OPTIONS = [
+  { value: 'ALL', label: 'All Countries' },
   { value: 'AE', label: 'United Arab Emirates' },
   { value: 'US', label: 'United States' },
   { value: 'GB', label: 'United Kingdom' },
@@ -119,8 +120,8 @@ export default function CompetitorDetailPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showScrapeDialog, setShowScrapeDialog] = useState(false);
   const [scrapeConfig, setScrapeConfig] = useState<ScrapeConfig>({
-    countries: ['AE'],
-    max_pages: 10,
+    countries: ['ALL'],
+    max_pages: 50,
     delay_between_requests: 2,
     active_status: 'active',
   });
@@ -256,12 +257,23 @@ export default function CompetitorDetailPage() {
   };
 
   const toggleCountry = (country: string) => {
-    setScrapeConfig(prev => ({
-      ...prev,
-      countries: prev.countries.includes(country)
-        ? prev.countries.filter(c => c !== country)
-        : [...prev.countries, country]
-    }));
+    setScrapeConfig(prev => {
+      let countries = [...prev.countries];
+      if (country === 'ALL') {
+        countries = countries.includes('ALL') ? [] : ['ALL'];
+      } else {
+        countries = countries.filter(c => c !== 'ALL');
+        if (countries.includes(country)) {
+          countries = countries.filter(c => c !== country);
+        } else {
+          countries.push(country);
+        }
+      }
+      if (countries.length === 0) {
+        countries = ['ALL'];
+      }
+      return { ...prev, countries };
+    });
   };
 
   if (loading) {
