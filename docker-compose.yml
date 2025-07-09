@@ -54,14 +54,6 @@ services:
       - ./backend:/app
       - backend_cache:/app/.cache
     restart: unless-stopped
-    develop:
-      watch:
-        - action: rebuild
-          path: ./backend/requirements.txt
-        - action: sync
-          path: ./backend
-          target: /app
-    
 
 
   # Celery Worker (for background tasks)

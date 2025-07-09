@@ -1,11 +1,12 @@
 import json
+import hashlib
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any, Tuple
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.models import Ad, Competitor
+from app.models import Ad, Competitor, AdSet
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,108 @@ class EnhancedAdExtractionService:
         except (ValueError, TypeError) as e:
             logger.warning(f"Error calculating duration: start={start_date_str}, end={end_date_str}, error={e}")
             return None
+    
+    def _generate_content_signature(self, ad_data: Dict) -> str:
+        """
+        Generate a content signature for ad grouping using conditional logic:
+        - If ad copy is longer than 10 words, use the copy as the signature base
+        - Otherwise, use the media URLs as the signature base (prioritizing media)
+        
+        Args:
+            ad_data: The ad data dictionary containing creatives
+            
+        Returns:
+            A SHA256 hash string representing the content signature
+        """
+        # Default to empty signature in case of errors
+        signature_base = ""
+        
+        try:
+            # Extract primary ad copy from creatives
+            ad_copy = ""
+            if creatives := ad_data.get("creatives", []):
+                for creative in creatives:
+                    if body := creative.get("body"):
+                        if body and isinstance(body, str) and len(body.strip()) > 0:
+                            ad_copy = body.strip()
+                            break
+            
+            # Normalize ad copy (lowercase and strip)
+            normalized_copy = ad_copy.lower().strip() if ad_copy else ""
+            
+            # Calculate word count (split by whitespace)
+            word_count = len(normalized_copy.split()) if normalized_copy else 0
+            
+            self.logger.debug(f"Ad copy word count: {word_count}")
+            
+            # Apply conditional logic
+            if word_count > 10:
+                # Long-form content: Use ad copy as signature
+                self.logger.debug(f"Using ad copy as signature base (words: {word_count})")
+                signature_base = normalized_copy
+            else:
+                # Short content: Use media URLs as signature
+                media_urls = []
+                for creative in ad_data.get("creatives", []):
+                    for media_item in creative.get("media", []):
+                        if url := media_item.get("url"):
+                            # Clean URL by removing query parameters
+                            base_url = url.split('?')[0] if '?' in url else url
+                            media_urls.append(base_url)
+                
+                # Remove duplicates and sort
+                unique_media_urls = sorted(set(media_urls))
+                
+                # Join URLs into a single string
+                signature_base = ",".join(unique_media_urls)
+                self.logger.debug(f"Using media URLs as signature base (count: {len(unique_media_urls)})")
+            
+            # Generate SHA256 hash
+            if not signature_base:
+                # Fallback to ad_archive_id if no content for signature
+                signature_base = str(ad_data.get("ad_archive_id", "unknown"))
+                self.logger.warning(f"No content for signature, using ad_archive_id: {signature_base}")
+            
+            # Generate SHA256 hash from signature base
+            signature = hashlib.sha256(signature_base.encode('utf-8')).hexdigest()
+            return signature
+            
+        except Exception as e:
+            self.logger.error(f"Error generating content signature: {e}")
+            # Fallback to ad_archive_id on error
+            fallback = str(ad_data.get("ad_archive_id", "error"))
+            return hashlib.sha256(fallback.encode('utf-8')).hexdigest()
+    
+    def _update_ad_set_metadata(self, ad_set_id: int) -> None:
+        """
+        Update metadata for an AdSet including:
+        - variant_count: Count of ads in the set
+        - best_ad_id: ID of the ad with highest overall_score
+        
+        Args:
+            ad_set_id: ID of the AdSet to update
+        """
+        try:
+            # Get the AdSet
+            ad_set = self.db.query(AdSet).filter(AdSet.id == ad_set_id).first()
+            if not ad_set:
+                self.logger.warning(f"AdSet not found for updating metadata: {ad_set_id}")
+                return
+            
+            # Count variants (ads in this set)
+            variant_count = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).count()
+            ad_set.variant_count = variant_count
+            
+            # Find best ad (currently using first ad in set as we don't have overall_score yet)
+            # TODO: Update this logic when overall_score is implemented
+            best_ad = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).first()
+            if best_ad:
+                ad_set.best_ad_id = best_ad.id
+            
+            self.logger.info(f"Updated AdSet metadata: id={ad_set_id}, variants={variant_count}")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating AdSet metadata: {e}")
     
     def parse_dynamic_lead_form(self, extra_texts: List[Dict]) -> Dict:
         """
@@ -398,8 +501,7 @@ class EnhancedAdExtractionService:
                                      advertiser_info: Dict) -> Tuple[Ad, bool]:
         """
         Creates a new ad or updates an existing one based on the enhanced data.
-        The 'campaign_id' and 'platforms' are currently for logging/future use
-        and are not directly saved to the Ad model.
+        Groups ads into AdSets based on content signature.
         """
         ad_archive_id = ad_data.get("ad_archive_id")
         session = self.db
@@ -416,6 +518,28 @@ class EnhancedAdExtractionService:
         # Calculate duration in days
         duration_days = self.calculate_duration_days(start_date, end_date, is_active)
         
+        # Generate content signature for AdSet grouping
+        content_signature = self._generate_content_signature(ad_data)
+        
+        # Find or create AdSet based on content signature
+        ad_set = session.query(AdSet).filter(AdSet.content_signature == content_signature).first()
+        if not ad_set:
+            # Create new AdSet
+            ad_set = AdSet(content_signature=content_signature)
+            session.add(ad_set)
+            try:
+                session.flush()  # Get the ID without committing
+                self.logger.info(f"Created new AdSet with signature: {content_signature[:10]}...")
+            except IntegrityError:
+                session.rollback()
+                # Try to find it again (in case of race condition)
+                ad_set = session.query(AdSet).filter(AdSet.content_signature == content_signature).first()
+                if not ad_set:
+                    self.logger.error(f"Failed to create AdSet with signature: {content_signature[:10]}...")
+                    # Fall back to creating the ad without an ad_set_id
+                    ad_set = None
+        
+        # Prepare ad data with AdSet reference
         db_data = {
             "competitor_id": competitor_id,
             "ad_archive_id": ad_archive_id,
@@ -425,6 +549,7 @@ class EnhancedAdExtractionService:
             "lead_form": ad_data.get("lead_form"),
             "creatives": ad_data.get("creatives"),
             "raw_data": ad_data,
+            "ad_set_id": ad_set.id if ad_set else None,
         }
         
         if existing_ad:
@@ -441,6 +566,16 @@ class EnhancedAdExtractionService:
             self.db.add(existing_ad)
             self.logger.info(f"Creating new enhanced ad: {ad_archive_id}")
             created = True
+        
+        try:
+            # Flush to get the ad.id without committing
+            session.flush()
+            
+            # Update AdSet metadata
+            if ad_set:
+                self._update_ad_set_metadata(ad_set.id)
+        except Exception as e:
+            self.logger.error(f"Error during ad creation/update: {e}")
         
         return existing_ad, created
     

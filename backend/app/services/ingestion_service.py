@@ -68,6 +68,9 @@ class DataIngestionService:
             logger.error(f"Database integrity error during ad ingestion: {e}")
             return AdIngestionResponse(
                 success=False,
+                ad_id=None,
+                competitor_id=None,
+                analysis_task_id=None,
                 message=f"Database integrity error: Duplicate ad_archive_id or constraint violation"
             )
             
@@ -76,6 +79,9 @@ class DataIngestionService:
             logger.error(f"Unexpected error during ad ingestion: {e}")
             return AdIngestionResponse(
                 success=False,
+                ad_id=None,
+                competitor_id=None,
+                analysis_task_id=None,
                 message=f"Ingestion failed: {str(e)}"
             )
     
@@ -433,13 +439,13 @@ class DataIngestionService:
             Task ID of the dispatched analysis task
         """
         try:
-            # Import here to avoid circular import
-            from app.tasks.ai_analysis_tasks import ai_analysis_task
+            # Use app's celery instance to avoid naming conflicts
+            from app.celery import celery
             
             # Dispatch the AI analysis task
-            task = ai_analysis_task.delay(ad_id)
-            logger.info(f"AI analysis task dispatched: {task.id} for ad: {ad_id}")
-            return task.id
+            task_result = celery.send_task('app.tasks.ai_analysis_tasks.ai_analysis_task', args=[ad_id])
+            logger.info(f"AI analysis task dispatched: {task_result.id} for ad: {ad_id}")
+            return task_result.id
         
         except Exception as e:
             logger.error(f"Failed to dispatch AI analysis task for ad {ad_id}: {e}")

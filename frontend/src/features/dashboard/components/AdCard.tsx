@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { differenceInDays, format, parseISO } from 'date-fns';
@@ -16,6 +16,7 @@ interface AdCardProps {
   isDeleting?: boolean;
   onSelectionChange?: (adId: number, selected: boolean) => void;
   showSelection?: boolean;
+  hideSetBadge?: boolean; // Add this prop to hide the "Set of X" badge when viewing variants
 }
 
 // Helper function to get main ad content for display
@@ -61,7 +62,8 @@ export function AdCard({
   isSelected = false, 
   isDeleting = false, 
   onSelectionChange, 
-  showSelection = false 
+  showSelection = false,
+  hideSetBadge = false
 }: AdCardProps) {
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -136,7 +138,14 @@ export function AdCard({
     if ((e.target as HTMLElement).closest('.carousel-control')) {
       return;
     }
-    router.push(`/ads/${ad.id}`);
+    
+    // If this is part of an ad set with variants, go to the ad set detail page
+    if (ad.variant_count && ad.variant_count > 1 && ad.ad_set_id) {
+      router.push(`/ad-sets/${ad.ad_set_id}`);
+    } else {
+      // Otherwise go to the individual ad detail page
+      router.push(`/ads/${ad.id}`);
+    }
   };
 
   const handleSelectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +168,9 @@ export function AdCard({
         "border-border/50 hover:border-border",
         hasHighScore && "border-photon-500/30 bg-gradient-to-br from-card via-card to-photon-950/10",
         isSelected && "border-photon-500/50 bg-photon-500/5",
-        isDeleting && "opacity-50 scale-95 pointer-events-none"
+        isDeleting && "opacity-50 scale-95 pointer-events-none",
+        // Add visual distinction for ad sets
+        ad.variant_count && ad.variant_count > 1 ? "border-l-4 border-l-photon-500" : ""
       )}>
         {/* High Score Indicator */}
         {hasHighScore && (
@@ -175,6 +186,22 @@ export function AdCard({
               onChange={handleSelectionChange}
               className="w-4 h-4 rounded border-border/60 bg-background/80 text-photon-500 focus:ring-photon-500/50 focus:ring-2 focus:ring-offset-0"
             />
+          </div>
+        )}
+        
+        {/* Ad Set Variants Badge */}
+        {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
+          <Badge className="absolute top-2 left-2 z-10 bg-photon-500 text-white flex items-center gap-1">
+            <Layers className="h-3 w-3" />
+            Set of {ad.variant_count}
+          </Badge>
+        )}
+        
+        {/* Standalone Ad Indicator */}
+        {(!ad.variant_count || ad.variant_count <= 1) && !hideSetBadge && (
+          <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded-md bg-background/70 backdrop-blur-sm text-xs flex items-center gap-1 shadow-sm">
+            <FileText className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground font-medium">Single Ad</span>
           </div>
         )}
         

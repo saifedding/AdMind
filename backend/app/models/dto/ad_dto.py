@@ -11,8 +11,7 @@ class ExtraTextItemDTO(BaseModel):
     """
     text: str
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class CompetitorCreateDTO(BaseModel):
@@ -24,10 +23,11 @@ class CompetitorCreateDTO(BaseModel):
     page_id: str = Field(..., description="Facebook page ID")
     is_active: bool = Field(default=True, description="Whether competitor is active")
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class AdMeta(BaseModel):
@@ -40,8 +40,7 @@ class AdMeta(BaseModel):
     start_date: Optional[str] = Field(None, description="Start date of the ad")
     end_date: Optional[str] = Field(None, description="End date of the ad")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AgeRange(BaseModel):
@@ -78,8 +77,7 @@ class AdTargeting(BaseModel):
     reach_breakdown: Optional[Dict[str, Any]] = Field(None, description="Reach breakdown")
     total_reach: Optional[int] = Field(None, description="Total reach")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class LeadFormQuestion(BaseModel):
@@ -91,8 +89,7 @@ class LeadFormQuestion(BaseModel):
     question_type: str = Field(..., description="Question type")
     options: Optional[List[str]] = Field(None, description="Question options")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class LeadForm(BaseModel):
@@ -102,8 +99,7 @@ class LeadForm(BaseModel):
     questions: Optional[Dict[str, Any]] = Field(None, description="Lead form questions")
     standalone_fields: Optional[List[str]] = Field(None, description="Standalone fields")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class CreativeMedia(BaseModel):
@@ -113,8 +109,7 @@ class CreativeMedia(BaseModel):
     url: str = Field(..., description="Media URL")
     type: str = Field(..., description="Media type")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class CreativeCta(BaseModel):
@@ -139,8 +134,7 @@ class Creative(BaseModel):
     link_description: Optional[str] = Field(None, description="Creative link description")
     media: Optional[List[CreativeMedia]] = Field(None, description="Creative media")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AdBase(BaseModel):
@@ -169,8 +163,7 @@ class AdInDB(AdBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class AdResponse(AdBase):
@@ -180,13 +173,13 @@ class AdResponse(AdBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class AdFilterParams(BaseModel):
     page: int = 1
     page_size: int = 20
+    limit: int = 20  # Alias for page_size
     competitor_id: Optional[int] = None
     competitor_name: Optional[str] = None
     media_type: Optional[str] = None
@@ -203,6 +196,12 @@ class AdFilterParams(BaseModel):
     search: Optional[str] = None
     sort_by: Optional[str] = "date_found"
     sort_order: Optional[str] = "desc"
+    
+    # Additional fields referenced in code
+    campaign_id: Optional[int] = None
+    has_lead_form: Optional[bool] = None
+    platform: Optional[str] = None
+    query: Optional[str] = None
 
 
 class PaginatedAdResponse(BaseModel):
@@ -250,8 +249,8 @@ class AdIngestionResponse(BaseModel):
     analysis_task_id: Optional[str] = Field(None, description="ID of triggered analysis task")
     message: str = Field(..., description="Human-readable result message")
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "success": True,
                 "ad_id": 123,
@@ -260,6 +259,7 @@ class AdIngestionResponse(BaseModel):
                 "message": "Ad ingested successfully and analysis task started."
             }
         }
+    }
 
 
 class AdAnalysisResponseDTO(BaseModel):
@@ -277,8 +277,7 @@ class AdAnalysisResponseDTO(BaseModel):
     created_at: datetime = Field(..., description="Analysis creation timestamp")
     updated_at: datetime = Field(..., description="Analysis update timestamp")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AdResponseDTO(BaseModel):
@@ -337,8 +336,11 @@ class AdResponseDTO(BaseModel):
     lead_form: Optional[LeadForm] = Field(None, description="Lead form information")
     creatives: List[Creative] = Field(default_factory=list, description="Ad creatives")
     
-    class Config:
-        from_attributes = True
+    # AdSet fields
+    ad_set_id: Optional[int] = Field(None, description="ID of the ad set this ad belongs to")
+    variant_count: Optional[int] = Field(None, description="Number of variants in the ad set")
+    
+    model_config = {"from_attributes": True}
 
 
 class AdDetailResponseDTO(BaseModel):
@@ -416,8 +418,7 @@ class AdDetailResponseDTO(BaseModel):
     lead_form: Optional[LeadForm] = Field(None, description="Lead form information")
     creatives: List[Creative] = Field(default_factory=list, description="Ad creatives")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class PaginationMetadata(BaseModel):
@@ -439,8 +440,8 @@ class PaginatedAdResponseDTO(BaseModel):
     data: List[AdResponseDTO] = Field(..., description="List of ads")
     pagination: PaginationMetadata = Field(..., description="Pagination metadata")
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "data": [
                     {
@@ -450,14 +451,14 @@ class PaginatedAdResponseDTO(BaseModel):
                             "page_id": "1591077094491398",
                             "page_name": "Binghatti"
                         },
-                        "ad_copy": "ندعوك لحضور فعالية حصرية",
-                        "media_type": "video",
-                        "page_name": "Binghatti",
-                        "analysis": {
-                            "hook_score": 8.5,
-                            "overall_score": 7.8,
-                            "summary": "Exclusive real estate event invitation"
-                        }
+                        "ad_copy": "Join Binghatti Properties at Cityscape Global Dubai and explore our latest real estate developments.",
+                        "main_title": "Cityscape Global Dubai",
+                        "date_found": "2023-07-19T12:00:00Z",
+                        "start_date": "2023-07-01",
+                        "end_date": None,
+                        "is_active": True,
+                        "created_at": "2023-07-19T12:00:00Z",
+                        "updated_at": "2023-07-19T12:00:00Z"
                     }
                 ],
                 "pagination": {
@@ -470,6 +471,7 @@ class PaginatedAdResponseDTO(BaseModel):
                 }
             }
         }
+    }
 
 
 class AdStatsResponseDTO(BaseModel):
@@ -500,8 +502,8 @@ class AdStatsResponseDTO(BaseModel):
     # Last update
     last_updated: datetime = Field(..., description="When stats were last updated")
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "total_ads": 1250,
                 "active_ads": 890,
@@ -515,13 +517,14 @@ class AdStatsResponseDTO(BaseModel):
                     "carousel": 200
                 },
                 "platform_breakdown": {
-                    "FACEBOOK": 800,
-                    "INSTAGRAM": 450
+                    "facebook": 800,
+                    "instagram": 450
                 },
-                "recent_ads_7_days": 85,
+                "recent_ads_7_days": 75,
                 "recent_ads_30_days": 320,
                 "avg_hook_score": 7.2,
                 "avg_overall_score": 6.8,
-                "last_updated": "2024-01-15T10:30:00Z"
+                "last_updated": "2023-09-01T10:15:00Z"
             }
-        } 
+        }
+    } 

@@ -109,6 +109,9 @@ async def ingest_ad(
         logger.error(f"Unexpected error in ingest endpoint: {e}")
         return AdIngestionResponse(
             success=False,
+            ad_id=None,
+            competitor_id=None,
+            analysis_task_id=None,
             message=f"Internal server error: {str(e)}"
         )
 

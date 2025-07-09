@@ -94,6 +94,10 @@ export interface Ad {
   // Relationships
   competitor?: Competitor;
   analysis?: AdAnalysis;
+  
+  // New fields for Ad Sets
+  ad_set_id?: number;
+  variant_count?: number;
 }
 
 export interface AdWithAnalysis extends Ad {
