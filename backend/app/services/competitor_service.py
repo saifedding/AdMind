@@ -55,15 +55,10 @@ class CompetitorService:
             
             logger.info(f"Created new competitor: {competitor.name} (ID: {competitor.id})")
             
-            return CompetitorResponseDTO(
-                id=competitor.id,
-                name=competitor.name,
-                page_id=competitor.page_id,
-                is_active=competitor.is_active,
-                ads_count=0,
-                created_at=competitor.created_at,
-                updated_at=competitor.updated_at
-            )
+            # Create DTO and set values explicitly
+            dto = CompetitorResponseDTO.model_validate(competitor)
+            dto.ads_count = 0
+            return dto
             
         except HTTPException:
             raise
@@ -132,15 +127,10 @@ class CompetitorService:
             # Build response
             competitor_data = []
             for competitor in competitors:
-                competitor_data.append(CompetitorResponseDTO(
-                    id=competitor.id,
-                    name=competitor.name,
-                    page_id=competitor.page_id,
-                    is_active=competitor.is_active,
-                    ads_count=ads_counts.get(competitor.id, 0),
-                    created_at=competitor.created_at,
-                    updated_at=competitor.updated_at
-                ))
+                # Create DTO from ORM and set ads_count explicitly
+                dto = CompetitorResponseDTO.model_validate(competitor)
+                dto.ads_count = ads_counts.get(competitor.id, 0)
+                competitor_data.append(dto)
             
             # Calculate pagination info
             total_pages = math.ceil(total / filters.page_size)
@@ -185,19 +175,12 @@ class CompetitorService:
                 Ad.competitor_id == competitor_id
             ).count()
             
-            # Variables already set above
-            
-            return CompetitorDetailResponseDTO(
-                id=competitor.id,
-                name=competitor.name,
-                page_id=competitor.page_id,
-                is_active=competitor.is_active,
-                ads_count=total_ads,
-                active_ads_count=active_ads,
-                analyzed_ads_count=analyzed_ads,
-                created_at=competitor.created_at,
-                updated_at=competitor.updated_at
-            )
+            # Create DTO from ORM and set fields explicitly
+            dto = CompetitorDetailResponseDTO.model_validate(competitor)
+            dto.ads_count = total_ads
+            dto.active_ads_count = active_ads
+            dto.analyzed_ads_count = analyzed_ads
+            return dto
             
         except HTTPException:
             raise
@@ -314,15 +297,23 @@ class CompetitorService:
                         detail=f"Another competitor with page_id '{competitor_data.page_id}' already exists"
                     )
             
-            # Update fields
+            # Update fields using SQLAlchemy's update method
+            update_data = {}
             if competitor_data.name is not None:
-                competitor.name = competitor_data.name
+                update_data['name'] = competitor_data.name
             if competitor_data.page_id is not None:
-                competitor.page_id = competitor_data.page_id
+                update_data['page_id'] = competitor_data.page_id
             if competitor_data.is_active is not None:
-                competitor.is_active = competitor_data.is_active
+                update_data['is_active'] = competitor_data.is_active
             
-            competitor.updated_at = datetime.utcnow()
+            update_data['updated_at'] = datetime.utcnow()
+            
+            self.db.query(Competitor).filter(
+                Competitor.id == competitor_id
+            ).update(
+                update_data,
+                synchronize_session=False
+            )
             
             self.db.commit()
             self.db.refresh(competitor)
@@ -353,9 +344,13 @@ class CompetitorService:
             ads_count = self.db.query(Ad).filter(Ad.competitor_id == competitor_id).count()
             
             if ads_count > 0:
-                # Soft delete - just deactivate
-                competitor.is_active = False
-                competitor.updated_at = datetime.utcnow()
+                # Soft delete - using update instead of direct assignment
+                self.db.query(Competitor).filter(
+                    Competitor.id == competitor_id
+                ).update(
+                    {'is_active': False, 'updated_at': datetime.utcnow()},
+                    synchronize_session=False
+                )
                 self.db.commit()
                 
                 logger.info(f"Soft deleted competitor: {competitor.name} (ID: {competitor.id}) - {ads_count} ads retained")
@@ -444,18 +439,13 @@ class CompetitorService:
                 
                 ads_counts = {comp_id: count for comp_id, count in ads_count_query}
             
-            return [
-                CompetitorResponseDTO(
-                    id=competitor.id,
-                    name=competitor.name,
-                    page_id=competitor.page_id,
-                    is_active=competitor.is_active,
-                    ads_count=ads_counts.get(competitor.id, 0),
-                    created_at=competitor.created_at,
-                    updated_at=competitor.updated_at
-                )
-                for competitor in competitors
-            ]
+            # Create DTOs from ORM objects and set ads_count manually
+            result = []
+            for competitor in competitors:
+                dto = CompetitorResponseDTO.model_validate(competitor)
+                dto.ads_count = ads_counts.get(competitor.id, 0)
+                result.append(dto)
+            return result
             
         except Exception as e:
             logger.error(f"Error searching competitors: {str(e)}")

@@ -83,6 +83,10 @@ export function transformAd(apiAd: ApiAd): Ad {
     targeting: apiAd.targeting || { locations: [], age_range: { min: 0, max: 0 } },
     lead_form: apiAd.lead_form || { questions: {}, standalone_fields: [] },
     creatives: apiAd.creatives || [],
+    
+    // Ad Set fields
+    ad_set_id: apiAd.ad_set_id,
+    variant_count: apiAd.variant_count,
   };
 }
 

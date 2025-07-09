@@ -138,6 +138,10 @@ export interface ApiAd {
   targeting?: ApiAdTargeting;
   lead_form?: ApiLeadForm;
   creatives?: ApiCreative[];
+  
+  // New fields for Ad Sets
+  ad_set_id?: number;
+  variant_count?: number;
 }
 
 export interface PaginationMetadata {
@@ -247,6 +251,15 @@ class ApiClient {
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<PaginatedAdsResponse>(`/ads${query}`);
   }
+  
+  async getAdsInSet(adSetId: number, page: number = 1, pageSize: number = 20): Promise<PaginatedAdsResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<PaginatedAdsResponse>(`/ad-sets/${adSetId}${query}`);
+  }
 
   async getAdById(id: number): Promise<ApiAd> {
     return this.request<ApiAd>(`/ads/${id}`);
@@ -331,6 +344,7 @@ export const adsApi = {
   getCompetitorAds: (competitorId: number, limit?: number) => apiClient.getCompetitorAds(competitorId, limit),
   getCompetitors: (skip?: number, limit?: number, isActive?: boolean) => apiClient.getCompetitors(skip, limit, isActive),
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
+  getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
 };
 
 export default apiClient;

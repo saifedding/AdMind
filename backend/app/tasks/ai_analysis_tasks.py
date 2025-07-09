@@ -3,6 +3,7 @@ from datetime import datetime
 import logging
 from typing import Dict, Any
 from app.services.ai_service import get_ai_service
+from celery.app import defaults
 
 logger = logging.getLogger(__name__)
 
@@ -146,25 +147,29 @@ def ai_analysis_task(self, ad_id: int) -> Dict[str, Any]:
             db.close()
 
 @shared_task
-def batch_ai_analysis_task(ad_ids: list) -> Dict[str, Any]:
+def batch_ai_analysis_task(ad_id_list: list) -> Dict[str, Any]:
     """
     Batch AI analysis task for processing multiple ads at once.
     
     Args:
-        ad_ids: List of ad IDs to analyze
+        ad_id_list: List of ad IDs to analyze
         
     Returns:
         Dict with batch analysis results
     """
-    logger.info(f"Starting batch AI analysis for {len(ad_ids)} ads")
+    logger.info(f"Starting batch AI analysis for {len(ad_id_list)} ads")
     
     results = []
     failed_ads = []
     
-    for ad_id in ad_ids:
+    # Import Celery app to get access to the task registry
+    from app.celery import celery
+    
+    for ad_id in ad_id_list:
         try:
-            # Dispatch individual analysis task
-            task = ai_analysis_task.delay(ad_id)
+            # Dispatch individual analysis task using the Celery app
+            task_sig = celery.signature('app.tasks.ai_analysis_tasks.ai_analysis_task')
+            task = task_sig.delay(ad_id)
             results.append({
                 "ad_id": ad_id,
                 "task_id": task.id,
@@ -178,7 +183,7 @@ def batch_ai_analysis_task(ad_ids: list) -> Dict[str, Any]:
             })
     
     return {
-        "total_ads": len(ad_ids),
+        "total_ads": len(ad_id_list),
         "successful_dispatches": len(results),
         "failed_dispatches": len(failed_ads),
         "results": results,

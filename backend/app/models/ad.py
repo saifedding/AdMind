@@ -22,9 +22,13 @@ class Ad(Base):
     # Raw data from initial scrape
     raw_data = Column(JSON, nullable=True)
     
+    # Foreign key to ad set
+    ad_set_id = Column(Integer, ForeignKey("ad_sets.id"), nullable=True, index=True)
+    
     # Relationships
     competitor = relationship("Competitor", back_populates="ads")
     analysis = relationship("AdAnalysis", uselist=False, back_populates="ad", cascade="all, delete-orphan")
+    ad_set = relationship("AdSet", back_populates="ads", foreign_keys=[ad_set_id])
     
     # New structured fields for enhanced extraction
     meta = Column(JSON, nullable=True)
@@ -37,13 +41,26 @@ class Ad(Base):
     
     def to_dict(self):
         """Convert Ad instance to dictionary for JSON serialization"""
+        date_found_iso = None
+        if hasattr(self, 'date_found') and self.date_found is not None:
+            date_found_iso = self.date_found.isoformat()
+            
+        created_at_iso = None
+        if hasattr(self, 'created_at') and self.created_at is not None:
+            created_at_iso = self.created_at.isoformat()
+            
+        updated_at_iso = None
+        if hasattr(self, 'updated_at') and self.updated_at is not None:
+            updated_at_iso = self.updated_at.isoformat()
+            
         return {
             "id": self.id,
             "competitor_id": self.competitor_id,
             "ad_archive_id": self.ad_archive_id,
-            "date_found": self.date_found.isoformat() if self.date_found else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "ad_set_id": self.ad_set_id,
+            "date_found": date_found_iso,
+            "created_at": created_at_iso,
+            "updated_at": updated_at_iso,
             "raw_data": self.raw_data,
             "meta": self.meta,
             "targeting": self.targeting,

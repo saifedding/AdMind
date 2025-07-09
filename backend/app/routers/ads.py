@@ -24,6 +24,7 @@ from app.services.enhanced_ad_extraction import EnhancedAdExtractionService
 from app.tasks.basic_tasks import add_together, test_task, long_running_task
 from app.tasks.facebook_ads_scraper_task import scrape_facebook_ads_task, scrape_competitor_ads_task
 from app.tasks.ai_analysis_tasks import ai_analysis_task, batch_ai_analysis_task
+from app.celery_worker import celery_app
 
 # Use TYPE_CHECKING to avoid circular imports
 if TYPE_CHECKING:
@@ -335,8 +336,8 @@ async def trigger_ad_analysis(
         if not ad:
             raise HTTPException(status_code=404, detail="Ad not found")
         
-        # Trigger analysis task
-        task = ai_analysis_task.delay(ad_id)
+        # Trigger analysis task using celery_app to avoid type issues
+        task = celery_app.send_task('app.tasks.ai_analysis_tasks.ai_analysis_task', args=[ad_id])
         
         return {
             "message": f"AI analysis triggered for ad {ad_id}",
@@ -367,8 +368,8 @@ async def trigger_batch_analysis(
         if not existing_ad_ids:
             raise HTTPException(status_code=404, detail="No valid ads found")
         
-        # Trigger batch analysis
-        task = batch_ai_analysis_task.delay(existing_ad_ids)
+        # Trigger batch analysis using celery_app
+        task = celery_app.send_task('app.tasks.ai_analysis_tasks.batch_ai_analysis_task', args=[existing_ad_ids])
         
         return {
             "message": f"Batch AI analysis triggered for {len(existing_ad_ids)} ads",
@@ -703,7 +704,7 @@ def get_scraping_task_status(task_id: str):
 async def test_add_numbers(request: AddNumbersRequest):
     """Test endpoint for adding numbers via Celery task"""
     try:
-        task = add_together.delay(request.x, request.y)
+        task = celery_app.send_task('app.tasks.basic_tasks.add_together', args=[request.x, request.y])
         return TaskResponse(
             task_id=task.id,
             status="started",
@@ -717,7 +718,7 @@ async def test_add_numbers(request: AddNumbersRequest):
 async def test_celery_task(request: TestTaskRequest):
     """Test endpoint for basic Celery task"""
     try:
-        task = test_task.delay(request.message)
+        task = celery_app.send_task('app.tasks.basic_tasks.test_task', args=[request.message])
         return TaskResponse(
             task_id=task.id,
             status="started",
@@ -865,8 +866,8 @@ def _run_competitor_ads_scraper_task(
             active_status=active_status,
             ad_type=ad_type,
             media_type=media_type,
-            date_from=date_from,
-            date_to=date_to,
+            start_date=date_from,
+            end_date=date_to,
             save_json=save_json
         )
         
@@ -910,3 +911,28 @@ def _run_competitor_ads_scraper_task(
         )
         db.add(task_status)
         db.commit() 
+
+@router.get("/ad-sets/{ad_set_id}", response_model=PaginatedAdResponseDTO)
+async def get_ads_in_set(
+    ad_set_id: int,
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    """
+    Get all ad variants belonging to a specific AdSet with pagination.
+    This endpoint is used to show all variations of ads within an ad set.
+    """
+    try:
+        result = ad_service.get_ads_in_set(ad_set_id, page, page_size)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail=f"AdSet with ID {ad_set_id} not found")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching ads in set {ad_set_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching ads in set: {str(e)}") 
