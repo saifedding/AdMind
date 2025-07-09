@@ -15,6 +15,15 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         curl \
+        # Dependencies for PyAV (video processing)
+        ffmpeg \
+        libavformat-dev \
+        libavcodec-dev \
+        libavdevice-dev \
+        libavutil-dev \
+        libswscale-dev \
+        libswresample-dev \
+        libavfilter-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

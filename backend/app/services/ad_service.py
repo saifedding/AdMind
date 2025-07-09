@@ -591,6 +591,8 @@ class AdService:
             return None  # type: ignore
             
         try:
+            import json
+            
             competitor_dto = None
             if ad.competitor:
                 competitor_dto = CompetitorResponseDTO(
@@ -607,36 +609,54 @@ class AdService:
             main_image_urls = []
             main_video_urls = []
             
-            if ad.creatives:
-                # Try to extract media information
-                for creative in ad.creatives:
-                    if creative.get('media'):
-                        for media in creative.get('media'):
-                            if media.get('type') == 'Video':
-                                main_video_urls.append(media.get('url'))
-                                if not media_type:
-                                    media_type = 'Video'
-                                    media_url = media.get('url')
-                            elif media.get('type') == 'Image':
-                                main_image_urls.append(media.get('url'))
-                                if not media_type and not main_video_urls:
-                                    media_type = 'Image'
-                                    media_url = media.get('url')
-            
-            # Extract text content
+            # Initialize text content variables
             ad_copy = None
             main_title = None
             main_body_text = None
             main_caption = None
             
+            # Process creatives if they exist
+            creatives_data = []
             if ad.creatives:
-                for creative in ad.creatives:
-                    if creative.get('headline') and not main_title:
-                        main_title = creative.get('headline')
-                    if creative.get('body') and not main_body_text:
-                        main_body_text = creative.get('body')
-                    if creative.get('link', {}).get('caption') and not main_caption:
-                        main_caption = creative.get('link', {}).get('caption')
+                # Handle the case when creatives is a string (JSON string)
+                if isinstance(ad.creatives, str):
+                    try:
+                        creatives_data = json.loads(ad.creatives)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse creatives JSON for ad {ad.id}")
+                        creatives_data = []
+                else:
+                    # Creatives is already a list or dict
+                    creatives_data = ad.creatives
+                
+                # If creatives_data is a dict, convert to list for consistency
+                if isinstance(creatives_data, dict):
+                    creatives_data = [creatives_data]
+                
+                # Process each creative
+                if isinstance(creatives_data, list):
+                    for creative in creatives_data:
+                        # Extract media information
+                        if creative.get('media'):
+                            for media in creative.get('media'):
+                                if media.get('type') == 'Video':
+                                    main_video_urls.append(media.get('url'))
+                                    if not media_type:
+                                        media_type = 'Video'
+                                        media_url = media.get('url')
+                                elif media.get('type') == 'Image':
+                                    main_image_urls.append(media.get('url'))
+                                    if not media_type and not main_video_urls:
+                                        media_type = 'Image'
+                                        media_url = media.get('url')
+                        
+                        # Extract text content
+                        if creative.get('headline') and not main_title:
+                            main_title = creative.get('headline')
+                        if creative.get('body') and not main_body_text:
+                            main_body_text = creative.get('body')
+                        if creative.get('link', {}).get('caption') and not main_caption:
+                            main_caption = creative.get('link', {}).get('caption')
             
             # Combine text fields for ad_copy
             all_text = [main_title, main_body_text, main_caption]
@@ -655,29 +675,67 @@ class AdService:
             end_date = None
             is_active = False
             
+            # Parse meta data
+            meta_data = {}
             if ad.meta:
-                if 'start_date' in ad.meta:
-                    start_date = ad.meta.get('start_date')
-                if 'end_date' in ad.meta:
-                    end_date = ad.meta.get('end_date')
-                if 'is_active' in ad.meta:
-                    is_active = ad.meta.get('is_active', False)
+                # Handle the case when meta is a string (JSON string)
+                if isinstance(ad.meta, str):
+                    try:
+                        meta_data = json.loads(ad.meta)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse meta JSON for ad {ad.id}")
+                        meta_data = {}
+                else:
+                    meta_data = ad.meta
+                
+                if isinstance(meta_data, dict):
+                    if 'start_date' in meta_data:
+                        start_date = meta_data.get('start_date')
+                    if 'end_date' in meta_data:
+                        end_date = meta_data.get('end_date')
+                    if 'is_active' in meta_data:
+                        is_active = meta_data.get('is_active', False)
             
             # Extract CTA info
             cta_text = None
             cta_type = None
             
-            if ad.creatives:
-                for creative in ad.creatives:
+            if isinstance(creatives_data, list):
+                for creative in creatives_data:
                     if creative.get('cta', {}).get('text') and not cta_text:
                         cta_text = creative.get('cta', {}).get('text')
                     if creative.get('cta', {}).get('type') and not cta_type:
                         cta_type = creative.get('cta', {}).get('type')
             
-            # Extract targeting countries
+            # Parse targeting data
+            targeting_data = {}
             targeted_countries = []
-            if ad.targeting and 'locations' in ad.targeting:
-                targeted_countries = ad.targeting.get('locations', [])
+            if ad.targeting:
+                # Handle the case when targeting is a string (JSON string)
+                if isinstance(ad.targeting, str):
+                    try:
+                        targeting_data = json.loads(ad.targeting)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse targeting JSON for ad {ad.id}")
+                        targeting_data = {}
+                else:
+                    targeting_data = ad.targeting
+                
+                if isinstance(targeting_data, dict) and 'locations' in targeting_data:
+                    targeted_countries = targeting_data.get('locations', [])
+            
+            # Parse lead form data
+            lead_form_data = {}
+            if ad.lead_form:
+                # Handle the case when lead_form is a string (JSON string)
+                if isinstance(ad.lead_form, str):
+                    try:
+                        lead_form_data = json.loads(ad.lead_form)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse lead_form JSON for ad {ad.id}")
+                        lead_form_data = {}
+                else:
+                    lead_form_data = ad.lead_form
             
             # Extract publisher platforms - using empty list as default since we don't have this data
             publisher_platform = []
@@ -746,11 +804,11 @@ class AdService:
                 # Analysis data
                 analysis=analysis_dto,
                 
-                # Raw data fields
-                meta=ad.meta,
-                targeting=ad.targeting,
-                lead_form=ad.lead_form,
-                creatives=ad.creatives,
+                # Raw data fields - use the parsed dictionaries
+                meta=meta_data,
+                targeting=targeting_data,
+                lead_form=lead_form_data,
+                creatives=creatives_data,
                 
                 # AdSet fields - will be populated later when needed
                 ad_set_id=ad.ad_set_id,
@@ -900,7 +958,14 @@ class AdService:
             ads = query.offset(offset).limit(page_size).all()
             
             # Convert to DTOs
-            ad_dtos = [self._convert_to_dto(ad) for ad in ads]
+            ad_dtos = []
+            for ad in ads:
+                try:
+                    ad_dto = self._convert_to_dto(ad)
+                    if ad_dto:
+                        ad_dtos.append(ad_dto)
+                except Exception as e:
+                    logger.error(f"Error converting ad {ad.id} to DTO: {str(e)}")
             
             # Calculate pagination metadata
             total_pages = (total_items + page_size - 1) // page_size

@@ -1,14 +1,11 @@
-import sys
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
-# Add backend path to sys.path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
-
 from app.models.ad import Ad
 from app.models.ad_analysis import AdAnalysis
+from app.models.ad_set import AdSet
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,22 +24,33 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def drop_all_ads():
     """
-    Deletes all records from the 'ads' and 'ad_analyses' tables.
+    Deletes all records from the 'ads', 'ad_analyses', and 'ad_sets' tables.
     """
     db = SessionLocal()
     try:
-        # The relationship is set to cascade delete, so deleting ads will also delete analyses.
-        # However, to be explicit and clear, we can delete them separately.
-        # Let's rely on the cascade for efficiency.
-
-        num_ads_deleted = db.query(Ad).delete(synchronize_session=False)
-        # No need to delete AdAnalysis separately if cascade is working correctly.
-        # num_analyses_deleted = db.query(AdAnalysis).delete(synchronize_session=False)
+        # First, update ad_sets to set best_ad_id to NULL
+        db.query(AdSet).update({AdSet.best_ad_id: None}, synchronize_session=False)
+        db.flush()
+        
+        # Second, update ads to set ad_set_id to NULL
+        db.query(Ad).update({Ad.ad_set_id: None}, synchronize_session=False)
+        db.flush()
+        
+        # Get count of ads for reporting
+        num_ads = db.query(Ad).count()
+        
+        # Get count of ad sets for reporting
+        num_ad_sets = db.query(AdSet).count()
+        
+        # Now we can delete ad_sets since nothing references them
+        db.query(AdSet).delete(synchronize_session=False)
+        
+        # Then delete all ads (which will cascade delete analyses)
+        db.query(Ad).delete(synchronize_session=False)
         
         db.commit()
 
-        print(f"Successfully deleted {num_ads_deleted} ad(s).")
-        # print(f"Successfully deleted {num_analyses_deleted} ad analysis record(s).")
+        print(f"Successfully deleted {num_ads} ad(s) and {num_ad_sets} ad set(s).")
         
     except Exception as e:
         db.rollback()
@@ -51,9 +59,9 @@ def drop_all_ads():
         db.close()
 
 if __name__ == "__main__":
-    print("This script will delete all ads and their analyses from the database.")
+    print("This script will delete all ads, ad sets, and their analyses from the database.")
     choice = input("Are you sure you want to continue? (y/n): ")
     if choice.lower() == 'y':
         drop_all_ads()
     else:
-        print("Operation cancelled.") 
+        print("Operation cancelled.")
