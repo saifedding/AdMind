@@ -20,7 +20,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Activity
+  Activity,
+  Layers
 } from "lucide-react";
 
 const navigation = [
@@ -34,6 +35,12 @@ const navigation = [
     name: "Ad Intelligence",
     href: "/ads",
     icon: Brain,
+    current: false
+  },
+  {
+    name: "Ad Sets",
+    href: "/ad-sets",
+    icon: Layers,
     current: false
   },
   {

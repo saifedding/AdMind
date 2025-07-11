@@ -1002,6 +1002,92 @@ class AdService:
             logger.error(f"Error fetching ads in set {ad_set_id}: {str(e)}")
             raise
 
+    def get_ad_sets(self, page: int = 1, page_size: int = 20, sort_by: str = "created_at", sort_order: str = "desc") -> Optional[PaginatedAdResponseDTO]:
+        """
+        Get all ad sets with pagination.
+        
+        Args:
+            page: Page number (1-indexed)
+            page_size: Number of items per page
+            sort_by: Field to sort by (created_at, variant_count, etc.)
+            sort_order: Sort direction (asc, desc)
+            
+        Returns:
+            PaginatedAdResponseDTO with the best ad from each set and pagination metadata
+        """
+        try:
+            # Build base query on AdSet model
+            query = self.db.query(AdSet).options(
+                joinedload(AdSet.best_ad).joinedload(Ad.competitor),
+                joinedload(AdSet.best_ad).joinedload(Ad.analysis)
+            )
+            
+            # Apply sorting
+            direction = desc if sort_order.lower() == "desc" else asc
+            
+            if sort_by == "created_at":
+                query = query.order_by(direction(AdSet.created_at))
+            elif sort_by == "variant_count":
+                query = query.order_by(direction(AdSet.variant_count))
+            elif sort_by == "first_seen_date":
+                query = query.order_by(direction(AdSet.first_seen_date))
+            elif sort_by == "last_seen_date":
+                query = query.order_by(direction(AdSet.last_seen_date))
+            else:
+                query = query.order_by(direction(AdSet.created_at))
+            
+            # Get total count before pagination
+            total_items = query.count()
+            
+            # Apply pagination
+            offset = (page - 1) * page_size
+            ad_sets = query.offset(offset).limit(page_size).all()
+            
+            # Convert to DTOs with AdSet information
+            ad_dtos = []
+            for ad_set in ad_sets:
+                if ad_set.best_ad:
+                    # Convert the best ad to DTO and add AdSet information
+                    ad_dto = self._convert_to_dto(ad_set.best_ad)
+                    # Augment the Ad DTO with metadata from its parent AdSet
+                    ad_dto.ad_set_id = ad_set.id
+                    ad_dto.variant_count = ad_set.variant_count
+                    ad_dto.ad_set_created_at = ad_set.created_at
+                    ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                    ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
+                    ad_dtos.append(ad_dto)
+                else:
+                    # If there's no best_ad, fetch the first ad in the set
+                    first_ad = self.db.query(Ad).filter(Ad.ad_set_id == ad_set.id).first()
+                    if first_ad:
+                        ad_dto = self._convert_to_dto(first_ad)
+                        ad_dto.ad_set_id = ad_set.id
+                        ad_dto.variant_count = ad_set.variant_count
+                        ad_dto.ad_set_created_at = ad_set.created_at
+                        ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                        ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
+                        ad_dtos.append(ad_dto)
+            
+            # Calculate pagination metadata
+            total_pages = (total_items + page_size - 1) // page_size
+            pagination = PaginationMetadata(
+                page=page,
+                page_size=page_size,
+                total_items=total_items,
+                total_pages=total_pages,
+                has_next=page < total_pages,
+                has_previous=page > 1
+            )
+            
+            return PaginatedAdResponseDTO(
+                data=ad_dtos,
+                pagination=pagination
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching ad sets: {str(e)}")
+            raise
+
 
 def get_ad_service(db: Session) -> AdService:
     """

@@ -912,6 +912,40 @@ def _run_competitor_ads_scraper_task(
         db.add(task_status)
         db.commit() 
 
+@router.get("/ad-sets", response_model=PaginatedAdResponseDTO)
+async def get_ad_sets(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    sort_by: Optional[str] = Query("created_at", description="Sort by field"),
+    sort_order: Optional[str] = Query("desc", description="Sort order (asc/desc)"),
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    """
+    Get all ad sets with pagination.
+    Each ad set is represented by its best/representative ad.
+    """
+    try:
+        result = ad_service.get_ad_sets(page, page_size, sort_by, sort_order)
+        
+        if not result:
+            return PaginatedAdResponseDTO(
+                data=[], 
+                pagination=PaginationMetadata(
+                    page=page, 
+                    page_size=page_size,
+                    total_items=0,
+                    total_pages=0,
+                    has_next=False,
+                    has_previous=False
+                )
+            )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error fetching ad sets: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching ad sets: {str(e)}") 
+
 @router.get("/ad-sets/{ad_set_id}", response_model=PaginatedAdResponseDTO)
 async def get_ads_in_set(
     ad_set_id: int,

@@ -330,6 +330,17 @@ class ApiClient {
   async getCompetitor(id: number): Promise<ApiCompetitor> {
     return this.request<ApiCompetitor>(`/competitors/${id}`);
   }
+
+  async getAllAdSets(page: number = 1, pageSize: number = 20, sortBy: string = "created_at", sortOrder: string = "desc"): Promise<PaginatedAdsResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
+    params.append('sort_by', sortBy);
+    params.append('sort_order', sortOrder);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<PaginatedAdsResponse>(`/ad-sets${query}`);
+  }
 }
 
 // Create and export API client instance
@@ -348,6 +359,7 @@ export const adsApi = {
   getCompetitors: (skip?: number, limit?: number, isActive?: boolean) => apiClient.getCompetitors(skip, limit, isActive),
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
+  getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
 };
 
 export default apiClient;
