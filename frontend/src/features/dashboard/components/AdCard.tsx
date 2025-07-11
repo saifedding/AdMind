@@ -141,7 +141,7 @@ export function AdCard({
         isSelected && "border-photon-500/50 bg-photon-500/5",
         isDeleting && "opacity-50 scale-95 pointer-events-none",
         // Add visual distinction for ad sets
-        ad.variant_count && ad.variant_count > 1 ? "border-l-4 border-l-photon-500" : ""
+        ad.variant_count && ad.variant_count > 1 ? "border-l-4 border-l-indigo-500" : ""
       )}>
         {/* High Score Indicator */}
         {hasHighScore && (
@@ -203,35 +203,48 @@ export function AdCard({
             )}
 
             {/* Media Type, Status & Duration Badges */}
-            <div className="absolute top-3 left-3 z-20 flex gap-1">
-              {ad.media_type && (
-                <div className="px-1.5 py-0.5 rounded-md bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide shadow-sm">
-                  {ad.media_type}
-                </div>
-              )}
-              {/* Status Badge */}
-              <div className={cn(
-                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide shadow-sm",
-                isActive 
-                  ? "bg-green-500/90 text-white" 
-                  : "bg-gray-500/90 text-white"
-              )}
-              title={isActive ? "Ad is currently active" : "Ad has ended"}>
-                {isActive ? "ACTIVE" : "ENDED"}
+            <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-1">
+              {/* Media type badge */}
+              <div 
+                className="flex items-center gap-1 rounded-md bg-black/50 backdrop-blur-sm px-2 py-0.5"
+                title={`Media Type: ${isVideo ? 'Video' : 'Image'}`}
+              >
+                {isVideo ? (
+                  <Play className="h-3 w-3 text-blue-300" />
+                ) : (
+                  <Image className="h-3 w-3 text-purple-300" />
+                )}
+                <span className="text-xs font-medium text-white">
+                  {isVideo ? 'Video' : 'Image'}
+                </span>
               </div>
-              
-              {/* Variant Count Badge */}
-              {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
-                <div className="px-1.5 py-0.5 rounded-md bg-indigo-500/90 text-white text-[10px] font-semibold tracking-wide shadow-sm"
-                     title={`${ad.variant_count} variants in this set`}>
-                  {ad.variant_count} Variants
+
+              {/* Ad duration badge */}
+              {adDuration.formattedDate && (
+                <div 
+                  className={cn(
+                    "flex items-center gap-1 rounded-md backdrop-blur-sm px-2 py-0.5", 
+                    durationBadgeClass
+                  )}
+                  title={`Ad Duration: ${adDuration.duration} days`}
+                >
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {adDuration.duration}d
+                  </span>
                 </div>
               )}
-
-              {durationDays !== null && (
-                <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide shadow-sm ${durationBadgeClass}`}
-                     title={`${durationDays} days running`}>
-                  {durationDays}d
+              
+              {/* Variant count badge */}
+              {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
+                <div 
+                  className="flex items-center gap-1 rounded-md bg-indigo-500/90 text-white px-2 py-0.5"
+                  title={`${ad.variant_count} variants in this ad set`}
+                >
+                  <Layers className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {ad.variant_count}
+                  </span>
                 </div>
               )}
             </div>
