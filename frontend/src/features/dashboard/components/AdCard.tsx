@@ -86,10 +86,8 @@ export function AdCard({
       : !ad.end_date || new Date(ad.end_date) >= new Date());
 
   const adDuration = formatAdDuration(ad.start_date, ad.end_date, isActive);
-  const adSetDuration = formatAdSetDuration(ad.ad_set_first_seen_date, ad.ad_set_last_seen_date);
-
-  // Fallback for ad set date range if not available
   const displayAdSetDate = ad.variant_count && ad.variant_count > 1;
+  const adSetDuration = formatAdSetDuration(ad.ad_set_first_seen_date, ad.ad_set_last_seen_date);
 
   // Duration badge logic
   const durationDays = adDuration.duration;
@@ -334,18 +332,15 @@ export function AdCard({
             )}
 
             {/* Ad Set Lifetime */}
-            {displayAdSetDate && (
-              <div className="absolute bottom-2 left-2 z-20" title="Ad Set Lifetime">
-                <div className="flex items-center gap-1.5 rounded-md bg-black/50 backdrop-blur-sm px-2 py-1">
-                  <Layers className="h-3 w-3 text-indigo-300" />
-                  {adSetDuration.formattedDate ? (
-                    <>
-                      <span className="text-xs font-mono text-white">{adSetDuration.formattedDate}</span>
-                      <span className="text-xs font-mono text-indigo-300">({adSetDuration.duration}d)</span>
-                    </>
-                  ) : (
-                    <span className="text-xs font-mono text-gray-400">Date range N/A</span>
-                  )}
+            {displayAdSetDate && adSetDuration.formattedDate && (
+              <div 
+                className="flex items-center gap-1.5 rounded-md bg-indigo-100 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300 px-3 py-1.5"
+                title="Period this ad set has been active"
+              >
+                <Calendar className="h-4 w-4" />
+                <div className="text-sm">
+                  <span className="font-medium">Date Range:</span>{' '}
+                  <span>{adSetDuration.formattedDate}</span>
                 </div>
               </div>
             )}

@@ -66,23 +66,62 @@ export function formatDate(dateString: string): string {
   }
 }
 
-export function formatAdSetDuration(startDateStr?: string, endDateStr?: string): { formattedDate: string | null, duration: number | null } {
-  if (!startDateStr || !endDateStr) return { formattedDate: null, duration: null };
+export function formatAdSetDuration(startDateStr?: string | null, endDateStr?: string | null): { formattedDate: string | null, duration: number | null } {
+  // If both dates are missing, return null values
+  if (!startDateStr && !endDateStr) return { formattedDate: null, duration: null };
+  
   try {
-    const startDate = parseISO(startDateStr);
-    const endDate = parseISO(endDateStr);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null };
+    const startDate = startDateStr ? parseISO(startDateStr) : null;
+    const endDate = endDateStr ? parseISO(endDateStr) : null;
     
-    let duration = differenceInDays(endDate, startDate);
-    duration = Math.max(duration, 1); // An ad set exists for at least 1 day
-
-    const formattedStartDate = format(startDate, 'MMM d, yyyy');
-    const formattedEndDate = format(endDate, 'MMM d, yyyy');
-
-    return { 
-      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
-      duration,
-    };
+    // If we can't parse either date, return null values
+    if ((startDate && isNaN(startDate.getTime())) || (endDate && isNaN(endDate.getTime()))) {
+      return { formattedDate: null, duration: null };
+    }
+    
+    // If we only have a start date, format it as "Since [date]"
+    if (startDate && !endDate) {
+      const formattedStartDate = format(startDate, 'MMM d, yyyy');
+      return { 
+        formattedDate: `Since ${formattedStartDate}`,
+        duration: 1, // Assume at least one day
+      };
+    }
+    
+    // If we only have an end date, format it as "Until [date]"
+    if (!startDate && endDate) {
+      const formattedEndDate = format(endDate, 'MMM d, yyyy');
+      return { 
+        formattedDate: `Until ${formattedEndDate}`,
+        duration: 1, // Assume at least one day
+      };
+    }
+    
+    // If we have both dates, calculate duration and format
+    if (startDate && endDate) {
+      let duration = differenceInDays(endDate, startDate);
+      duration = Math.max(duration, 1); // An ad set exists for at least 1 day
+      
+      const formattedStartDate = format(startDate, 'MMM d, yyyy');
+      const formattedEndDate = format(endDate, 'MMM d, yyyy');
+      
+      // If dates are the same, just show one date
+      if (duration === 1 && formattedStartDate === formattedEndDate) {
+        return { 
+          formattedDate: formattedStartDate,
+          duration: 1,
+        };
+      }
+      
+      return { 
+        formattedDate: `${formattedStartDate} - ${formattedEndDate}`,
+        duration,
+      };
+    }
+    
+    // Fallback case (shouldn't happen based on the logic above)
+    return { formattedDate: null, duration: null };
+    
   } catch (error) {
     console.error("Error formatting ad set duration:", error);
     return { formattedDate: null, duration: null };
