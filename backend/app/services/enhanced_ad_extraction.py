@@ -603,36 +603,33 @@ class EnhancedAdExtractionService:
             new_hash = self._calculate_perceptual_hash_for_ad(ad_data)
             if not new_hash:
                 self.logger.warning(f"Could not generate perceptual hash for ad {ad_id}. Creating new AdSet via fallback.")
-                return self._create_new_ad_set(str(ad_id))  # Fallback to ad ID as signature
+                return self._create_new_ad_set(str(ad_id))
 
-            # 2. Quick exact match: check if hash already exists (avoids pg_trgm call if identical)
+            # 2. Quick exact match: check if hash already exists
             exact_match = self.db.query(AdSet).filter(AdSet.content_signature == new_hash).first()
             if exact_match:
                 self.logger.info(f"Exact content_signature match found – using existing AdSet {exact_match.id}.")
                 return exact_match
 
-            # 3. Use pg_trgm similarity to fetch top candidate AdSets quickly
+            # 3. Use pg_trgm similarity to fetch top candidate AdSets
             candidate_query = text(
                 """
-                SELECT id
-                FROM ad_sets
+                SELECT id FROM ad_sets
                 WHERE similarity(content_signature, :hash) > 0.8
                 ORDER BY similarity(content_signature, :hash) DESC
                 LIMIT 20
                 """
             )
-
             try:
                 result = self.db.execute(candidate_query, {"hash": new_hash})
                 candidate_ids = [row[0] for row in result]
             except Exception as e:
-                # pg_trgm not enabled or other error – fallback to creating new set
                 self.logger.error(f"pg_trgm similarity query failed: {e}. Falling back to new AdSet.")
                 return self._create_new_ad_set(new_hash)
 
             self.logger.info(f"{len(candidate_ids)} candidate AdSets retrieved for visual hash {new_hash}.")
 
-            # 4. Compare only with candidate AdSets' representative ads
+            # 4. Compare with candidate AdSets' representative ads
             if candidate_ids:
                 candidates = (
                     self.db.query(AdSet)
@@ -640,11 +637,9 @@ class EnhancedAdExtractionService:
                     .filter(AdSet.id.in_(candidate_ids))
                     .all()
                 )
-
                 for ad_set in candidates:
                     if not ad_set.best_ad:
                         continue
-                
                     rep_ad_data = ad_set.best_ad.to_enhanced_format()
                     try:
                         if self.creative_comparison_service.should_group_ads(ad_data, rep_ad_data):
@@ -654,7 +649,7 @@ class EnhancedAdExtractionService:
                         self.logger.warning(f"Comparison failed between ad {ad_id} and AdSet {ad_set.id}: {e}")
                         continue
 
-            # 5. No suitable candidate – create a new AdSet with the new perceptual hash
+            # 5. No suitable candidate – create a new AdSet
             self.logger.info(f"No AdSet matched. Creating new AdSet for hash {new_hash}.")
             return self._create_new_ad_set(new_hash)
         except Exception as e:
@@ -733,7 +728,7 @@ class EnhancedAdExtractionService:
                 if ad_set.last_seen_date is None or ad_found_date > ad_set.last_seen_date:
                     ad_set.last_seen_date = ad_found_date
                 # ---------------------------------
-
+                
                 self.db.add(new_ad)
                 self.db.flush()
                 
