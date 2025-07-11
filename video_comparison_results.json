@@ -1,0 +1,36 @@
+{
+  "results": [
+    {
+      "test_case": "HQ URL Match",
+      "creative1_id": "creative1",
+      "creative2_id": "creative2",
+      "is_similar": true,
+      "similarity_score": 1.0,
+      "match_type": "url"
+    },
+    {
+      "test_case": "Thumbnail Match",
+      "creative1_id": "creative3",
+      "creative2_id": "creative4",
+      "is_similar": true,
+      "similarity_score": 1.0,
+      "match_type": "thumbnail"
+    },
+    {
+      "test_case": "LQ Stream Match",
+      "creative1_id": "creative5",
+      "creative2_id": "creative6",
+      "is_similar": true,
+      "similarity_score": 0.8,
+      "match_type": "thumbnail"
+    },
+    {
+      "test_case": "No Match",
+      "creative1_id": "creative7",
+      "creative2_id": "creative8",
+      "is_similar": false,
+      "similarity_score": 0.0,
+      "match_type": "none"
+    }
+  ]
+}

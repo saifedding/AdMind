@@ -16,7 +16,13 @@ from app.models import Ad, Competitor
 from app.database import get_db
 from app.services.enhanced_ad_extraction import EnhancedAdExtractionService
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, 
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+# Set logging level for specific modules
+logging.getLogger('app.services.creative_comparison_service').setLevel(logging.INFO)
+logging.getLogger('app.services.enhanced_ad_extraction').setLevel(logging.INFO)
 
 
 class FacebookAdsScraperConfig:

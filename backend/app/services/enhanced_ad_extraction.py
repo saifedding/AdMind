@@ -55,74 +55,65 @@ class EnhancedAdExtractionService:
     
     def _generate_content_signature(self, ad_data: Dict) -> str:
         """
-        Generate a content signature for ad grouping using conditional logic:
-        - If ad copy is longer than 10 words, use the copy as the signature base
-        - Otherwise, use the media URLs as the signature base (prioritizing media)
+        Generate a content signature for an ad based on its content
+        This is used to group identical ads together quickly
         
         Args:
-            ad_data: The ad data dictionary containing creatives
+            ad_data: Ad data object
             
         Returns:
-            A SHA256 hash string representing the content signature
+            Content signature string
         """
-        # Default to empty signature in case of errors
-        signature_base = ""
+        ad_id = ad_data.get("ad_archive_id", ad_data.get("id", "unknown"))
+        self.logger.info(f"Generating content signature for ad {ad_id}")
         
-        try:
-            # Extract primary ad copy from creatives
-            ad_copy = ""
-            if creatives := ad_data.get("creatives", []):
-                for creative in creatives:
-                    if body := creative.get("body"):
-                        if body and isinstance(body, str) and len(body.strip()) > 0:
-                            ad_copy = body.strip()
-                            break
+        signature_components = []
+        
+        # Add media URL if available
+        if media_url := ad_data.get("media_url"):
+            signature_components.append(f"media:{media_url}")
+            self.logger.info(f"Using primary media URL for signature: {media_url[:50]}...")
             
-            # Normalize ad copy (lowercase and strip)
-            normalized_copy = ad_copy.lower().strip() if ad_copy else ""
-            
-            # Calculate word count (split by whitespace)
-            word_count = len(normalized_copy.split()) if normalized_copy else 0
-            
-            self.logger.debug(f"Ad copy word count: {word_count}")
-            
-            # Apply conditional logic
-            if word_count > 10:
-                # Long-form content: Use ad copy as signature
-                self.logger.debug(f"Using ad copy as signature base (words: {word_count})")
-                signature_base = normalized_copy
-            else:
-                # Short content: Use media URLs as signature
-                media_urls = []
-                for creative in ad_data.get("creatives", []):
-                    for media_item in creative.get("media", []):
-                        if url := media_item.get("url"):
-                            # Clean URL by removing query parameters
-                            base_url = url.split('?')[0] if '?' in url else url
-                            media_urls.append(base_url)
+        # Add text content from creatives
+        if creatives := ad_data.get("creatives"):
+            for i, creative in enumerate(creatives):
+                if body := creative.get("body"):
+                    # Normalize text by removing spaces, lowercasing
+                    normalized_body = body.lower().strip()
+                    signature_components.append(f"text:{normalized_body[:100]}")
+                    self.logger.info(f"Added creative {i} text to signature: {normalized_body[:50]}...")
+                    
+                # Add media URLs from creatives
+                if media := creative.get("media"):
+                    for j, media_item in enumerate(media):
+                        if media_url := media_item.get("url"):
+                            signature_components.append(f"creative_media:{media_url}")
+                            self.logger.info(f"Added creative {i} media {j} URL to signature: {media_url[:50]}...")
+        
+        # Also include image and video URLs if available
+        if image_urls := ad_data.get("main_image_urls", []):
+            for i, url in enumerate(image_urls):
+                signature_components.append(f"image:{url}")
+                self.logger.info(f"Added image URL {i} to signature: {url[:50]}...")
                 
-                # Remove duplicates and sort
-                unique_media_urls = sorted(set(media_urls))
-                
-                # Join URLs into a single string
-                signature_base = ",".join(unique_media_urls)
-                self.logger.debug(f"Using media URLs as signature base (count: {len(unique_media_urls)})")
+        if video_urls := ad_data.get("main_video_urls", []):
+            for i, url in enumerate(video_urls):
+                signature_components.append(f"video:{url}")
+                self.logger.info(f"Added video URL {i} to signature: {url[:50]}...")
+        
+        if not signature_components:
+            # Fallback: use ad_archive_id as signature
+            fallback = str(ad_id)
+            self.logger.warning(f"No content found for signature, using ad ID as fallback: {fallback}")
+            return fallback
             
-            # Generate SHA256 hash
-            if not signature_base:
-                # Fallback to ad_archive_id if no content for signature
-                signature_base = str(ad_data.get("ad_archive_id", "unknown"))
-                self.logger.warning(f"No content for signature, using ad_archive_id: {signature_base}")
-            
-            # Generate SHA256 hash from signature base
-            signature = hashlib.sha256(signature_base.encode('utf-8')).hexdigest()
-            return signature
-            
-        except Exception as e:
-            self.logger.error(f"Error generating content signature: {e}")
-            # Fallback to ad_archive_id on error
-            fallback = str(ad_data.get("ad_archive_id", "error"))
-            return hashlib.sha256(fallback.encode('utf-8')).hexdigest()
+        # Generate a hash of all components
+        signature_text = "|".join(signature_components)
+        import hashlib
+        signature = hashlib.md5(signature_text.encode()).hexdigest()
+        
+        self.logger.info(f"Generated signature {signature} for ad {ad_id} from {len(signature_components)} components")
+        return signature
     
     def _update_ad_set_metadata(self, ad_set_id: int) -> None:
         """
@@ -363,49 +354,80 @@ class EnhancedAdExtractionService:
         Returns:
             Dictionary mapping content_signature to list of ad data
         """
+        self.logger.info(f"Starting ad grouping process for {len(ads_data)} ads")
+        
         ad_groups = {}  # Signature -> list of ads with that signature
         
         # First pass: group identical ads (exact same content signature)
         for ad_data in ads_data:
+            # Extract ad identifier
+            ad_id = ad_data.get("ad_archive_id", ad_data.get("id", "unknown"))
+            
             # Generate the content signature based on ad copy or media
             content_signature = self._generate_content_signature(ad_data)
+            self.logger.info(f"Generated content signature for ad {ad_id}: {content_signature[:8]}...")
             
             if content_signature not in ad_groups:
+                self.logger.info(f"Creating new ad group with signature {content_signature[:8]}...")
                 ad_groups[content_signature] = []
                 
             ad_groups[content_signature].append(ad_data)
+            self.logger.info(f"Added ad {ad_id} to group {content_signature[:8]}...")
+        
+        self.logger.info(f"First-pass grouping complete: {len(ad_groups)} groups created")
+        for sig, ads in ad_groups.items():
+            self.logger.info(f"Group {sig[:8]}: {len(ads)} ads, first ad: {ads[0].get('ad_archive_id', ads[0].get('id', 'unknown'))}")
         
         # Second pass: try to merge groups with similar content
         # This uses our creative comparison service for more sophisticated matching
         signatures = list(ad_groups.keys())
-        merged_signatures = set()  # Signatures that have been merged into other groups
+        merged_signatures = set()
+        
+        self.logger.info(f"Starting second-pass group merging for {len(signatures)} groups")
         
         # For each group
         for i, sig1 in enumerate(signatures):
             if sig1 in merged_signatures:
+                self.logger.debug(f"Skipping already merged group {sig1[:8]}...")
                 continue
+            
+            group1_id = f"{sig1[:8]}({len(ad_groups[sig1])} ads)"
+            self.logger.info(f"Processing group {i+1}/{len(signatures)}: {group1_id}")
                 
             # Compare with every other group
             for j in range(i + 1, len(signatures)):
                 sig2 = signatures[j]
                 if sig2 in merged_signatures:
+                    self.logger.debug(f"Skipping already merged group {sig2[:8]}...")
                     continue
+                
+                group2_id = f"{sig2[:8]}({len(ad_groups[sig2])} ads)"
+                self.logger.info(f"Comparing group {group1_id} with group {group2_id}")
                 
                 # Check if representative ads from each group are similar
                 if self._are_ad_groups_similar(ad_groups[sig1], ad_groups[sig2]):
                     # Merge groups
+                    self.logger.info(f"Merging groups: {group1_id} + {group2_id}")
                     ad_groups[sig1].extend(ad_groups[sig2])
                     merged_signatures.add(sig2)
-                    self.logger.info(f"Merged ad groups with signatures: {sig1[:8]} and {sig2[:8]}")
+                    self.logger.info(f"Group {sig1[:8]} now has {len(ad_groups[sig1])} ads after merging")
+                else:
+                    self.logger.info(f"Groups {group1_id} and {group2_id} are not similar enough to merge")
         
         # Remove merged groups
         for sig in merged_signatures:
+            self.logger.debug(f"Removing merged group {sig[:8]}...")
             ad_groups.pop(sig, None)
             
-        # Log grouping results
-        self.logger.info(f"Grouped {len(ads_data)} ads into {len(ad_groups)} sets")
+        # Log final grouping results
+        self.logger.info(f"Ad grouping complete: {len(ads_data)} ads grouped into {len(ad_groups)} sets")
         for sig, ads in ad_groups.items():
-            self.logger.debug(f"  Group {sig[:8]}: {len(ads)} ads")
+            self.logger.info(f"Final group {sig[:8]}: {len(ads)} ads")
+            if len(ads) > 1:
+                ad_ids = [ad.get('ad_archive_id', ad.get('id', 'unknown')) for ad in ads[:5]]
+                if len(ads) > 5:
+                    ad_ids.append("...")
+                self.logger.info(f"   Ads in group: {', '.join(ad_ids)}")
             
         return ad_groups
     
@@ -424,369 +446,316 @@ class EnhancedAdExtractionService:
         ad1 = group1[0]
         ad2 = group2[0]
         
+        # Log the representative ads being compared
+        ad1_id = ad1.get("ad_archive_id", ad1.get("id", "unknown"))
+        ad2_id = ad2.get("ad_archive_id", ad2.get("id", "unknown"))
+        self.logger.info(f"Comparing representative ads: {ad1_id} vs {ad2_id}")
+        
+        # Extract basic ad details for logging
+        ad1_type = ad1.get("media_type", "unknown")
+        ad2_type = ad2.get("media_type", "unknown")
+        self.logger.info(f"Ad types: {ad1_type} vs {ad2_type}")
+        
+        # Check if both ads have text
+        ad1_text = ""
+        ad2_text = ""
+        if ad1.get("creatives") and ad1["creatives"] and "body" in ad1["creatives"][0]:
+            ad1_text = ad1["creatives"][0]["body"]
+        if ad2.get("creatives") and ad2["creatives"] and "body" in ad2["creatives"][0]:
+            ad2_text = ad2["creatives"][0]["body"]
+            
+        if ad1_text and ad2_text:
+            text_match = "identical" if ad1_text == ad2_text else "different"
+            self.logger.info(f"Ad text is {text_match}")
+            self.logger.debug(f"Ad1 text: {ad1_text[:100]}...")
+            self.logger.debug(f"Ad2 text: {ad2_text[:100]}...")
+            
+        # Check media URLs
+        ad1_urls = self._extract_media_urls(ad1)
+        ad2_urls = self._extract_media_urls(ad2)
+        
+        if ad1_urls and ad2_urls:
+            self.logger.info(f"Ad1 media URLs: {', '.join([url[:40]+'...' for url in ad1_urls[:2]])}")
+            self.logger.info(f"Ad2 media URLs: {', '.join([url[:40]+'...' for url in ad2_urls[:2]])}")
+            
+            # Check for exact URL matches
+            common_urls = set(ad1_urls).intersection(set(ad2_urls))
+            if common_urls:
+                self.logger.info(f"Found {len(common_urls)} identical media URLs between the ads")
+            
         # Use creative comparison service to check similarity
-        return self.creative_comparison_service.should_group_ads(ad1, ad2)
+        result = self.creative_comparison_service.should_group_ads(ad1, ad2)
+        self.logger.info(f"Creative comparison service decision: ads should{'' if result else ' not'} be grouped")
+        return result
+        
+    def _extract_media_urls(self, ad: Dict) -> List[str]:
+        """Extract all media URLs from an ad for logging purposes"""
+        urls = []
+        
+        # Check direct media URL
+        if ad.get("media_url"):
+            urls.append(ad["media_url"])
+            
+        # Check image URLs
+        if ad.get("main_image_urls"):
+            urls.extend(ad["main_image_urls"])
+            
+        # Check video URLs
+        if ad.get("main_video_urls"):
+            urls.extend(ad["main_video_urls"])
+            
+        # Check creative media
+        if ad.get("creatives"):
+            for creative in ad["creatives"]:
+                if creative.get("media"):
+                    for media in creative["media"]:
+                        if media.get("url"):
+                            urls.append(media["url"])
+                            
+        return urls
     
-    def _find_or_create_ad_set(self, content_signature: str) -> Optional[AdSet]:
+    def find_or_create_ad_set_for_ad(self, ad_data: Dict) -> Optional[AdSet]:
         """
-        Find or create an AdSet with the given content signature
+        Find an existing AdSet for an ad by comparing against representative ads,
+        or create a new AdSet if no match is found.
+        
+        This replaces the signature-based grouping with direct visual comparison
+        against existing AdSets.
         
         Args:
-            content_signature: Unique content signature for the ad set
+            ad_data: Ad data to find a matching AdSet for
             
         Returns:
             AdSet object or None if creation failed
         """
         try:
-            # Try to find existing ad set
-            ad_set = self.db.query(AdSet).filter(AdSet.content_signature == content_signature).first()
+            ad_id = ad_data.get("ad_archive_id", "unknown")
+            self.logger.info(f"Finding AdSet for ad {ad_id} using direct comparison")
             
-            if ad_set:
-                return ad_set
+            # Fetch all existing AdSets with their best_ad
+            ad_sets = self.db.query(AdSet).all()
+            self.logger.info(f"Found {len(ad_sets)} existing AdSets to compare against")
+            
+            # Track best match for debugging
+            best_match = None
+            best_match_id = None
+            
+            # For each AdSet, check if the ad should be grouped with its representative
+            for ad_set in ad_sets:
+                # Skip AdSets without a best_ad
+                if not ad_set.best_ad_id:
+                    continue
+                    
+                # Get the representative ad for this AdSet
+                representative_ad = self.db.query(Ad).filter(Ad.id == ad_set.best_ad_id).first()
+                if not representative_ad:
+                    self.logger.warning(f"AdSet {ad_set.id} has best_ad_id {ad_set.best_ad_id} but ad not found")
+                    continue
+                    
+                # Convert representative ad to dict format for comparison with necessary fields
+                try:
+                    # Start with the basic enhanced format
+                    representative_ad_data = representative_ad.to_enhanced_format()
+                    
+                    # Add required fields for comparison that might be missing
+                    representative_ad_data["ad_archive_id"] = representative_ad.ad_archive_id
+                    
+                    # Try to determine media type
+                    media_type = "unknown"
+                    if representative_ad.creatives and len(representative_ad.creatives) > 0:
+                        for creative in representative_ad.creatives:
+                            if creative.get("media"):
+                                for media in creative.get("media", []):
+                                    if media.get("type") == "image":
+                                        media_type = "image"
+                                        break
+                                    elif media.get("type") == "video":
+                                        media_type = "video"
+                                        break
+                    
+                    representative_ad_data["media_type"] = media_type
+                    
+                    # Ensure creatives have the required structure
+                    if "creatives" not in representative_ad_data or not representative_ad_data["creatives"]:
+                        representative_ad_data["creatives"] = []
+                    
+                    # Ensure we have at least one creative with proper structure for comparison
+                    if not representative_ad_data["creatives"]:
+                        # Create a minimal creative if none exists
+                        representative_ad_data["creatives"] = [{
+                            "id": f"{representative_ad.ad_archive_id}-0",
+                            "body": "",
+                            "title": "",
+                            "media": []
+                        }]
+                    else:
+                        # Ensure each creative has the minimal required fields
+                        for i, creative in enumerate(representative_ad_data["creatives"]):
+                            if "id" not in creative:
+                                creative["id"] = f"{representative_ad.ad_archive_id}-{i}"
+                            if "body" not in creative:
+                                creative["body"] = ""
+                            if "title" not in creative:
+                                creative["title"] = ""
+                            if "media" not in creative:
+                                creative["media"] = []
+                    
+                    rep_ad_id = representative_ad.ad_archive_id
+                    self.logger.info(f"Comparing ad {ad_id} with representative ad {rep_ad_id} of AdSet {ad_set.id}")
+                    
+                    # Use the creative comparison service to compare the ads
+                    should_group = self.creative_comparison_service.should_group_ads(
+                        ad_data, representative_ad_data
+                    )
+                    
+                    if should_group:
+                        self.logger.info(f"Match found! Grouping ad {ad_id} with AdSet {ad_set.id}")
+                        best_match = ad_set
+                        best_match_id = rep_ad_id
+                        break
+                except Exception as e:
+                    self.logger.warning(f"Error comparing ad {ad_id} with representative ad {representative_ad.ad_archive_id}: {e}")
+                    continue
+            
+            # If we found a match, return it
+            if best_match:
+                self.logger.info(f"Ad {ad_id} matched with AdSet {best_match.id} (rep ad: {best_match_id})")
+                return best_match
                 
+            # If no match found, create a new AdSet
+            self.logger.info(f"No matching AdSet found for ad {ad_id}, creating new AdSet")
+            
+            # Generate a content signature for reference (not for matching)
+            content_signature = self._generate_content_signature(ad_data)
+            
             # Create new ad set
-            ad_set = AdSet(
+            new_ad_set = AdSet(
                 content_signature=content_signature,
-                variant_count=0  # Will be updated later
+                variant_count=1,  # Initial count is 1 (this ad)
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
             )
-            self.db.add(ad_set)
+            self.db.add(new_ad_set)
             self.db.flush()  # Get the ID without committing
             
-            return ad_set
+            self.logger.info(f"Created new AdSet {new_ad_set.id} for ad {ad_id}")
+            return new_ad_set
             
         except Exception as e:
-            self.logger.error(f"Error finding/creating ad set: {e}")
-            return None
-
-    def transform_raw_data_to_enhanced_format(self, file_data_list: List[Dict]) -> Dict:
-        """
-        Transform raw data from Facebook Ads Library to the enhanced format
-        
-        Args:
-            file_data_list: List of raw response data from Facebook Ads Library API
-            
-        Returns:
-            Enhanced data structure matching frontend_payload_final.json format
-        """
-        try:
-            # Base structure
-            result = {
-                "advertiser_info": {},
-                "campaigns": []
-            }
-            
-            if not file_data_list:
-                self.logger.warning("Empty file_data_list provided to transform_raw_data_to_enhanced_format")
-                return result
-                
-            # Extract all ads from all responses
-            all_ads = []
-            
-            for file_data in file_data_list:
-                try:
-                    # Check if this is a valid response with ad_library_main
-                    if not isinstance(file_data, dict):
-                        self.logger.warning(f"Invalid file_data type: {type(file_data)}")
-                        continue
-                        
-                    if "data" not in file_data or "ad_library_main" not in file_data["data"]:
-                        self.logger.warning("Invalid response data structure")
-                        continue
-                        
-                    # Extract edges from response
-                    edges = file_data["data"]["ad_library_main"].get("search_results_connection", {}).get("edges", [])
-                    
-                    for edge in edges:
-                        if "node" not in edge:
-                            continue
-                            
-                        # Extract collated results (individual ads)
-                        collated_results = edge["node"].get("collated_results", [])
-                        
-                        for ad_data in collated_results:
-                            try:
-                                # Build clean ad object
-                                clean_ad = self.build_clean_ad_object(ad_data)
-                                if clean_ad:
-                                    all_ads.append(clean_ad)
-                            except Exception as e:
-                                self.logger.error(f"Error processing individual ad: {e}")
-                                continue
-                except Exception as e:
-                    self.logger.error(f"Error processing file_data: {e}")
-                    continue
-            
-            # Group ads by campaign
-            campaigns_by_id = {}
-            
-            for ad_data in all_ads:
-                try:
-                    # Extract campaign info
-                    meta = ad_data.get("meta", {})
-                    campaign_id = meta.get("campaign_id", "unknown")
-                    campaign_name = meta.get("campaign_name", "Unknown Campaign")
-                    
-                    if campaign_id not in campaigns_by_id:
-                        campaigns_by_id[campaign_id] = {
-                            "id": campaign_id,
-                            "name": campaign_name,
-                            "ads": []
-                        }
-                        
-                    # Add ad to campaign
-                    campaigns_by_id[campaign_id]["ads"].append(ad_data)
-                    
-                    # Extract advertiser info from first ad
-                    if not result["advertiser_info"] and ad_data.get("meta"):
-                        result["advertiser_info"] = {
-                            "id": meta.get("page_id"),
-                            "name": meta.get("page_name"),
-                            "url": meta.get("page_url")
-                        }
-                except Exception as e:
-                    self.logger.error(f"Error grouping ad by campaign: {e}")
-                    continue
-            
-            # For each campaign, group ads into sets based on similarity
-            for campaign_id, campaign in campaigns_by_id.items():
-                try:
-                    # Group ads by similarity
-                    ad_groups = self._group_ads_into_sets(campaign["ads"])
-                    
-                    # Replace campaign's ads with grouped ads
-                    # We'll keep all ads but organize them by set for the database
-                    campaign["ad_groups"] = ad_groups
-                except Exception as e:
-                    self.logger.error(f"Error grouping ads for campaign {campaign_id}: {e}")
-                    campaign["ad_groups"] = campaign["ads"]  # Fallback to original ads
-                
-            # Add campaigns to result
-            result["campaigns"] = list(campaigns_by_id.values())
-            
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"Error transforming raw data: {e}")
-            return {"advertiser_info": {}, "campaigns": []}
-
-    def save_enhanced_ads_to_database(self, enhanced_data: Dict) -> Dict:
-        """
-        Save the enhanced ad data to the database
-        
-        Args:
-            enhanced_data: Enhanced ad data structure
-            
-        Returns:
-            Dictionary with statistics about the operation
-        """
-        stats = {
-            'total_processed': 0,
-            'created': 0,
-            'updated': 0,
-            'errors': 0,
-            'competitors_created': 0,
-            'competitors_updated': 0,
-            'campaigns_processed': 0
-        }
-        
-        try:
-            advertiser_info = enhanced_data.get("advertiser_info", {})
-            campaigns = enhanced_data.get("campaigns", [])
-            
-            # Process each campaign
-            for campaign in campaigns:
-                stats['campaigns_processed'] += 1
-                campaign_id = campaign.get("id") # Changed from campaign_id to id
-                platforms = campaign.get("platforms", []) # This will be removed by the new _group_ads_into_sets
-                
-                # Process each ad in the campaign
-                for ad_data in campaign.get("ads", []): # Changed from campaign.get("ads", []) to campaign.get("ad_groups", [])
-                    try:
-                        stats['total_processed'] += 1
-                        
-                        # Find or create competitor
-                        competitor = self._find_or_create_competitor_from_advertiser(advertiser_info)
-                        if competitor:
-                            if hasattr(competitor, '_is_new'):
-                                stats['competitors_created'] += 1
-                            else:
-                                stats['competitors_updated'] += 1
-                            
-                            # Create or update ad with enhanced data
-                            ad, is_new = self._create_or_update_enhanced_ad(
-                                ad_data, competitor.id, campaign_id, platforms, advertiser_info
-                            )
-                            
-                            if is_new:
-                                stats['created'] += 1
-                            else:
-                                stats['updated'] += 1
-                        else:
-                            stats['errors'] += 1
-                            logger.error(f"Cannot save ad {ad_data.get('ad_archive_id', 'unknown')} - competitor not found/created")
-                            
-                    except Exception as e:
-                        stats['errors'] += 1
-                        logger.error(f"Error saving enhanced ad {ad_data.get('ad_archive_id', 'unknown')}: {e}")
-            
-            # Commit all changes
-            self.db.commit()
-            logger.info(f"Successfully saved enhanced ads data. Stats: {stats}")
-            
-        except Exception as e:
-            self.db.rollback()
-            logger.error(f"Failed to commit enhanced database changes: {e}")
-            stats['errors'] = stats['total_processed']
-            stats['created'] = 0
-            stats['updated'] = 0
-        
-        return stats
-    
-    def _find_or_create_competitor_from_advertiser(self, advertiser_info: Dict) -> Optional[Competitor]:
-        """
-        Find existing competitor from advertiser info or create a new one if needed
-        
-        Args:
-            advertiser_info: Dictionary with advertiser information
-            
-        Returns:
-            Competitor instance or None if creation failed
-        """
-        page_id = advertiser_info.get('id') 
-        page_name = advertiser_info.get('name')
-        page_url = advertiser_info.get('url')
-        
-        # If we don't have either a page_id or page_name, we can't proceed
-        if not (page_id or page_name):
-            logger.warning("Missing both page_id and page_name in advertiser info")
-            return None
-        
-        try:
-            # Try to find existing competitor by page_id if available
-            existing_competitor = None
-            if page_id:
-                existing_competitor = self.db.query(Competitor).filter_by(page_id=page_id).first()
-            
-            # If not found by page_id but we have a name, try finding by name (fuzzy match)
-            if not existing_competitor and page_name:
-                existing_competitor = self.db.query(Competitor).filter(
-                    Competitor.name.ilike(f"%{page_name}%")
-                ).first()
-            
-            if existing_competitor:
-                # Update competitor info
-                if page_name:
-                    existing_competitor.name = page_name
-                if page_url:
-                    existing_competitor.page_url = page_url
-                if page_id and not existing_competitor.page_id:
-                    existing_competitor.page_id = page_id
-                existing_competitor.updated_at = datetime.utcnow()
-                return existing_competitor
-            
-            # Create new competitor if allowed
-            if page_name:  # At minimum we need a name
-                new_competitor = Competitor(
-                    name=page_name,
-                    page_id=page_id,
-                    page_url=page_url,
-                    is_active=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
-                )
-                # Mark as new for stats tracking
-                setattr(new_competitor, '_is_new', True)
-                self.db.add(new_competitor)
-                self.db.flush()  # Get the ID without committing
-                logger.info(f"Created new competitor: {page_name} (ID: {new_competitor.id})")
-                return new_competitor
-                
-            logger.warning(f"Insufficient data to create competitor: page_id={page_id}, page_name={page_name}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error finding/creating competitor: {e}")
+            self.logger.error(f"Error finding/creating ad set via direct comparison: {e}")
             return None
     
-    def _create_or_update_enhanced_ad(self, ad_data: Dict, competitor_id: int, 
-                                   campaign_id: str, platforms: List[str], 
-                                   advertiser_info: Dict) -> Tuple[Optional[Ad], bool]:
+    def _create_or_update_enhanced_ad(
+        self,
+        ad_data: Dict,
+        competitor_id: int,
+        campaign_name: str = None,
+        platforms: List[str] = None,
+        meta_data: Dict = None,
+    ) -> Tuple[Optional[Ad], bool]:
         """
-        Create or update an ad in the database with enhanced data
+        Create or update an ad with enhanced extraction data.
         
         Args:
-            ad_data: Enhanced ad data
+            ad_data: Ad data to create or update
             competitor_id: ID of the competitor
-            campaign_id: Campaign ID
-            platforms: List of platforms the ad is running on
-            advertiser_info: Advertiser information
+            campaign_name: Optional campaign name
+            platforms: Optional list of platforms where the ad was found
+            meta_data: Optional metadata for the ad
             
         Returns:
-            Tuple of (Ad object or None, is_new)
+            Tuple of (Ad object, is_new flag)
         """
         try:
-            # Extract ad archive ID
-            ad_archive_id = ad_data.get("ad_archive_id", "")
-            
-            if not ad_archive_id:
-                self.logger.error("Missing ad_archive_id, cannot save ad")
+            ad_id = ad_data.get("ad_archive_id", None)
+            if not ad_id:
+                self.logger.error("Ad data missing ad_archive_id, cannot process")
                 return None, False
+                
+            # Check if the ad already exists
+            existing_ad = self.db.query(Ad).filter(Ad.ad_archive_id == ad_id).first()
+            is_new = existing_ad is None
             
-            # Check if ad already exists
-            ad = self.db.query(Ad).filter(Ad.ad_archive_id == ad_archive_id).first()
-            is_new = False
+            # Enhanced data extraction
+            enhanced_data = self._extract_enhanced_ad_data(ad_data)
             
-            if not ad:
-                # Create new ad
-                ad = Ad(
-                    ad_archive_id=ad_archive_id,
+            if is_new:
+                # Create a new ad
+                
+                # First, find or create the appropriate AdSet using direct comparison
+                ad_set = self.find_or_create_ad_set_for_ad(ad_data)
+                if not ad_set:
+                    self.logger.error(f"Failed to find or create AdSet for ad {ad_id}")
+                    return None, False
+                
+                # Create the new ad
+                new_ad = Ad(
+                    ad_archive_id=ad_id,
                     competitor_id=competitor_id,
-                    date_found=datetime.now()
+                    ad_set_id=ad_set.id,
+                    date_found=datetime.utcnow(),
+                    meta=ad_data.get("meta", {}),
+                    targeting=ad_data.get("targeting", {}),
+                    lead_form=ad_data.get("lead_form", {}),
+                    creatives=ad_data.get("creatives", []),
+                    duration_days=enhanced_data.get("duration_days", 0)
                 )
-                self.db.add(ad)
-                is_new = True
-            
-            # Get ad_set_id from signature (may be None if we can't generate a signature)
-            content_signature = self._generate_content_signature(ad_data)
-            ad_set = None
-            if content_signature:
-                ad_set = self._find_or_create_ad_set(content_signature)
-            
-            # Link ad to ad set if available
-            if ad_set:
-                ad.ad_set_id = ad_set.id
-            
-            # Update ad with enhanced data
-            ad.meta = ad_data.get("meta", {})
-            ad.targeting = ad_data.get("targeting", {})
-            ad.lead_form = ad_data.get("lead_form", {})
-            ad.creatives = ad_data.get("creatives", [])
-            
-            # Update raw_data if not already set
-            if not ad.raw_data:
-                ad.raw_data = ad_data.get("raw_data")
-            
-            # Set duration_days if available in metadata
-            meta = ad_data.get("meta", {})
-            if "start_date" in meta:
-                is_active = meta.get("is_active", False) # Assuming is_active is in meta
-                ad.duration_days = self.calculate_duration_days(
-                    meta.get("start_date"), 
-                    meta.get("end_date"),
-                    is_active
-                )
-            
-            # Flush to get the ad ID
-            self.db.flush()
-            
-            # If we have an ad set, update its metadata
-            if ad_set:
-                self._update_ad_set_metadata(ad_set.id)
-            
-            return ad, is_new
-            
+                
+                # Store campaign name in meta if provided
+                if campaign_name and new_ad.meta:
+                    new_ad.meta["campaign_name"] = campaign_name
+                
+                # Store platforms in meta if provided
+                if platforms and new_ad.meta:
+                    new_ad.meta["platforms"] = platforms
+                
+                self.db.add(new_ad)
+                self.db.flush()
+                
+                # Update the ad set's metadata
+                if not ad_set.best_ad_id:
+                    ad_set.best_ad_id = new_ad.id
+                    
+                ad_set.variant_count = ad_set.variant_count + 1
+                ad_set.updated_at = datetime.utcnow()
+                
+                self.logger.info(f"Updated AdSet metadata: id={ad_set.id}, variants={ad_set.variant_count}")
+                
+                return new_ad, True
+                
+            else:
+                # Update existing ad
+                existing_ad.updated_at = datetime.utcnow()
+                
+                # Update duration_days if available in enhanced data
+                if "duration_days" in enhanced_data:
+                    existing_ad.duration_days = enhanced_data.get("duration_days")
+                
+                # Update meta data if provided
+                if meta_data and existing_ad.meta:
+                    existing_ad.meta.update(meta_data)
+                
+                # Update campaign name in meta if provided
+                if campaign_name and existing_ad.meta:
+                    existing_ad.meta["campaign_name"] = campaign_name
+                
+                # Update platforms in meta if provided
+                if platforms and existing_ad.meta:
+                    existing_platforms = set(existing_ad.meta.get("platforms", []))
+                    for platform in platforms:
+                        existing_platforms.add(platform)
+                    existing_ad.meta["platforms"] = list(existing_platforms)
+                
+                # Update creatives if provided
+                if ad_data.get("creatives"):
+                    existing_ad.creatives = ad_data.get("creatives")
+                
+                self.db.flush()
+                return existing_ad, False
+                
         except Exception as e:
             self.logger.error(f"Error creating/updating enhanced ad: {e}")
+            self.db.rollback()
             return None, False
     
     def process_raw_responses(self, raw_responses: List[Dict]) -> Tuple[Dict, Dict]:
@@ -808,3 +777,105 @@ class EnhancedAdExtractionService:
         stats = self.save_enhanced_ads_to_database(enhanced_data)
         
         return enhanced_data, stats 
+
+    def _extract_enhanced_ad_data(self, ad_data: Dict) -> Dict:
+        """
+        Extract enhanced ad data from ad_data into a format suitable for storage.
+        
+        Args:
+            ad_data: Raw ad data to extract enhanced data from
+            
+        Returns:
+            Dictionary with enhanced ad data
+        """
+        try:
+            enhanced_data = {}
+            
+            # Extract basic metadata
+            meta = ad_data.get("meta", {})
+            enhanced_data["advertiser_name"] = meta.get("page_name", "")
+            enhanced_data["advertiser_id"] = meta.get("page_id", "")
+            enhanced_data["start_date"] = meta.get("start_date", "")
+            enhanced_data["end_date"] = meta.get("end_date", None)
+            enhanced_data["is_active"] = meta.get("is_active", False)
+            
+            # Extract primary texts
+            primary_text = ""
+            title = ""
+            link_description = ""
+            cta = ""
+            
+            # Extract creatives data
+            creatives = ad_data.get("creatives", [])
+            if creatives and len(creatives) > 0:
+                # Use first creative as primary
+                primary_creative = creatives[0]
+                primary_text = primary_creative.get("body", "")
+                title = primary_creative.get("title", "")
+                link_description = primary_creative.get("description", "")
+                cta = primary_creative.get("call_to_action", "")
+            
+            enhanced_data["primary_text"] = primary_text
+            enhanced_data["title"] = title
+            enhanced_data["link_description"] = link_description
+            enhanced_data["cta"] = cta
+            
+            # Extract media URLs
+            enhanced_data["image_urls"] = ad_data.get("main_image_urls", [])
+            enhanced_data["video_urls"] = ad_data.get("main_video_urls", [])
+            enhanced_data["primary_media_url"] = ad_data.get("media_url", "")
+            
+            # Extract other useful data
+            enhanced_data["targeting"] = ad_data.get("targeting", {})
+            enhanced_data["lead_form"] = ad_data.get("lead_form", {})
+            enhanced_data["media_type"] = ad_data.get("media_type", "unknown")
+            
+            # Calculate duration in days if dates are available
+            if enhanced_data["start_date"]:
+                enhanced_data["duration_days"] = self.calculate_duration_days(
+                    enhanced_data["start_date"], 
+                    enhanced_data["end_date"],
+                    enhanced_data["is_active"]
+                )
+            
+            return enhanced_data
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting enhanced ad data: {e}")
+            return {}
+
+    def calculate_duration_days(self, start_date_str: str, end_date_str: Optional[str], is_active: bool) -> int:
+        """
+        Calculate the duration of an ad in days.
+        
+        Args:
+            start_date_str: Start date string
+            end_date_str: End date string, or None if not ended
+            is_active: Whether the ad is still active
+            
+        Returns:
+            Number of days the ad has been or was running
+        """
+        try:
+            # Parse start date
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+            if not start_date:
+                return 0
+                
+            # Parse end date or use current date if ad is active
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            elif is_active:
+                # If ad is active and no end date, use current date
+                end_date = datetime.now().date()
+            else:
+                # If ad is not active and no end date, assume it ran for 1 day
+                return 1
+                
+            # Calculate difference in days
+            duration = (end_date - start_date).days
+            return max(1, duration)  # Ensure at least 1 day
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating duration days: {e}")
+            return 0 
