@@ -57,6 +57,29 @@ const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?:
   }
 };
 
+const formatAdSetDuration = (startDateStr?: string, endDateStr?: string): { formattedDate: string | null, duration: number | null } => {
+  if (!startDateStr || !endDateStr) return { formattedDate: null, duration: null };
+  try {
+    const startDate = parseISO(startDateStr);
+    const endDate = parseISO(endDateStr);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null };
+    
+    let duration = differenceInDays(endDate, startDate);
+    duration = Math.max(duration, 1); // An ad set exists for at least 1 day
+
+    const formattedStartDate = format(startDate, 'MMM d, yyyy');
+    const formattedEndDate = format(endDate, 'MMM d, yyyy');
+
+    return { 
+      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
+      duration,
+    };
+  } catch (error) {
+    console.error("Error formatting ad set duration:", error);
+    return { formattedDate: null, duration: null };
+  }
+};
+
 export function AdCard({ 
   ad, 
   isSelected = false, 
@@ -119,6 +142,10 @@ export function AdCard({
       : !ad.end_date || new Date(ad.end_date) >= new Date());
 
   const adDuration = formatAdDuration(ad.start_date, ad.end_date, isActive);
+  const adSetDuration = formatAdSetDuration(ad.ad_set_first_seen_date, ad.ad_set_last_seen_date);
+
+  // Fallback for ad set date range if not available
+  const displayAdSetDate = ad.variant_count && ad.variant_count > 1;
 
   // Duration badge logic
   const durationDays = adDuration.duration;
@@ -189,13 +216,7 @@ export function AdCard({
           </div>
         )}
         
-        {/* Ad Set Variants Badge */}
-        {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
-          <Badge className="absolute top-2 left-2 z-10 bg-photon-500 text-white flex items-center gap-1">
-            <Layers className="h-3 w-3" />
-            Set of {ad.variant_count}
-          </Badge>
-        )}
+        {/* Ad Set Variants Badge - REMOVED, now integrated into top badges */}
         
         {/* Standalone Ad Indicator */}
         {(!ad.variant_count || ad.variant_count <= 1) && !hideSetBadge && (
@@ -254,6 +275,15 @@ export function AdCard({
               title={isActive ? "Ad is currently active" : "Ad has ended"}>
                 {isActive ? "ACTIVE" : "ENDED"}
               </div>
+              
+              {/* Variant Count Badge */}
+              {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
+                <div className="px-1.5 py-0.5 rounded-md bg-indigo-500/90 text-white text-[10px] font-semibold tracking-wide shadow-sm"
+                     title={`${ad.variant_count} variants in this set`}>
+                  {ad.variant_count} Variants
+                </div>
+              )}
+
               {durationDays !== null && (
                 <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide shadow-sm ${durationBadgeClass}`}
                      title={`${durationDays} days running`}>
@@ -345,6 +375,23 @@ export function AdCard({
                 </button>
               </>
             )}
+
+            {/* Ad Set Lifetime */}
+            {displayAdSetDate && (
+              <div className="absolute bottom-2 left-2 z-20" title="Ad Set Lifetime">
+                <div className="flex items-center gap-1.5 rounded-md bg-black/50 backdrop-blur-sm px-2 py-1">
+                  <Layers className="h-3 w-3 text-indigo-300" />
+                  {adSetDuration.formattedDate ? (
+                    <>
+                      <span className="text-xs font-mono text-white">{adSetDuration.formattedDate}</span>
+                      <span className="text-xs font-mono text-indigo-300">({adSetDuration.duration}d)</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-mono text-gray-400">Date range N/A</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
         
@@ -394,19 +441,7 @@ export function AdCard({
                 </div>
               )}
 
-              {/* Ad Set Date Range */}
-              {ad.ad_set_first_seen_date && ad.ad_set_last_seen_date && (
-                <div className="flex items-center justify-between text-xs mt-1 pt-1 border-t border-border/20">
-                  <div className="flex items-center gap-1 text-muted-foreground" title="Ad Set Date Range">
-                    <Layers className="h-3 w-3" />
-                    <span>
-                      {format(parseISO(ad.ad_set_first_seen_date), 'MMM d')}
-                       - 
-                      {format(parseISO(ad.ad_set_last_seen_date), 'MMM d, yyyy')}
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* Ad Set Date Range - REMOVED, now overlaid on media */}
             </div>
             
             {/* Score Badge */}

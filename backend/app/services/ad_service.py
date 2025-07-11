@@ -86,6 +86,9 @@ class AdService:
                         ad_dto = self._convert_to_dto(first_ad)
                         ad_dto.ad_set_id = ad_set.id
                         ad_dto.variant_count = ad_set.variant_count
+                        ad_dto.ad_set_created_at = ad_set.created_at
+                        ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                        ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
                         ad_dtos.append(ad_dto)
             
             # Calculate pagination metadata
@@ -159,18 +162,18 @@ class AdService:
             if filters.max_duration_days is not None:
                 query = query.join(AdSet.best_ad).filter(Ad.duration_days <= filters.max_duration_days)
             
-            # Filter by date range
+            # Filter by date range on the AdSet's lifetime
             if filters.date_from:
-                query = query.join(AdSet.best_ad).filter(Ad.date_found >= filters.date_from)
+                query = query.filter(AdSet.last_seen_date >= filters.date_from)
                 
             if filters.date_to:
-                query = query.join(AdSet.best_ad).filter(Ad.date_found <= filters.date_to)
+                query = query.filter(AdSet.first_seen_date <= filters.date_to)
             
             # Filter by active status
             if filters.is_active is not None:
                 # Check the meta JSON field for is_active
                 query = query.join(AdSet.best_ad).filter(
-                    cast(Ad.meta['is_active'].astext, SQLAString) == str(filters.is_active).lower()
+                    Ad.meta['is_active'].as_string() == str(filters.is_active).lower()
                 )
             
             # Search in ad content

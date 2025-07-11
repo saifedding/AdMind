@@ -641,13 +641,9 @@ class EnhancedAdExtractionService:
                     if not ad_set.best_ad:
                         continue
                     rep_ad_data = ad_set.best_ad.to_enhanced_format()
-                    try:
-                        if self.creative_comparison_service.should_group_ads(ad_data, rep_ad_data):
-                            self.logger.info(f"Grouping ad {ad_id} with existing AdSet {ad_set.id} (hash match).")
-                            return ad_set
-                    except Exception as e:
-                        self.logger.warning(f"Comparison failed between ad {ad_id} and AdSet {ad_set.id}: {e}")
-                        continue
+                    if self.creative_comparison_service.should_group_ads(ad_data, rep_ad_data):
+                        self.logger.info(f"Grouping ad {ad_id} with existing AdSet {ad_set.id} (hash match).")
+                        return ad_set
 
             # 5. No suitable candidate – create a new AdSet
             self.logger.info(f"No AdSet matched. Creating new AdSet for hash {new_hash}.")
