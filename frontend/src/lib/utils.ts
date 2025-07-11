@@ -65,3 +65,26 @@ export function formatDate(dateString: string): string {
     return dateString;
   }
 }
+
+export function formatAdSetDuration(startDateStr?: string, endDateStr?: string): { formattedDate: string | null, duration: number | null } {
+  if (!startDateStr || !endDateStr) return { formattedDate: null, duration: null };
+  try {
+    const startDate = parseISO(startDateStr);
+    const endDate = parseISO(endDateStr);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null };
+    
+    let duration = differenceInDays(endDate, startDate);
+    duration = Math.max(duration, 1); // An ad set exists for at least 1 day
+
+    const formattedStartDate = format(startDate, 'MMM d, yyyy');
+    const formattedEndDate = format(endDate, 'MMM d, yyyy');
+
+    return { 
+      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
+      duration,
+    };
+  } catch (error) {
+    console.error("Error formatting ad set duration:", error);
+    return { formattedDate: null, duration: null };
+  }
+}

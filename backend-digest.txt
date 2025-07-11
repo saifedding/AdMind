@@ -28,9 +28,11 @@ Directory structure:
     │       ├── a220f98e38c2_add_form_details_running_countries_.py
     │       ├── a2feb1e20f39_add_meta_targeting_lead_form_and_.py
     │       ├── a7031f8c7467_add_enhanced_extraction_fields_and_keep_.py
+    │       ├── b1c2d3e4f5g6_add_date_range_to_ad_sets.py
     │       ├── d26d6ee785d3_add_enhanced_extraction_fields_hybrid_.py
     │       ├── df763544010c_update_adset_content_signature_to_.py
     │       ├── e9be095c41d0_create_ad_sets_table_and_link_to_ads.py
+    │       ├── ea1c3a5b9c21_enable_pg_trgm_and_index_ad_sets.py
     │       ├── f2b75a2c1596_add_is_active_field_to_adset.py
     │       └── f3e2b1c4a5d6_add_ad_set_id_to_ads.py
     └── app/
@@ -2386,6 +2388,57 @@ def downgrade() -> None:
 
 
 ================================================
+File: alembic/versions/b1c2d3e4f5g6_add_date_range_to_ad_sets.py
+================================================
+"""add_date_range_to_ad_sets
+
+Revision ID: b1c2d3e4f5g6
+Revises: ea1c3a5b9c21
+Create Date: 2025-07-11 13:00:00
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+revision: str = 'b1c2d3e4f5g6'
+down_revision: Union[str, None] = 'ea1c3a5b9c21'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    # 1. Add new columns
+    op.add_column('ad_sets', sa.Column('first_seen_date', sa.DateTime(timezone=True), nullable=True))
+    op.add_column('ad_sets', sa.Column('last_seen_date', sa.DateTime(timezone=True), nullable=True))
+    op.create_index('ix_ad_sets_first_seen_date', 'ad_sets', ['first_seen_date'])
+    op.create_index('ix_ad_sets_last_seen_date', 'ad_sets', ['last_seen_date'])
+
+    # 2. Backfill existing rows with min/max date_found from ads table
+    backfill_sql = """
+    UPDATE ad_sets AS s
+    SET first_seen_date = sub.min_date,
+        last_seen_date = sub.max_date
+    FROM (
+        SELECT ad_set_id, MIN(date_found) AS min_date, MAX(date_found) AS max_date
+        FROM ads
+        WHERE ad_set_id IS NOT NULL
+        GROUP BY ad_set_id
+    ) AS sub
+    WHERE s.id = sub.ad_set_id;
+    """
+    op.execute(backfill_sql)
+
+
+def downgrade() -> None:
+    op.drop_index('ix_ad_sets_last_seen_date', table_name='ad_sets')
+    op.drop_index('ix_ad_sets_first_seen_date', table_name='ad_sets')
+    op.drop_column('ad_sets', 'last_seen_date')
+    op.drop_column('ad_sets', 'first_seen_date') 
+
+
+================================================
 File: alembic/versions/d26d6ee785d3_add_enhanced_extraction_fields_hybrid_.py
 ================================================
 """add_enhanced_extraction_fields_hybrid_model
@@ -2571,6 +2624,43 @@ def downgrade() -> None:
     pass
     # ### end Alembic commands ###
 
+
+
+================================================
+File: alembic/versions/ea1c3a5b9c21_enable_pg_trgm_and_index_ad_sets.py
+================================================
+"""enable_pg_trgm_and_index_ad_sets
+
+Revision ID: ea1c3a5b9c21
+Revises: f3e2b1c4a5d6
+Create Date: 2025-07-11 12:30:00
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+revision: str = 'ea1c3a5b9c21'
+down_revision: Union[str, None] = 'f3e2b1c4a5d6'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    # Enable pg_trgm extension (safe if already enabled)
+    op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+    # Create GIN index on content_signature using pg_trgm for similarity search
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_ad_sets_content_signature_gin "
+        "ON ad_sets USING gin (content_signature gin_trgm_ops);"
+    )
+
+
+def downgrade() -> None:
+    # Drop the GIN index
+    op.execute("DROP INDEX IF EXISTS ix_ad_sets_content_signature_gin;")
+    # Optionally keep pg_trgm extension (safe); do not drop to avoid affecting other objects 
 
 
 ================================================
@@ -3376,6 +3466,10 @@ class AdSet(Base):
     
     # Count of ad variants in this set
     variant_count = Column(Integer, default=0, nullable=False)
+
+    # Earliest and latest discovery dates among ads in this set
+    first_seen_date = Column(DateTime(timezone=True), nullable=True, index=True)
+    last_seen_date = Column(DateTime(timezone=True), nullable=True, index=True)
     
     # Reference to the best/representative ad in the set
     best_ad_id = Column(Integer, ForeignKey("ads.id"), nullable=True, index=True)
@@ -3833,6 +3927,11 @@ class AdResponseDTO(BaseModel):
     # AdSet fields
     ad_set_id: Optional[int] = Field(None, description="ID of the ad set this ad belongs to")
     variant_count: Optional[int] = Field(None, description="Number of variants in the ad set")
+    ad_set_created_at: Optional[datetime] = Field(None, description="Timestamp when the ad set was first created")
+
+    # Date range for the entire ad set
+    ad_set_first_seen_date: Optional[datetime] = Field(None, description="The date the oldest ad in this set was found")
+    ad_set_last_seen_date: Optional[datetime] = Field(None, description="The date the newest ad in this set was found")
     
     model_config = {"from_attributes": True}
 
@@ -5657,8 +5756,12 @@ class AdService:
                 if ad_set.best_ad:
                     # Convert the best ad to DTO and add AdSet information
                     ad_dto = self._convert_to_dto(ad_set.best_ad)
+                    # Augment the Ad DTO with metadata from its parent AdSet
                     ad_dto.ad_set_id = ad_set.id
                     ad_dto.variant_count = ad_set.variant_count
+                    ad_dto.ad_set_created_at = ad_set.created_at
+                    ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                    ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
                     ad_dtos.append(ad_dto)
                 else:
                     # If there's no best_ad, fetch the first ad in the set
@@ -5667,6 +5770,9 @@ class AdService:
                         ad_dto = self._convert_to_dto(first_ad)
                         ad_dto.ad_set_id = ad_set.id
                         ad_dto.variant_count = ad_set.variant_count
+                        ad_dto.ad_set_created_at = ad_set.created_at
+                        ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                        ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
                         ad_dtos.append(ad_dto)
             
             # Calculate pagination metadata
@@ -5740,18 +5846,18 @@ class AdService:
             if filters.max_duration_days is not None:
                 query = query.join(AdSet.best_ad).filter(Ad.duration_days <= filters.max_duration_days)
             
-            # Filter by date range
+            # Filter by date range on the AdSet's lifetime
             if filters.date_from:
-                query = query.join(AdSet.best_ad).filter(Ad.date_found >= filters.date_from)
+                query = query.filter(AdSet.last_seen_date >= filters.date_from)
                 
             if filters.date_to:
-                query = query.join(AdSet.best_ad).filter(Ad.date_found <= filters.date_to)
+                query = query.filter(AdSet.first_seen_date <= filters.date_to)
             
             # Filter by active status
             if filters.is_active is not None:
                 # Check the meta JSON field for is_active
                 query = query.join(AdSet.best_ad).filter(
-                    cast(Ad.meta['is_active'].astext, SQLAString) == str(filters.is_active).lower()
+                    Ad.meta['is_active'].as_string() == str(filters.is_active).lower()
                 )
             
             # Search in ad content
@@ -6080,12 +6186,17 @@ class AdService:
             Number of ads successfully deleted
         """
         try:
-            # Delete associated analyses first
+            # Unset best_ad_id in AdSets where it's one of the ads being deleted
+            self.db.query(AdSet).filter(
+                AdSet.best_ad_id.in_(ad_ids)
+            ).update({"best_ad_id": None}, synchronize_session=False)
+
+            # First, delete all analyses associated with the ads
             analyses_deleted = self.db.query(AdAnalysis).filter(
                 AdAnalysis.ad_id.in_(ad_ids)
             ).delete(synchronize_session=False)
             
-            # Delete the ads
+            # Then delete the ads
             ads_deleted = self.db.query(Ad).filter(
                 Ad.id.in_(ad_ids)
             ).delete(synchronize_session=False)
@@ -6397,7 +6508,10 @@ class AdService:
                 
                 # AdSet fields - will be populated later when needed
                 ad_set_id=ad.ad_set_id,
-                variant_count=None  # This will be set separately when needed
+                variant_count=None,  # This will be set separately when needed
+                ad_set_created_at=None,
+                ad_set_first_seen_date=None,
+                ad_set_last_seen_date=None
             )
             
         except Exception as e:
@@ -7974,10 +8088,11 @@ File: app/services/enhanced_ad_extraction.py
 ================================================
 import json
 import hashlib
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, List, Optional, Any, Tuple, cast
 import logging
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Ad, Competitor, AdSet
@@ -8116,7 +8231,7 @@ class EnhancedAdExtractionService:
         except Exception as e:
             self.logger.error(f"Error calculating perceptual hash for ad: {e}")
             return None
-
+    
     def _update_ad_set_metadata(self, ad_set_id: int) -> None:
         """
         Update metadata for an AdSet including:
@@ -8145,7 +8260,7 @@ class EnhancedAdExtractionService:
             
             if best_ad:
                 ad_set.best_ad_id = best_ad.id
-                
+            
                 # Update content_signature if best_ad changed or if it's not set
                 if (previous_best_ad_id != best_ad.id or not ad_set.content_signature):
                     self.logger.info(f"Best ad changed or content_signature missing for AdSet {ad_set_id}, updating content_signature")
@@ -8538,131 +8653,17 @@ class EnhancedAdExtractionService:
                             
         return urls
     
-    def find_or_create_ad_set_for_ad(self, ad_data: Dict) -> Optional[AdSet]:
+    def _create_new_ad_set(self, content_signature: str) -> Optional[AdSet]:
         """
-        Find an existing AdSet for an ad by comparing against representative ads,
-        or create a new AdSet if no match is found.
-        
-        This replaces the signature-based grouping with direct visual comparison
-        against existing AdSets.
+        Creates a new AdSet with the given content_signature.
         
         Args:
-            ad_data: Ad data to find a matching AdSet for
+            content_signature: The content signature for the new AdSet.
             
         Returns:
-            AdSet object or None if creation failed
+            The newly created AdSet object or None if creation failed.
         """
         try:
-            ad_id = ad_data.get("ad_archive_id", "unknown")
-            self.logger.info(f"Finding AdSet for ad {ad_id} using direct comparison")
-            
-            # First, generate content signature for this ad
-            content_signature = self._generate_content_signature(ad_data)
-            self.logger.info(f"Generated content signature for ad {ad_id}: {content_signature}")
-            
-            # Check if an AdSet with this content_signature already exists
-            existing_ad_set = self.db.query(AdSet).filter(
-                AdSet.content_signature == content_signature
-            ).first()
-            
-            if existing_ad_set:
-                self.logger.info(f"Found existing AdSet {existing_ad_set.id} with matching content_signature: {content_signature}")
-                return existing_ad_set
-            
-            # Fetch all existing AdSets with their best_ad
-            ad_sets = self.db.query(AdSet).all()
-            self.logger.info(f"Found {len(ad_sets)} existing AdSets to compare against")
-            
-            # Track best match for debugging
-            best_match = None
-            best_match_id = None
-            
-            # For each AdSet, check if the ad should be grouped with its representative
-            for ad_set in ad_sets:
-                # Skip AdSets without a best_ad
-                if not ad_set.best_ad_id:
-                    continue
-                    
-                # Get the representative ad for this AdSet
-                representative_ad = self.db.query(Ad).filter(Ad.id == ad_set.best_ad_id).first()
-                if not representative_ad:
-                    self.logger.warning(f"AdSet {ad_set.id} has best_ad_id {ad_set.best_ad_id} but ad not found")
-                    continue
-                    
-                # Convert representative ad to dict format for comparison with necessary fields
-                try:
-                    # Start with the basic enhanced format
-                    representative_ad_data = representative_ad.to_enhanced_format()
-                    
-                    # Add required fields for comparison that might be missing
-                    representative_ad_data["ad_archive_id"] = representative_ad.ad_archive_id
-                    
-                    # Try to determine media type
-                    media_type = "unknown"
-                    if representative_ad.creatives and len(representative_ad.creatives) > 0:
-                        for creative in representative_ad.creatives:
-                            if creative.get("media"):
-                                for media in creative.get("media", []):
-                                    if media.get("type") == "image":
-                                        media_type = "image"
-                                        break
-                                    elif media.get("type") == "video":
-                                        media_type = "video"
-                                        break
-                    
-                    representative_ad_data["media_type"] = media_type
-                    
-                    # Ensure creatives have the required structure
-                    if "creatives" not in representative_ad_data or not representative_ad_data["creatives"]:
-                        representative_ad_data["creatives"] = []
-                    
-                    # Ensure we have at least one creative with proper structure for comparison
-                    if not representative_ad_data["creatives"]:
-                        # Create a minimal creative if none exists
-                        representative_ad_data["creatives"] = [{
-                            "id": f"{representative_ad.ad_archive_id}-0",
-                            "body": "",
-                            "title": "",
-                            "media": []
-                        }]
-                    else:
-                        # Ensure each creative has the minimal required fields
-                        for i, creative in enumerate(representative_ad_data["creatives"]):
-                            if "id" not in creative:
-                                creative["id"] = f"{representative_ad.ad_archive_id}-{i}"
-                            if "body" not in creative:
-                                creative["body"] = ""
-                            if "title" not in creative:
-                                creative["title"] = ""
-                            if "media" not in creative:
-                                creative["media"] = []
-                    
-                    rep_ad_id = representative_ad.ad_archive_id
-                    self.logger.info(f"Comparing ad {ad_id} with representative ad {rep_ad_id} of AdSet {ad_set.id}")
-                    
-                    # Use the creative comparison service to compare the ads
-                    should_group = self.creative_comparison_service.should_group_ads(
-                        ad_data, representative_ad_data
-                    )
-                    
-                    if should_group:
-                        self.logger.info(f"Match found! Grouping ad {ad_id} with AdSet {ad_set.id}")
-                        best_match = ad_set
-                        best_match_id = rep_ad_id
-                        break
-                except Exception as e:
-                    self.logger.warning(f"Error comparing ad {ad_id} with representative ad {representative_ad.ad_archive_id}: {e}")
-                    continue
-            
-            # If we found a match, return it
-            if best_match:
-                self.logger.info(f"Ad {ad_id} matched with AdSet {best_match.id} (rep ad: {best_match_id})")
-                return best_match
-                
-            # If no match found, create a new AdSet
-            self.logger.info(f"No matching AdSet found for ad {ad_id}, creating new AdSet")
-            
-            # Create new ad set
             new_ad_set = AdSet(
                 content_signature=content_signature,
                 variant_count=1,  # Initial count is 1 (this ad)
@@ -8671,12 +8672,72 @@ class EnhancedAdExtractionService:
             )
             self.db.add(new_ad_set)
             self.db.flush()  # Get the ID without committing
-            
-            self.logger.info(f"Created new AdSet {new_ad_set.id} for ad {ad_id}")
+            self.logger.info(f"Created new AdSet {new_ad_set.id} for content signature: {content_signature}")
             return new_ad_set
-            
         except Exception as e:
-            self.logger.error(f"Error finding/creating ad set via direct comparison: {e}")
+            self.logger.error(f"Error creating new AdSet for content signature {content_signature}: {e}")
+            return None
+
+    def find_or_create_ad_set_for_ad(self, ad_data: Dict) -> Optional[AdSet]:
+        """
+        Finds or creates an AdSet for a new ad using a highly performant,
+        index-driven candidate selection process based on perceptual hashes.
+        """
+        try:
+            ad_id = ad_data.get("ad_archive_id", "unknown")
+            self.logger.info(f"Finding AdSet for ad {ad_id} using visual index pre-filtering.")
+
+            # 1. Calculate perceptual hash for the new ad
+            new_hash = self._calculate_perceptual_hash_for_ad(ad_data)
+            if not new_hash:
+                self.logger.warning(f"Could not generate perceptual hash for ad {ad_id}. Creating new AdSet via fallback.")
+                return self._create_new_ad_set(str(ad_id))
+
+            # 2. Quick exact match: check if hash already exists
+            exact_match = self.db.query(AdSet).filter(AdSet.content_signature == new_hash).first()
+            if exact_match:
+                self.logger.info(f"Exact content_signature match found â€“ using existing AdSet {exact_match.id}.")
+                return exact_match
+
+            # 3. Use pg_trgm similarity to fetch top candidate AdSets
+            candidate_query = text(
+                """
+                SELECT id FROM ad_sets
+                WHERE similarity(content_signature, :hash) > 0.8
+                ORDER BY similarity(content_signature, :hash) DESC
+                LIMIT 20
+                """
+            )
+            try:
+                result = self.db.execute(candidate_query, {"hash": new_hash})
+                candidate_ids = [row[0] for row in result]
+            except Exception as e:
+                self.logger.error(f"pg_trgm similarity query failed: {e}. Falling back to new AdSet.")
+                return self._create_new_ad_set(new_hash)
+
+            self.logger.info(f"{len(candidate_ids)} candidate AdSets retrieved for visual hash {new_hash}.")
+
+            # 4. Compare with candidate AdSets' representative ads
+            if candidate_ids:
+                candidates = (
+                    self.db.query(AdSet)
+                    .options(joinedload(AdSet.best_ad))
+                    .filter(AdSet.id.in_(candidate_ids))
+                    .all()
+                )
+                for ad_set in candidates:
+                    if not ad_set.best_ad:
+                        continue
+                    rep_ad_data = ad_set.best_ad.to_enhanced_format()
+                    if self.creative_comparison_service.should_group_ads(ad_data, rep_ad_data):
+                        self.logger.info(f"Grouping ad {ad_id} with existing AdSet {ad_set.id} (hash match).")
+                        return ad_set
+
+            # 5. No suitable candidate â€“ create a new AdSet
+            self.logger.info(f"No AdSet matched. Creating new AdSet for hash {new_hash}.")
+            return self._create_new_ad_set(new_hash)
+        except Exception as e:
+            self.logger.error(f"Error in find_or_create_ad_set_for_ad: {e}")
             return None
     
     def _create_or_update_enhanced_ad(
@@ -8743,6 +8804,14 @@ class EnhancedAdExtractionService:
                     creatives=ad_data.get("creatives", []),
                     duration_days=enhanced_data.get("duration_days", 0)
                 )
+                
+                # --- Maintain AdSet date range ---
+                ad_found_date = new_ad.date_found.astimezone(timezone.utc)
+                if ad_set.first_seen_date is None or ad_found_date < ad_set.first_seen_date:
+                    ad_set.first_seen_date = ad_found_date
+                if ad_set.last_seen_date is None or ad_found_date > ad_set.last_seen_date:
+                    ad_set.last_seen_date = ad_found_date
+                # ---------------------------------
                 
                 self.db.add(new_ad)
                 self.db.flush()

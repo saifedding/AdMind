@@ -4,11 +4,10 @@ import { AdWithAnalysis } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
 import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { differenceInDays, format, parseISO } from 'date-fns';
 
 interface AdCardProps {
   ad: AdWithAnalysis;
@@ -23,61 +22,6 @@ interface AdCardProps {
 const getMainAdContent = (ad: AdWithAnalysis): string => {
   // Use the main body text, title, or caption from the individual fields
   return ad.main_body_text || ad.main_title || ad.main_caption || ad.ad_copy || 'No content available';
-};
-
-const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): { formattedDate: string | null, duration: number | null, isActive: boolean } => {
-  if (!startDateStr) return { formattedDate: null, duration: null, isActive: false };
-  try {
-    const startDate = parseISO(startDateStr);
-    const endDate = endDateStr ? parseISO(endDateStr) : new Date();
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null, isActive: false };
-    
-    let duration = differenceInDays(endDate, startDate);
-    duration = Math.max(duration, 1);
-
-    const formattedStartDate = format(startDate, 'MMM d, yyyy');
-    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'Present';
-
-    if (isActive) {
-      return { 
-        formattedDate: `Since ${formattedStartDate}`, 
-        duration, 
-        isActive: true 
-      };
-    }
-
-    return { 
-      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
-      duration, 
-      isActive: false 
-    };
-  } catch (error) {
-    console.error("Error formatting ad duration:", error);
-    return { formattedDate: null, duration: null, isActive: false };
-  }
-};
-
-const formatAdSetDuration = (startDateStr?: string, endDateStr?: string): { formattedDate: string | null, duration: number | null } => {
-  if (!startDateStr || !endDateStr) return { formattedDate: null, duration: null };
-  try {
-    const startDate = parseISO(startDateStr);
-    const endDate = parseISO(endDateStr);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null };
-    
-    let duration = differenceInDays(endDate, startDate);
-    duration = Math.max(duration, 1); // An ad set exists for at least 1 day
-
-    const formattedStartDate = format(startDate, 'MMM d, yyyy');
-    const formattedEndDate = format(endDate, 'MMM d, yyyy');
-
-    return { 
-      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
-      duration,
-    };
-  } catch (error) {
-    console.error("Error formatting ad set duration:", error);
-    return { formattedDate: null, duration: null };
-  }
 };
 
 export function AdCard({ 
