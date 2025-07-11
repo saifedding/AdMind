@@ -1,0 +1,2288 @@
+{
+    "data": [
+        {
+            "id": 1287,
+            "ad_archive_id": "965164305537015",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501749413_965164318870347_950588725601695687_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Efno-H0RqicQ7kNvwG73gpI&_nc_oc=AdnWXIQV8-f9YK3Fxqy0Vt_fg7E2dA-Kx1-m81Y07-cXdC15Tsg_b0DvUD5cXOvfC4s&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSNFlpAuHzaTpTJq-b7swQErgxhZKXJWv3iHJi8PCpHcg&oe=68745449",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500908610_1235465261418058_9008096561890543040_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=c1lYS3yyuCIQ7kNvwE_PG1d&_nc_oc=AdmGht4Advi_U4uuRUAHZ-i5wqfv8zGC2hYbmTgOqKwC7bC_mSKgCj9UevF9UkfA-3s&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR9zAA5U1qv2aYsEm4GHCl76gFufOOgr8H22pgRMEEO2Q&oe=6874619A"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501749413_965164318870347_950588725601695687_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Efno-H0RqicQ7kNvwG73gpI&_nc_oc=AdnWXIQV8-f9YK3Fxqy0Vt_fg7E2dA-Kx1-m81Y07-cXdC15Tsg_b0DvUD5cXOvfC4s&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSNFlpAuHzaTpTJq-b7swQErgxhZKXJWv3iHJi8PCpHcg&oe=68745449",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501779310_965164322203680_8059691155471668329_n.?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fDfaEzQseWYQ7kNvwFGRplm&_nc_oc=AdlnT1sLb0VjjnR0_dumDFwDaDth1W0OCMWHK7vQ_1PWHUgIP28PFJuZ7AucVLx13-Q&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRsTX2zdWkZAlEqripRBAcsr2keoYMy74AIJgMI7Bz-0g&oe=68747222"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.238365Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "965164305537015-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501749413_965164318870347_950588725601695687_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Efno-H0RqicQ7kNvwG73gpI&_nc_oc=AdnWXIQV8-f9YK3Fxqy0Vt_fg7E2dA-Kx1-m81Y07-cXdC15Tsg_b0DvUD5cXOvfC4s&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSNFlpAuHzaTpTJq-b7swQErgxhZKXJWv3iHJi8PCpHcg&oe=68745449",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501779310_965164322203680_8059691155471668329_n.?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fDfaEzQseWYQ7kNvwFGRplm&_nc_oc=AdlnT1sLb0VjjnR0_dumDFwDaDth1W0OCMWHK7vQ_1PWHUgIP28PFJuZ7AucVLx13-Q&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRsTX2zdWkZAlEqripRBAcsr2keoYMy74AIJgMI7Bz-0g&oe=68747222",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500908610_1235465261418058_9008096561890543040_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=c1lYS3yyuCIQ7kNvwE_PG1d&_nc_oc=AdmGht4Advi_U4uuRUAHZ-i5wqfv8zGC2hYbmTgOqKwC7bC_mSKgCj9UevF9UkfA-3s&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR9zAA5U1qv2aYsEm4GHCl76gFufOOgr8H22pgRMEEO2Q&oe=6874619A",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 629,
+            "variant_count": 1
+        },
+        {
+            "id": 1280,
+            "ad_archive_id": "900243468901138",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501682834_900243485567803_1431433583960463955_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kLZFxz12bAsQ7kNvwFxPfVd&_nc_oc=AdlPAJlFuXB1YpMbiRrtIURPmYcB-0NQv3C3QvZlq4cZZH-7tmAPz3PverY1I6JqM5Y&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSb4W1FCOSJbpNSMR47cv17JXdKlaJ-9nq1-FA3CfCodA&oe=68746605",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500735220_1875767673172731_440281215830581389_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RTFT8LDAC9cQ7kNvwGuZDJF&_nc_oc=AdmhtR3CbSwIq88HNBcH-auUSIp8XtQjMubjZNJ-mLb3ZQsFGFvZWjNW6BCjmxCFnq8&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR1ivi-S40n6NnCsX8MuSM1Bpz1ROFecYwU6VQmKTbcHQ&oe=68746823"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501682834_900243485567803_1431433583960463955_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kLZFxz12bAsQ7kNvwFxPfVd&_nc_oc=AdlPAJlFuXB1YpMbiRrtIURPmYcB-0NQv3C3QvZlq4cZZH-7tmAPz3PverY1I6JqM5Y&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSb4W1FCOSJbpNSMR47cv17JXdKlaJ-9nq1-FA3CfCodA&oe=68746605",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501890558_900243495567802_2894093837718410200_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=VwAH4SGdy-MQ7kNvwFbAM6N&_nc_oc=AdlMaRW4HNQXldRwS2a_V9oI3LDkDoEvT4SFTJcpOAxOKAE6cZXS4kj_L3LRvNsV6Vw&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRAV2wApip7n7y5XhN_udYmaArPoyNlUajPMPzY0CYhxg&oe=68748362"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.160721Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "900243468901138-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501682834_900243485567803_1431433583960463955_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kLZFxz12bAsQ7kNvwFxPfVd&_nc_oc=AdlPAJlFuXB1YpMbiRrtIURPmYcB-0NQv3C3QvZlq4cZZH-7tmAPz3PverY1I6JqM5Y&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSb4W1FCOSJbpNSMR47cv17JXdKlaJ-9nq1-FA3CfCodA&oe=68746605",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501890558_900243495567802_2894093837718410200_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=VwAH4SGdy-MQ7kNvwFbAM6N&_nc_oc=AdlMaRW4HNQXldRwS2a_V9oI3LDkDoEvT4SFTJcpOAxOKAE6cZXS4kj_L3LRvNsV6Vw&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRAV2wApip7n7y5XhN_udYmaArPoyNlUajPMPzY0CYhxg&oe=68748362",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500735220_1875767673172731_440281215830581389_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RTFT8LDAC9cQ7kNvwGuZDJF&_nc_oc=AdmhtR3CbSwIq88HNBcH-auUSIp8XtQjMubjZNJ-mLb3ZQsFGFvZWjNW6BCjmxCFnq8&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR1ivi-S40n6NnCsX8MuSM1Bpz1ROFecYwU6VQmKTbcHQ&oe=68746823",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 622,
+            "variant_count": 1
+        },
+        {
+            "id": 1308,
+            "ad_archive_id": "1330975094648835",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499907985_1199613754979381_9129915815380534418_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y8hbsuYucj0Q7kNvwGKs7fV&_nc_oc=AdmdHuqXjh8Fa5XsiRapiIRtsYbyrVC31agyxOMsco1QI1a6ucSHNCXxW8tcLQWjOK0&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRvzMRo4DLbMHKLQlZKQGUehOCTwf6ZnxyMsIIMWthocg&oe=687453F7",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500564823_466186663239919_7295909449489030382_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=1HvU2-4rPpEQ7kNvwGME8-2&_nc_oc=AdlOg-rsn7DYr1aPVfPjyUvCTKXnj2WtYDkcxYOnJ7W6pkp2CvnGaS4JMffmoQ422Kw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfT-c-5UBr7GKhbpayCQDIyNUGJvAupevXTbGxITKbh0tw&oe=6874675B"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499907985_1199613754979381_9129915815380534418_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y8hbsuYucj0Q7kNvwGKs7fV&_nc_oc=AdmdHuqXjh8Fa5XsiRapiIRtsYbyrVC31agyxOMsco1QI1a6ucSHNCXxW8tcLQWjOK0&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRvzMRo4DLbMHKLQlZKQGUehOCTwf6ZnxyMsIIMWthocg&oe=687453F7",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499915188_1199613761646047_6784624301877391152_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ZmatRXxKKdAQ7kNvwGcFxAg&_nc_oc=AdnF6r8yE4XDII8ejHkCGj_v7FbafU5TQwOvKO1_7EwqAsYopicdSjTfJdyb2_214mU&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ8sv7AdTxpU26e2ddtke2-ZeL35a7qVMdQ0LdU9hXULw&oe=68746BA3"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.480783Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1330975094648835-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499907985_1199613754979381_9129915815380534418_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y8hbsuYucj0Q7kNvwGKs7fV&_nc_oc=AdmdHuqXjh8Fa5XsiRapiIRtsYbyrVC31agyxOMsco1QI1a6ucSHNCXxW8tcLQWjOK0&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRvzMRo4DLbMHKLQlZKQGUehOCTwf6ZnxyMsIIMWthocg&oe=687453F7",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499915188_1199613761646047_6784624301877391152_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ZmatRXxKKdAQ7kNvwGcFxAg&_nc_oc=AdnF6r8yE4XDII8ejHkCGj_v7FbafU5TQwOvKO1_7EwqAsYopicdSjTfJdyb2_214mU&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ8sv7AdTxpU26e2ddtke2-ZeL35a7qVMdQ0LdU9hXULw&oe=68746BA3",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500564823_466186663239919_7295909449489030382_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=1HvU2-4rPpEQ7kNvwGME8-2&_nc_oc=AdlOg-rsn7DYr1aPVfPjyUvCTKXnj2WtYDkcxYOnJ7W6pkp2CvnGaS4JMffmoQ422Kw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfT-c-5UBr7GKhbpayCQDIyNUGJvAupevXTbGxITKbh0tw&oe=6874675B",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 633,
+            "variant_count": 1
+        },
+        {
+            "id": 1288,
+            "ad_archive_id": "1378159449900405",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501688761_1378159489900401_8162223031709988269_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=AruOf26kMWMQ7kNvwEqHZBN&_nc_oc=AdlDmFfMayA2V3phvO_8rKkDd6e0ktibY3NDI4xlNWW0oFcYcBZVkfzJH-pzYwDIeHM&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ-GXxQxA9EgARUa_KOpMlX1wwzhLbkv-dG6jmEX2UXzg&oe=68747387",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500393293_3259895154152700_177083074345413395_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=dmERQRdyJc4Q7kNvwFcuNOA&_nc_oc=AdmsSTOspehiSF6uTT9kAal4g7p4hhOOpAaE3bWj1gdgMse7EDoq4hnWPPhq6Z8ppDQ&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRgl1HPxAy8sCLwVBu8c_8X8YqlIRM266h2XJIP10WItA&oe=6874835F"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501688761_1378159489900401_8162223031709988269_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=AruOf26kMWMQ7kNvwEqHZBN&_nc_oc=AdlDmFfMayA2V3phvO_8rKkDd6e0ktibY3NDI4xlNWW0oFcYcBZVkfzJH-pzYwDIeHM&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ-GXxQxA9EgARUa_KOpMlX1wwzhLbkv-dG6jmEX2UXzg&oe=68747387",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/502182853_1378159493233734_3154554745079020458_n.?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=gYwPKEE8dOwQ7kNvwEOYVaS&_nc_oc=AdnDsYtAElkE1Ln6ALUJ_OKfo73hRZvxk2SfHoXNHEEAd3aKe2vTLjI81XB2lUL4S3Q&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTwBOaSfRe4iDDC7X_--7VNVKLE95tkBOLtkGVv2f8LIQ&oe=68745E6A"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.251378Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1378159449900405-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501688761_1378159489900401_8162223031709988269_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=AruOf26kMWMQ7kNvwEqHZBN&_nc_oc=AdlDmFfMayA2V3phvO_8rKkDd6e0ktibY3NDI4xlNWW0oFcYcBZVkfzJH-pzYwDIeHM&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ-GXxQxA9EgARUa_KOpMlX1wwzhLbkv-dG6jmEX2UXzg&oe=68747387",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/502182853_1378159493233734_3154554745079020458_n.?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=gYwPKEE8dOwQ7kNvwEOYVaS&_nc_oc=AdnDsYtAElkE1Ln6ALUJ_OKfo73hRZvxk2SfHoXNHEEAd3aKe2vTLjI81XB2lUL4S3Q&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTwBOaSfRe4iDDC7X_--7VNVKLE95tkBOLtkGVv2f8LIQ&oe=68745E6A",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500393293_3259895154152700_177083074345413395_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=dmERQRdyJc4Q7kNvwFcuNOA&_nc_oc=AdmsSTOspehiSF6uTT9kAal4g7p4hhOOpAaE3bWj1gdgMse7EDoq4hnWPPhq6Z8ppDQ&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRgl1HPxAy8sCLwVBu8c_8X8YqlIRM266h2XJIP10WItA&oe=6874835F",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 630,
+            "variant_count": 1
+        },
+        {
+            "id": 1281,
+            "ad_archive_id": "867650325570333",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501584229_867650345570331_5909251763691631335_n.?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=YqOkdD0PLrkQ7kNvwHvTKSJ&_nc_oc=AdkntJOG8UkFkuGW9lQ9T_WDHLrx1yOCi61rk8KkllGNgMmKuMu-vSdpexI7lL2RCuQ&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS2qlbjE2oVg5jZKbTAFNn9S9OHH7ruiAarCO62xJ3VeA&oe=68745A92",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500378679_2488218834850712_8229064572650876499_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RkCOu7Vifw4Q7kNvwGyb6US&_nc_oc=AdngYwrZx1oTfJGsiPpwbvNmzQGc10sJJ7hLmLSYOo3YI-RYvYwnFsAc7_oK85pmGzw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTkjJBJ30m9ncyjDAEVKhPLLm46_l6IpIdGu-D8aDyRVQ&oe=6874679E"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501584229_867650345570331_5909251763691631335_n.?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=YqOkdD0PLrkQ7kNvwHvTKSJ&_nc_oc=AdkntJOG8UkFkuGW9lQ9T_WDHLrx1yOCi61rk8KkllGNgMmKuMu-vSdpexI7lL2RCuQ&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS2qlbjE2oVg5jZKbTAFNn9S9OHH7ruiAarCO62xJ3VeA&oe=68745A92",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502126618_867650348903664_8418338469424244906_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Gn-0WhlUFRAQ7kNvwGwgRSd&_nc_oc=AdlGKJJBSlPB3Bandi9Npn-ABR3meU8fzprDi8mLbIuae6ywb9ANO12gcJc0eS9uz9s&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTw_GNZYLUZLvDWh3jPwDDUxM9Faa0Lerts2oCSkA1HDg&oe=687453B5"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.171237Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "867650325570333-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501584229_867650345570331_5909251763691631335_n.?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=YqOkdD0PLrkQ7kNvwHvTKSJ&_nc_oc=AdkntJOG8UkFkuGW9lQ9T_WDHLrx1yOCi61rk8KkllGNgMmKuMu-vSdpexI7lL2RCuQ&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS2qlbjE2oVg5jZKbTAFNn9S9OHH7ruiAarCO62xJ3VeA&oe=68745A92",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502126618_867650348903664_8418338469424244906_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Gn-0WhlUFRAQ7kNvwGwgRSd&_nc_oc=AdlGKJJBSlPB3Bandi9Npn-ABR3meU8fzprDi8mLbIuae6ywb9ANO12gcJc0eS9uz9s&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTw_GNZYLUZLvDWh3jPwDDUxM9Faa0Lerts2oCSkA1HDg&oe=687453B5",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500378679_2488218834850712_8229064572650876499_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RkCOu7Vifw4Q7kNvwGyb6US&_nc_oc=AdngYwrZx1oTfJGsiPpwbvNmzQGc10sJJ7hLmLSYOo3YI-RYvYwnFsAc7_oK85pmGzw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTkjJBJ30m9ncyjDAEVKhPLLm46_l6IpIdGu-D8aDyRVQ&oe=6874679E",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 623,
+            "variant_count": 1
+        },
+        {
+            "id": 1282,
+            "ad_archive_id": "1108420371317571",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500540282_1108420397984235_2411673671024198829_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JIWTPrvrupcQ7kNvwEDeuGK&_nc_oc=AdllknuU8AL-5waGvm3jdfkVkJZaJE91RrhQZ2OfW_0QHx12xJtEkkuUtR-02P_Ev0s&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRMdBs0nyhNNjDuyAogJXuEIt-8WVOlrOh28pj6oRdqKQ&oe=68745AAA",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500054705_24181194094806035_23498733224720412_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ivlXC4RAlNcQ7kNvwEbKGBm&_nc_oc=AdkLcbdWCZxC_dtWCiZBH4LRL3YPTlo2FjBQ8xL6QWlBUgKuqpB-tbjIu2PSAlCwM-c&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR18aDMdFIb3IsvRdXy2hf3YJaH8BCYowBaSqKtxeWcNw&oe=68745D5E"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500540282_1108420397984235_2411673671024198829_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JIWTPrvrupcQ7kNvwEDeuGK&_nc_oc=AdllknuU8AL-5waGvm3jdfkVkJZaJE91RrhQZ2OfW_0QHx12xJtEkkuUtR-02P_Ev0s&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRMdBs0nyhNNjDuyAogJXuEIt-8WVOlrOh28pj6oRdqKQ&oe=68745AAA",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502128864_1108420401317568_3695716479225320958_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kRrvoWbOyzAQ7kNvwFDId6I&_nc_oc=AdmPKvqDbKBQsyHScLVLM2KMV-7W3yXzUqKYUJewVpGu1YYqz0MgzkuUcRm3KG7JMHc&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSXdDeot1A-Gp7ZFNRI3ParmhXj54g9pPHSdgYeNtQbWQ&oe=68746932"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.181266Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1108420371317571-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500540282_1108420397984235_2411673671024198829_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=JIWTPrvrupcQ7kNvwEDeuGK&_nc_oc=AdllknuU8AL-5waGvm3jdfkVkJZaJE91RrhQZ2OfW_0QHx12xJtEkkuUtR-02P_Ev0s&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRMdBs0nyhNNjDuyAogJXuEIt-8WVOlrOh28pj6oRdqKQ&oe=68745AAA",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502128864_1108420401317568_3695716479225320958_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kRrvoWbOyzAQ7kNvwFDId6I&_nc_oc=AdmPKvqDbKBQsyHScLVLM2KMV-7W3yXzUqKYUJewVpGu1YYqz0MgzkuUcRm3KG7JMHc&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSXdDeot1A-Gp7ZFNRI3ParmhXj54g9pPHSdgYeNtQbWQ&oe=68746932",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500054705_24181194094806035_23498733224720412_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ivlXC4RAlNcQ7kNvwEbKGBm&_nc_oc=AdkLcbdWCZxC_dtWCiZBH4LRL3YPTlo2FjBQ8xL6QWlBUgKuqpB-tbjIu2PSAlCwM-c&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfR18aDMdFIb3IsvRdXy2hf3YJaH8BCYowBaSqKtxeWcNw&oe=68745D5E",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 624,
+            "variant_count": 1
+        },
+        {
+            "id": 1286,
+            "ad_archive_id": "1587570548606839",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500897726_1587570568606837_6168462699017279780_n.?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=8emfjXhnVj0Q7kNvwF11p9j&_nc_oc=AdleCXCNP6LbD2vqPmH6yHjuGoqHhJTpsdFthFDhma6cyKBj4QHY_NOcMcwvYTChsEY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQyhb2IlPxc4ZHcq6uaSH9_FilO2oU1ixAhStyE76XkzA&oe=687454CE",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500705864_580516711318821_1553231466764284297_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RpMq58sMMEUQ7kNvwGyNmqN&_nc_oc=AdnSIz6Q_UbQrdy06Aze5DSdPm2_zRzRQOpnKcsLOi4ylb6kV-kqC6ypiRV6PRUm_BQ&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTCEqUfbp8sDZYNe8autv4GEa-vZoal--_d9nzllUUw3g&oe=68747F70"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500897726_1587570568606837_6168462699017279780_n.?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=8emfjXhnVj0Q7kNvwF11p9j&_nc_oc=AdleCXCNP6LbD2vqPmH6yHjuGoqHhJTpsdFthFDhma6cyKBj4QHY_NOcMcwvYTChsEY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQyhb2IlPxc4ZHcq6uaSH9_FilO2oU1ixAhStyE76XkzA&oe=687454CE",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501014717_1587570571940170_881057706301388353_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=g9CfycAcO8IQ7kNvwH3bd7a&_nc_oc=AdmPHxrn3n4IObU6vQg_YKLl1N3wJUyR0tdF35VEwK5N37T7eprzVwWNKW14xnjlnLs&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRv3a8tdCJnBgnpIRSDebC-TlWSgciTJ37WMs8ql2vzLA&oe=68746193"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.225676Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1587570548606839-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500897726_1587570568606837_6168462699017279780_n.?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=8emfjXhnVj0Q7kNvwF11p9j&_nc_oc=AdleCXCNP6LbD2vqPmH6yHjuGoqHhJTpsdFthFDhma6cyKBj4QHY_NOcMcwvYTChsEY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQyhb2IlPxc4ZHcq6uaSH9_FilO2oU1ixAhStyE76XkzA&oe=687454CE",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501014717_1587570571940170_881057706301388353_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=g9CfycAcO8IQ7kNvwH3bd7a&_nc_oc=AdmPHxrn3n4IObU6vQg_YKLl1N3wJUyR0tdF35VEwK5N37T7eprzVwWNKW14xnjlnLs&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRv3a8tdCJnBgnpIRSDebC-TlWSgciTJ37WMs8ql2vzLA&oe=68746193",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500705864_580516711318821_1553231466764284297_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RpMq58sMMEUQ7kNvwGyNmqN&_nc_oc=AdnSIz6Q_UbQrdy06Aze5DSdPm2_zRzRQOpnKcsLOi4ylb6kV-kqC6ypiRV6PRUm_BQ&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTCEqUfbp8sDZYNe8autv4GEa-vZoal--_d9nzllUUw3g&oe=68747F70",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 628,
+            "variant_count": 1
+        },
+        {
+            "id": 1289,
+            "ad_archive_id": "2056139621545059",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501578730_1262677435218078_5978524587325278369_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-XjS8A05pScQ7kNvwGbKPVa&_nc_oc=Adn2C1LZyG2poXrzc5A_PkdkYmJF19vkeYutggOhe86ffhg5-cTmW_mETACXKPrXt2A&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQT20NxGHiWuxsHi5eykgT7IrkExRBMRbPbWQYjbk871Q&oe=687474BD",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501382551_1652696448716790_758031445802076102_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=t_cL2wV7wkEQ7kNvwG6q8nc&_nc_oc=AdnuzqKT2YiZTXs3am1hRR-QU5gHaRPeseod1csYlPt1Air5MnBsGVf-2U05NC_APgM&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSHKAox0_PJBaFhmcuq9YowtAvnMc8GwTaqH6vRwm4pNQ&oe=68747B83"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501578730_1262677435218078_5978524587325278369_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-XjS8A05pScQ7kNvwGbKPVa&_nc_oc=Adn2C1LZyG2poXrzc5A_PkdkYmJF19vkeYutggOhe86ffhg5-cTmW_mETACXKPrXt2A&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQT20NxGHiWuxsHi5eykgT7IrkExRBMRbPbWQYjbk871Q&oe=687474BD",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501296861_1262677441884744_8431430089211063109_n.?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=NMex9Sk510YQ7kNvwEfG-aM&_nc_oc=AdlPOPOp2sxiH5fWdmy3blfS3GEnh9JmE2J5aTb5kLutfuDznH3miNRtAywjQsDlHHY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTyQX2L6czMY9-ihnUlI9g0A44LbWbedB14FYYCX9x3NA&oe=6874849D"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.260823Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "2056139621545059-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501578730_1262677435218078_5978524587325278369_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=-XjS8A05pScQ7kNvwGbKPVa&_nc_oc=Adn2C1LZyG2poXrzc5A_PkdkYmJF19vkeYutggOhe86ffhg5-cTmW_mETACXKPrXt2A&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQT20NxGHiWuxsHi5eykgT7IrkExRBMRbPbWQYjbk871Q&oe=687474BD",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501296861_1262677441884744_8431430089211063109_n.?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=NMex9Sk510YQ7kNvwEfG-aM&_nc_oc=AdlPOPOp2sxiH5fWdmy3blfS3GEnh9JmE2J5aTb5kLutfuDznH3miNRtAywjQsDlHHY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTyQX2L6czMY9-ihnUlI9g0A44LbWbedB14FYYCX9x3NA&oe=6874849D",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501382551_1652696448716790_758031445802076102_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=t_cL2wV7wkEQ7kNvwG6q8nc&_nc_oc=AdnuzqKT2YiZTXs3am1hRR-QU5gHaRPeseod1csYlPt1Air5MnBsGVf-2U05NC_APgM&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSHKAox0_PJBaFhmcuq9YowtAvnMc8GwTaqH6vRwm4pNQ&oe=68747B83",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 631,
+            "variant_count": 1
+        },
+        {
+            "id": 1304,
+            "ad_archive_id": "1661304884531339",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "شقق سكنية فاخرة بإطلالات مميزة على أفق دبي! شقق سكنية فاخرة بإطلالات خلابة على أفق دبي ضمن المشروع الأيقوني \"بن غاطي أكوا رايز\" في قلب الخليج التجاري!\n\nاستثمر في أسلوب حياة راقٍ ضمن أحد أبرز المشاريع الجديدة في دبي، حيث التصميم العصري يلتقي بالفخامة، والمرافق المتكاملة تضمن لك الراحة والرفاهية.\n\nشقق من ستوديوهات حتى 4 غرف نوم وصالة بأسعار تبدأ  999,999 درهم إماراتي فقط!\nبـ خطة دفع مرنة: 70% خلال فترة الإنشاء – 30% عند التسليم\n\nسجل الأن للمزيد من التفاصيل!\nأو تواصل معنا عبر : \n +97180015",
+            "main_title": "شقق سكنية فاخرة بإطلالات مميزة على أفق دبي!",
+            "main_body_text": "شقق سكنية فاخرة بإطلالات خلابة على أفق دبي ضمن المشروع الأيقوني \"بن غاطي أكوا رايز\" في قلب الخليج التجاري!\n\nاستثمر في أسلوب حياة راقٍ ضمن أحد أبرز المشاريع الجديدة في دبي، حيث التصميم العصري يلتقي بالفخامة، والمرافق المتكاملة تضمن لك الراحة والرفاهية.\n\nشقق من ستوديوهات حتى 4 غرف نوم وصالة بأسعار تبدأ  999,999 درهم إماراتي فقط!\nبـ خطة دفع مرنة: 70% خلال فترة الإنشاء – 30% عند التسليم\n\nسجل الأن للمزيد من التفاصيل!\nأو تواصل معنا عبر : \n +97180015",
+            "main_caption": null,
+            "media_type": "Image",
+            "media_url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499767094_698739719464917_7719677338498955001_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y647q9f2_E8Q7kNvwF52rSe&_nc_oc=AdnVClle2H-Qlp33czlxPpcGEKFa3j0S9Lx9KAOc5YyGXiDiW4ZyxLpK5mlDZzRQISw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSlG0-DSs5gGD6URNKIkOTRhxN8O98EuJQlD0PXGQfOFw&oe=6874577F",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499767094_698739719464917_7719677338498955001_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y647q9f2_E8Q7kNvwF52rSe&_nc_oc=AdnVClle2H-Qlp33czlxPpcGEKFa3j0S9Lx9KAOc5YyGXiDiW4ZyxLpK5mlDZzRQISw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSlG0-DSs5gGD6URNKIkOTRhxN8O98EuJQlD0PXGQfOFw&oe=6874577F",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500210864_1450343025965318_344097690537401125_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Hb2-I5v2G38Q7kNvwH0MhHh&_nc_oc=Adl4p2pL538KWDB3tH2_CJzRrp3I-cCaFlswgt1rvCYWYXR2qOYQCXeebjgRhwrODeE&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQmYhftuplmr89CdiTRyZxE8tqwuePTIYmZIjjMF_kKFQ&oe=6874752E",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500126942_1054218283290553_7979168029369853794_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=vfrYKg1TFtIQ7kNvwFM12ku&_nc_oc=Adk_ln9USUBdgQ_-CcnqCcjmcqNcmcgu1XcUkPVpBRbaLxwgFcMf4hNtFsaQII0lO2I&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfT9vDBV-jjoUaGohqLbrzWcWK7Xzh02hygOWmc_MVRhZA&oe=68744F11",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500685408_3283315411817348_6301850909692963836_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=YrckeddUVqEQ7kNvwG7ufHa&_nc_oc=AdmgliknYn8TkmQWXJ3ldiABte_IjjYLxOUjw5guKohFL0wWF9oPk0A-WQdytSyP0Rc&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSShX8aMkrk90vRvIuscUY25M1yKhIx2fFKg0G20CnblA&oe=687455A5"
+            ],
+            "main_video_urls": [],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": "Learn More",
+            "cta_type": "LEARN_MORE",
+            "date_found": "2025-07-09T16:21:22.426800Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": true,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": true,
+                "cta_type": "LEARN_MORE",
+                "display_format": "DCO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": {
+                    "يرجى إختيار نوع الوحدة المطلوبة :": [
+                        "ستوديو",
+                        "غرفة نوم وصالة",
+                        "غرفتين نوم وصالة",
+                        "ثلاثة غرف نوم وصالة",
+                        "محل تجاري"
+                    ]
+                },
+                "standalone_fields": [
+                    "Country",
+                    "Email",
+                    "Full name",
+                    "Phone number"
+                ]
+            },
+            "creatives": [
+                {
+                    "id": "1661304884531339-0",
+                    "title": null,
+                    "body": "شقق سكنية فاخرة بإطلالات خلابة على أفق دبي ضمن المشروع الأيقوني \"بن غاطي أكوا رايز\" في قلب الخليج التجاري!\n\nاستثمر في أسلوب حياة راقٍ ضمن أحد أبرز المشاريع الجديدة في دبي، حيث التصميم العصري يلتقي بالفخامة، والمرافق المتكاملة تضمن لك الراحة والرفاهية.\n\nشقق من ستوديوهات حتى 4 غرف نوم وصالة بأسعار تبدأ  999,999 درهم إماراتي فقط!\nبـ خطة دفع مرنة: 70% خلال فترة الإنشاء – 30% عند التسليم\n\nسجل الأن للمزيد من التفاصيل!\nأو تواصل معنا عبر : \n +97180015",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499767094_698739719464917_7719677338498955001_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Y647q9f2_E8Q7kNvwF52rSe&_nc_oc=AdnVClle2H-Qlp33czlxPpcGEKFa3j0S9Lx9KAOc5YyGXiDiW4ZyxLpK5mlDZzRQISw&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSlG0-DSs5gGD6URNKIkOTRhxN8O98EuJQlD0PXGQfOFw&oe=6874577F",
+                            "type": "Image"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500210864_1450343025965318_344097690537401125_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Hb2-I5v2G38Q7kNvwH0MhHh&_nc_oc=Adl4p2pL538KWDB3tH2_CJzRrp3I-cCaFlswgt1rvCYWYXR2qOYQCXeebjgRhwrODeE&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQmYhftuplmr89CdiTRyZxE8tqwuePTIYmZIjjMF_kKFQ&oe=6874752E",
+                            "type": "Image"
+                        }
+                    ]
+                },
+                {
+                    "id": "1661304884531339-1",
+                    "title": null,
+                    "body": "شقق سكنية فاخرة بإطلالات خلابة على أفق دبي ضمن المشروع الأيقوني \"بن غاطي أكوا رايز\" في قلب الخليج التجاري!\n\nاستثمر في أسلوب حياة راقٍ ضمن أحد أبرز المشاريع الجديدة في دبي، حيث التصميم العصري يلتقي بالفخامة، والمرافق المتكاملة تضمن لك الراحة والرفاهية.\n\nشقق من ستوديوهات حتى 4 غرف نوم وصالة بأسعار تبدأ  999,999 درهم إماراتي فقط!\nبـ خطة دفع مرنة: 70% خلال فترة الإنشاء – 30% عند التسليم\n\nسجل الأن للمزيد من التفاصيل!\nأو تواصل معنا عبر : \n +97180015",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500126942_1054218283290553_7979168029369853794_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=vfrYKg1TFtIQ7kNvwFM12ku&_nc_oc=Adk_ln9USUBdgQ_-CcnqCcjmcqNcmcgu1XcUkPVpBRbaLxwgFcMf4hNtFsaQII0lO2I&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfT9vDBV-jjoUaGohqLbrzWcWK7Xzh02hygOWmc_MVRhZA&oe=68744F11",
+                            "type": "Image"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500685408_3283315411817348_6301850909692963836_n.jpg?stp=dst-jpg_s600x600_tt6&_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=YrckeddUVqEQ7kNvwG7ufHa&_nc_oc=AdmgliknYn8TkmQWXJ3ldiABte_IjjYLxOUjw5guKohFL0wWF9oPk0A-WQdytSyP0Rc&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSShX8aMkrk90vRvIuscUY25M1yKhIx2fFKg0G20CnblA&oe=687455A5",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 632,
+            "variant_count": 18
+        },
+        {
+            "id": 1283,
+            "ad_archive_id": "710078628266766",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501595635_710078641600098_9001144302157184023_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=u__D-ijGQ7YQ7kNvwEQaajI&_nc_oc=AdmVb4xUEFDDNRY7whObNWmA6fSP3AHooyy17_sMJCrWYGNWDxTnFwzy4n-5HAr_Z4k&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRmXOlwf2B7QrVYYTzbN2nLNCRpYbH9X6lUkLmeZ1himg&oe=68745DD4",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499922150_563063309894388_1963679556509413002_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=wES0YjWb5k0Q7kNvwHVTqqO&_nc_oc=Adk4VEgMS-Q7RPftKK52rzGi2QiRK1bZwvxpo80X2t9raIHgvqG2jvrrmXO5sz8NpTU&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTo3FPcDYHLXiM7LyeCWYaxtiivWUuGBRotx3pzQvDBGQ&oe=6874799D"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501595635_710078641600098_9001144302157184023_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=u__D-ijGQ7YQ7kNvwEQaajI&_nc_oc=AdmVb4xUEFDDNRY7whObNWmA6fSP3AHooyy17_sMJCrWYGNWDxTnFwzy4n-5HAr_Z4k&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRmXOlwf2B7QrVYYTzbN2nLNCRpYbH9X6lUkLmeZ1himg&oe=68745DD4",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501570311_710078648266764_4387838396192513288_n.?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=vwg59znWjhUQ7kNvwHpJLhQ&_nc_oc=AdlwxrSIjhV5WXYzH04Vn7ha75Q4Pt0qBnQt2IgqvUIH66m7o9YahVWktWkAgRtcwVo&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ0_wl2fAeabrKsHwkv2rshV1TTEOPMZdljUNpPMf86XQ&oe=68747DA4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.188742Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "710078628266766-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501595635_710078641600098_9001144302157184023_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=u__D-ijGQ7YQ7kNvwEQaajI&_nc_oc=AdmVb4xUEFDDNRY7whObNWmA6fSP3AHooyy17_sMJCrWYGNWDxTnFwzy4n-5HAr_Z4k&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRmXOlwf2B7QrVYYTzbN2nLNCRpYbH9X6lUkLmeZ1himg&oe=68745DD4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501570311_710078648266764_4387838396192513288_n.?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=vwg59znWjhUQ7kNvwHpJLhQ&_nc_oc=AdlwxrSIjhV5WXYzH04Vn7ha75Q4Pt0qBnQt2IgqvUIH66m7o9YahVWktWkAgRtcwVo&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ0_wl2fAeabrKsHwkv2rshV1TTEOPMZdljUNpPMf86XQ&oe=68747DA4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/499922150_563063309894388_1963679556509413002_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=wES0YjWb5k0Q7kNvwHVTqqO&_nc_oc=Adk4VEgMS-Q7RPftKK52rzGi2QiRK1bZwvxpo80X2t9raIHgvqG2jvrrmXO5sz8NpTU&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfTo3FPcDYHLXiM7LyeCWYaxtiivWUuGBRotx3pzQvDBGQ&oe=6874799D",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 625,
+            "variant_count": 1
+        },
+        {
+            "id": 1285,
+            "ad_archive_id": "1555452102526186",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500671640_1555452129192850_2856958707207084723_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=05Uu0oGnpUgQ7kNvwGwH4Z5&_nc_oc=Adl4jQZk60_YZhC1VF2sEZjDRF_h9l2hHw6azPTlwE7QaYnCwnPlT2b_NZotYs6IrEE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ9u9KN88tP-ICoR1WJ1SdocRBGGtRl3ViImSxqSRzFfg&oe=68744F3E",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500635089_630843380007092_7487409700380340029_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=zJWe2DRlivcQ7kNvwGed9g9&_nc_oc=Adks9_-UUCKDDto6b9h3nSNgZI_vvYSETB_1Hk92cHgstyZZx4DDIC-dWl0z2P5eCRc&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS5oN74Doq1OtQNMLT18YzPAQkLN-VlpxDCgLp7gGpCaA&oe=687464C2"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500671640_1555452129192850_2856958707207084723_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=05Uu0oGnpUgQ7kNvwGwH4Z5&_nc_oc=Adl4jQZk60_YZhC1VF2sEZjDRF_h9l2hHw6azPTlwE7QaYnCwnPlT2b_NZotYs6IrEE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ9u9KN88tP-ICoR1WJ1SdocRBGGtRl3ViImSxqSRzFfg&oe=68744F3E",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501790974_1555452132526183_3327985088118230110_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=diRlSnJQKLUQ7kNvwGmGLrl&_nc_oc=Adn7-DecC5ai1wleWFScFqHVVQqnN7rKuvKTYW3tcc1TCw8wRodncCaDXGg4OAEauQo&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS_81W1BHiHCVkUGw55HX-F2pP57wZSbKnOmNuiqvVe-A&oe=68746AEA"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.213016Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1555452102526186-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500671640_1555452129192850_2856958707207084723_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=05Uu0oGnpUgQ7kNvwGwH4Z5&_nc_oc=Adl4jQZk60_YZhC1VF2sEZjDRF_h9l2hHw6azPTlwE7QaYnCwnPlT2b_NZotYs6IrEE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQ9u9KN88tP-ICoR1WJ1SdocRBGGtRl3ViImSxqSRzFfg&oe=68744F3E",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501790974_1555452132526183_3327985088118230110_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=diRlSnJQKLUQ7kNvwGmGLrl&_nc_oc=Adn7-DecC5ai1wleWFScFqHVVQqnN7rKuvKTYW3tcc1TCw8wRodncCaDXGg4OAEauQo&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS_81W1BHiHCVkUGw55HX-F2pP57wZSbKnOmNuiqvVe-A&oe=68746AEA",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500635089_630843380007092_7487409700380340029_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=zJWe2DRlivcQ7kNvwGed9g9&_nc_oc=Adks9_-UUCKDDto6b9h3nSNgZI_vvYSETB_1Hk92cHgstyZZx4DDIC-dWl0z2P5eCRc&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfS5oN74Doq1OtQNMLT18YzPAQkLN-VlpxDCgLp7gGpCaA&oe=687464C2",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 627,
+            "variant_count": 1
+        },
+        {
+            "id": 1284,
+            "ad_archive_id": "1402976544162721",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500325894_1402976577496051_3841244101054834851_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Vy1BbHFzkJEQ7kNvwGXOXvZ&_nc_oc=Adms_xb8mvYUNwJo83NZku8muOYcgeUwUxdJJH1GZLD2wqS7or_NeYncB3yNDmJkYsw&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSw_6d5Vwq1_7vPkAkQ5ACARNTd08T9VXeLYqq6V1948Q&oe=68745629",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500573869_1864785434307639_273867748489720532_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ZD3n_bN7visQ7kNvwGLFxsk&_nc_oc=AdlhduFQSN--vcp7jh692doN4XOCb9sO8tRTqQnuw5ht-5_c_jsehMeY_uvW9oWSDTw&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQoyjOyrNec31-pfIYMKh88GYwuBU1B6Vqdv6g5mjqGMA&oe=68747A44"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500325894_1402976577496051_3841244101054834851_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Vy1BbHFzkJEQ7kNvwGXOXvZ&_nc_oc=Adms_xb8mvYUNwJo83NZku8muOYcgeUwUxdJJH1GZLD2wqS7or_NeYncB3yNDmJkYsw&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSw_6d5Vwq1_7vPkAkQ5ACARNTd08T9VXeLYqq6V1948Q&oe=68745629",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499928960_1402976587496050_6912951873808104776_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=mLmE-2pClIsQ7kNvwFsoHYO&_nc_oc=AdnfXLYR5A8hHxrzHvMGHrHhV3qLJwa1GyJKW10DZdmhjVbKxcEIK3QaALvqJhutURk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRtktxMswpFujvp-Afur4ZRGooOzZ_3WZFF8GZOg-e5tw&oe=68744E26"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:22.200298Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:22.158273Z",
+            "updated_at": "2025-07-09T16:21:22.158273Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1402976544162721-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500325894_1402976577496051_3841244101054834851_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Vy1BbHFzkJEQ7kNvwGXOXvZ&_nc_oc=Adms_xb8mvYUNwJo83NZku8muOYcgeUwUxdJJH1GZLD2wqS7or_NeYncB3yNDmJkYsw&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfSw_6d5Vwq1_7vPkAkQ5ACARNTd08T9VXeLYqq6V1948Q&oe=68745629",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/499928960_1402976587496050_6912951873808104776_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=mLmE-2pClIsQ7kNvwFsoHYO&_nc_oc=AdnfXLYR5A8hHxrzHvMGHrHhV3qLJwa1GyJKW10DZdmhjVbKxcEIK3QaALvqJhutURk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfRtktxMswpFujvp-Afur4ZRGooOzZ_3WZFF8GZOg-e5tw&oe=68744E26",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500573869_1864785434307639_273867748489720532_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=ZD3n_bN7visQ7kNvwGLFxsk&_nc_oc=AdlhduFQSN--vcp7jh692doN4XOCb9sO8tRTqQnuw5ht-5_c_jsehMeY_uvW9oWSDTw&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=OJYFFH0a_rsO0hqozkkkfA&oh=00_AfQoyjOyrNec31-pfIYMKh88GYwuBU1B6Vqdv6g5mjqGMA&oe=68747A44",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 626,
+            "variant_count": 1
+        },
+        {
+            "id": 1278,
+            "ad_archive_id": "729319696299492",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501649164_1872434753609870_3751223955624425345_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=edNOgU-k9NoQ7kNvwEgXjxA&_nc_oc=AdmwwkplwUd64JCkKqFxvzgiUpW9Ot_K3OrFfdz364jneYA1wGykvBawgYaf5nXUuxY&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQMunPS8GTOMWgRtqo4BzAr30ylxu39sdFDtN3po-LSiQ&oe=68746D9D",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502581355_1623937039028144_5376326971906222709_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=bol-7PorUeYQ7kNvwFlaV5w&_nc_oc=AdkEZVC6ieIAk3k2lWz1Q6Klc2cEWLpFIZ-Hc4OQ6d_ZaINtoIp1HeDZ0XHQ8o98MY8&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTepLVqIv6wGq2ZtTfTo5edgAIgi58sjnx9Jhxb6xwrOA&oe=68746CF7"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501649164_1872434753609870_3751223955624425345_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=edNOgU-k9NoQ7kNvwEgXjxA&_nc_oc=AdmwwkplwUd64JCkKqFxvzgiUpW9Ot_K3OrFfdz364jneYA1wGykvBawgYaf5nXUuxY&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQMunPS8GTOMWgRtqo4BzAr30ylxu39sdFDtN3po-LSiQ&oe=68746D9D",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.995322Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "729319696299492-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501649164_1872434753609870_3751223955624425345_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=edNOgU-k9NoQ7kNvwEgXjxA&_nc_oc=AdmwwkplwUd64JCkKqFxvzgiUpW9Ot_K3OrFfdz364jneYA1wGykvBawgYaf5nXUuxY&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQMunPS8GTOMWgRtqo4BzAr30ylxu39sdFDtN3po-LSiQ&oe=68746D9D",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502581355_1623937039028144_5376326971906222709_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=bol-7PorUeYQ7kNvwFlaV5w&_nc_oc=AdkEZVC6ieIAk3k2lWz1Q6Klc2cEWLpFIZ-Hc4OQ6d_ZaINtoIp1HeDZ0XHQ8o98MY8&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTepLVqIv6wGq2ZtTfTo5edgAIgi58sjnx9Jhxb6xwrOA&oe=68746CF7",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 620,
+            "variant_count": 1
+        },
+        {
+            "id": 1258,
+            "ad_archive_id": "1239407387921276",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "Explore Binghatti’s Exclusive Offers! Binghatti’s Summer Sale is on! Discover exclusive offers on top Dubai developments, with flexible payment plans and limited-time pricing. \n\nSign up now for details!\nor Call us at +97180015",
+            "main_title": "Explore Binghatti’s Exclusive Offers!",
+            "main_body_text": "Binghatti’s Summer Sale is on! Discover exclusive offers on top Dubai developments, with flexible payment plans and limited-time pricing. \n\nSign up now for details!\nor Call us at +97180015",
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501894167_1239407477921267_3800322130573063236_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=UtgW4NPfCdoQ7kNvwHmW4uO&_nc_oc=AdmPeXk3m1bTHjJl7KTWDNVfBCkDnD_beGmPecdfl01WzsUN22XqBOFGg3p3QhiOfvQ&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS9fZNowRcw--qoSuW9Ng61mvmchhrNZdabG1rjsPVKkg&oe=68746B81",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501465568_685365114319633_6005822743296573637_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nS8G-7daeOEQ7kNvwEb1qlB&_nc_oc=Adkw_rOnKob38AehW9QmBqYhAlcMsxRU82_FiBDp7BHS6LF3YTFtv9p0bGf-ZlvAM-c&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRoYJZ3O4EZbcduXzmiW5lbULn8lmHg-u_Z_RQFgJ8vvQ&oe=6874844B",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502498003_1213315963737833_369203002927895238_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7rX07c_5aX4Q7kNvwENl8Cf&_nc_oc=Adlq_Kf-mKLM4eSXlRXLFlh01jdFPyeGmg_Wl8IKlWYFU7F0HpJrXt9soF29p__ZjAE&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRB387kdzSQhyG0T3o3rfCpzldsDwjhoTtcOvZ71RgOkw&oe=68746968",
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501301781_610689114677195_1123397387515352435_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=BULadXqjB8oQ7kNvwHnN8SO&_nc_oc=Adkn4r-77Z-oJHd3_5lDiaFsDKNPIrM8U8-m1ncGozBpt7Vdt1OWPnuFvwuE_9jEbvQ&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ5fb_igbPspZrEdpnHyrbg78Atk4wqimf_WNInINsDvw&oe=68746F7F"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501894167_1239407477921267_3800322130573063236_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=UtgW4NPfCdoQ7kNvwHmW4uO&_nc_oc=AdmPeXk3m1bTHjJl7KTWDNVfBCkDnD_beGmPecdfl01WzsUN22XqBOFGg3p3QhiOfvQ&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS9fZNowRcw--qoSuW9Ng61mvmchhrNZdabG1rjsPVKkg&oe=68746B81",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501780668_1223777935910540_1693721322934404830_n.mp4?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=oE-fbFulODkQ7kNvwEkux_L&_nc_oc=AdnJ6WlL6NKzFPbTXXMJQ5lFkAmtMixAduQk4kX_upFN1L7YwZmHLsMKhH_9LRLnd9w&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTaxw-ISIrbMufECsKwVbNqiUnJFkg5hsOx__S-Wyf_WQ&oe=6874767E",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501329658_1239407471254601_1486190274404730436_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fuig_r0M_pAQ7kNvwFcEE-V&_nc_oc=AdnpyLdwk5kXH-0VRf4rY3U3vbacMCdKFS0omyHX4oGRdvRtB6E-6GQDBXpNLvZdr5U&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS39F-4HguU743jwqBcvRhGlX8hShLrDhV07pYYX6NF9A&oe=68745D07",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502121373_1393620018504880_8686154076622557245_n.mp4?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IlRLsQbuHwIQ7kNvwHQijSv&_nc_oc=AdmOYTrCB4cgUyNGZzDEvMO4vyuaFUxUzHG1wFaACoECadRDOlkZgMfi5VFnyuTma_8&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ8xuyv63mGBn4zZod5gYWio0j9spdp7NEay2DIWQiQVw&oe=68746F34",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501652192_1239407474587934_7958499210962081868_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=517Jip81nkwQ7kNvwEZfjMn&_nc_oc=AdmEijMQhsbXXk6AX5349Oa3nHvdOeiSFDDy2ziz5dic6CUh6Rrw3YQKVga5jTNMQxE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRpgOpuM4L5GEsJZ_LL8N51jvQdCUMBVsrkkU9RoZENyg&oe=687463C5",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502121373_1393620018504880_8686154076622557245_n.mp4?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IlRLsQbuHwIQ7kNvwHQijSv&_nc_oc=AdmOYTrCB4cgUyNGZzDEvMO4vyuaFUxUzHG1wFaACoECadRDOlkZgMfi5VFnyuTma_8&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ8xuyv63mGBn4zZod5gYWio0j9spdp7NEay2DIWQiQVw&oe=68746F34"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": "Learn More",
+            "cta_type": "LEARN_MORE",
+            "date_found": "2025-07-09T16:21:17.731966Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": true,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": true,
+                "cta_type": "LEARN_MORE",
+                "display_format": "DCO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": {
+                    "Select the type of unit required:": [
+                        "Studio",
+                        "1 bedroom apartment",
+                        "2 bedroom apartment",
+                        "3 bedroom apartment",
+                        "Retail shop"
+                    ],
+                    "Select preferred language:": [
+                        "Arabic",
+                        "English",
+                        "French",
+                        "Hindi",
+                        "Russian",
+                        "Turkish",
+                        "German",
+                        "Italian",
+                        "Chinese"
+                    ]
+                },
+                "standalone_fields": [
+                    "Country",
+                    "Email",
+                    "Full name",
+                    "Phone number"
+                ]
+            },
+            "creatives": [
+                {
+                    "id": "1239407387921276-0",
+                    "title": null,
+                    "body": "Binghatti’s Summer Sale is on! Discover exclusive offers on top Dubai developments, with flexible payment plans and limited-time pricing. \n\nSign up now for details!\nor Call us at +97180015",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501894167_1239407477921267_3800322130573063236_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=UtgW4NPfCdoQ7kNvwHmW4uO&_nc_oc=AdmPeXk3m1bTHjJl7KTWDNVfBCkDnD_beGmPecdfl01WzsUN22XqBOFGg3p3QhiOfvQ&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS9fZNowRcw--qoSuW9Ng61mvmchhrNZdabG1rjsPVKkg&oe=68746B81",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501780668_1223777935910540_1693721322934404830_n.mp4?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=oE-fbFulODkQ7kNvwEkux_L&_nc_oc=AdnJ6WlL6NKzFPbTXXMJQ5lFkAmtMixAduQk4kX_upFN1L7YwZmHLsMKhH_9LRLnd9w&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTaxw-ISIrbMufECsKwVbNqiUnJFkg5hsOx__S-Wyf_WQ&oe=6874767E",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501465568_685365114319633_6005822743296573637_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nS8G-7daeOEQ7kNvwEb1qlB&_nc_oc=Adkw_rOnKob38AehW9QmBqYhAlcMsxRU82_FiBDp7BHS6LF3YTFtv9p0bGf-ZlvAM-c&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRoYJZ3O4EZbcduXzmiW5lbULn8lmHg-u_Z_RQFgJ8vvQ&oe=6874844B",
+                            "type": "Image"
+                        }
+                    ]
+                },
+                {
+                    "id": "1239407387921276-1",
+                    "title": null,
+                    "body": "Binghatti’s Summer Sale is on! Discover exclusive offers on top Dubai developments, with flexible payment plans and limited-time pricing. \n\nSign up now for details!\nor Call us at +97180015",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501329658_1239407471254601_1486190274404730436_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fuig_r0M_pAQ7kNvwFcEE-V&_nc_oc=AdnpyLdwk5kXH-0VRf4rY3U3vbacMCdKFS0omyHX4oGRdvRtB6E-6GQDBXpNLvZdr5U&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS39F-4HguU743jwqBcvRhGlX8hShLrDhV07pYYX6NF9A&oe=68745D07",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502121373_1393620018504880_8686154076622557245_n.mp4?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IlRLsQbuHwIQ7kNvwHQijSv&_nc_oc=AdmOYTrCB4cgUyNGZzDEvMO4vyuaFUxUzHG1wFaACoECadRDOlkZgMfi5VFnyuTma_8&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ8xuyv63mGBn4zZod5gYWio0j9spdp7NEay2DIWQiQVw&oe=68746F34",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502498003_1213315963737833_369203002927895238_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7rX07c_5aX4Q7kNvwENl8Cf&_nc_oc=Adlq_Kf-mKLM4eSXlRXLFlh01jdFPyeGmg_Wl8IKlWYFU7F0HpJrXt9soF29p__ZjAE&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRB387kdzSQhyG0T3o3rfCpzldsDwjhoTtcOvZ71RgOkw&oe=68746968",
+                            "type": "Image"
+                        }
+                    ]
+                },
+                {
+                    "id": "1239407387921276-2",
+                    "title": null,
+                    "body": "Binghatti’s Summer Sale is on! Discover exclusive offers on top Dubai developments, with flexible payment plans and limited-time pricing. \n\nSign up now for details!\nor Call us at +97180015",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501652192_1239407474587934_7958499210962081868_n.?_nc_cat=107&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=517Jip81nkwQ7kNvwEZfjMn&_nc_oc=AdmEijMQhsbXXk6AX5349Oa3nHvdOeiSFDDy2ziz5dic6CUh6Rrw3YQKVga5jTNMQxE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRpgOpuM4L5GEsJZ_LL8N51jvQdCUMBVsrkkU9RoZENyg&oe=687463C5",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/502121373_1393620018504880_8686154076622557245_n.mp4?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IlRLsQbuHwIQ7kNvwHQijSv&_nc_oc=AdmOYTrCB4cgUyNGZzDEvMO4vyuaFUxUzHG1wFaACoECadRDOlkZgMfi5VFnyuTma_8&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ8xuyv63mGBn4zZod5gYWio0j9spdp7NEay2DIWQiQVw&oe=68746F34",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/501301781_610689114677195_1123397387515352435_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=BULadXqjB8oQ7kNvwHnN8SO&_nc_oc=Adkn4r-77Z-oJHd3_5lDiaFsDKNPIrM8U8-m1ncGozBpt7Vdt1OWPnuFvwuE_9jEbvQ&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ5fb_igbPspZrEdpnHyrbg78Atk4wqimf_WNInINsDvw&oe=68746F7F",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 605,
+            "variant_count": 4
+        },
+        {
+            "id": 1277,
+            "ad_archive_id": "663181639862698",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501489740_2126289024542797_6991552155931981043_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sLpd7Ruqks0Q7kNvwHUCwXx&_nc_oc=AdmCpAowOJjdmwEX-orQLU3O_dnvjDZH3CDNMt4l3A2eUh5LcOTCrB3RW71S9gatLuY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSg-RXFStntuvBquB6Q3K7nOFhh8p7utidAKFlXpGAHnQ&oe=68746177",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/502467041_4924536114439005_3746495919805287625_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Wmu0SDfou_EQ7kNvwECriMT&_nc_oc=AdmM9a_8tGxy1pRdx6pmkc-wLARfk28iPXaEfSZ1I8rRiO3JBh2chFmtJl1fBGLDSnc&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTF4Jq5kclauNb5EUXE_HGH6V_FlJ_c5u7GiK4SwhcIiQ&oe=68747450"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501489740_2126289024542797_6991552155931981043_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sLpd7Ruqks0Q7kNvwHUCwXx&_nc_oc=AdmCpAowOJjdmwEX-orQLU3O_dnvjDZH3CDNMt4l3A2eUh5LcOTCrB3RW71S9gatLuY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSg-RXFStntuvBquB6Q3K7nOFhh8p7utidAKFlXpGAHnQ&oe=68746177",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.981832Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "663181639862698-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501489740_2126289024542797_6991552155931981043_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sLpd7Ruqks0Q7kNvwHUCwXx&_nc_oc=AdmCpAowOJjdmwEX-orQLU3O_dnvjDZH3CDNMt4l3A2eUh5LcOTCrB3RW71S9gatLuY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSg-RXFStntuvBquB6Q3K7nOFhh8p7utidAKFlXpGAHnQ&oe=68746177",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/502467041_4924536114439005_3746495919805287625_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Wmu0SDfou_EQ7kNvwECriMT&_nc_oc=AdmM9a_8tGxy1pRdx6pmkc-wLARfk28iPXaEfSZ1I8rRiO3JBh2chFmtJl1fBGLDSnc&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTF4Jq5kclauNb5EUXE_HGH6V_FlJ_c5u7GiK4SwhcIiQ&oe=68747450",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 619,
+            "variant_count": 1
+        },
+        {
+            "id": 1279,
+            "ad_archive_id": "1357571958684959",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501640318_1891941328233869_6090984888696480300_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=hb3fRknpzm0Q7kNvwGn1M_1&_nc_oc=AdnHZWssrLiS7JjIkdRwuJlW7LCbMKocq70cwW7yTVKHsXnK1HL5ce-nGP3DMfnIz3I&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRXBj0Br6l1z8_xY8ebEPcCBaNBs9g897GGnVCVaRMOhQ&oe=68745265",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500748647_710787388171825_9061335686289711214_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=gNCpmxnLKncQ7kNvwGPzuXB&_nc_oc=Adl_cFdgip4j4H68vP82hb3KNC_3irNtLqJMqj728mhSo-eOqNz6LiHkjQ-gI4thckU&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfT5y4THnA_1A5dOS8t_SsOIEUQGCUu1ctsRH5E2p2_q6w&oe=68747B58"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501640318_1891941328233869_6090984888696480300_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=hb3fRknpzm0Q7kNvwGn1M_1&_nc_oc=AdnHZWssrLiS7JjIkdRwuJlW7LCbMKocq70cwW7yTVKHsXnK1HL5ce-nGP3DMfnIz3I&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRXBj0Br6l1z8_xY8ebEPcCBaNBs9g897GGnVCVaRMOhQ&oe=68745265",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:18.007409Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1357571958684959-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501640318_1891941328233869_6090984888696480300_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=hb3fRknpzm0Q7kNvwGn1M_1&_nc_oc=AdnHZWssrLiS7JjIkdRwuJlW7LCbMKocq70cwW7yTVKHsXnK1HL5ce-nGP3DMfnIz3I&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRXBj0Br6l1z8_xY8ebEPcCBaNBs9g897GGnVCVaRMOhQ&oe=68745265",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500748647_710787388171825_9061335686289711214_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=gNCpmxnLKncQ7kNvwGPzuXB&_nc_oc=Adl_cFdgip4j4H68vP82hb3KNC_3irNtLqJMqj728mhSo-eOqNz6LiHkjQ-gI4thckU&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfT5y4THnA_1A5dOS8t_SsOIEUQGCUu1ctsRH5E2p2_q6w&oe=68747B58",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 621,
+            "variant_count": 1
+        },
+        {
+            "id": 1274,
+            "ad_archive_id": "1533805511134145",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501944072_611866021914908_265778363314468119_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Bk2D-HyjzLIQ7kNvwEn5B2O&_nc_oc=AdlK2LLqswpuS0CUKOBIDXwLX6FR2E1JoMwNTpSYSb03NZGuCPksSWirPmkXSh0sApE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS7eN7k8aCqGtMyRZrhUPm_w7gaviVGy04jZ7RFWRe8PQ&oe=68745D77",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500864468_3702241033401529_5562620520041585974_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=9lZKQsPc-QUQ7kNvwFiS-Xz&_nc_oc=AdnHfIJq8pFTeSGgGkuM6GLALrpLWXGeQucSyLj2VcH1-R2Wdh341raibvdUokkMMZY&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSNDg-0U6nwbe1C7qWg3RW1N366Pa3KkErQOlNrs9-wpw&oe=68744F10"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501944072_611866021914908_265778363314468119_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Bk2D-HyjzLIQ7kNvwEn5B2O&_nc_oc=AdlK2LLqswpuS0CUKOBIDXwLX6FR2E1JoMwNTpSYSb03NZGuCPksSWirPmkXSh0sApE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS7eN7k8aCqGtMyRZrhUPm_w7gaviVGy04jZ7RFWRe8PQ&oe=68745D77",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.939092Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1533805511134145-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501944072_611866021914908_265778363314468119_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Bk2D-HyjzLIQ7kNvwEn5B2O&_nc_oc=AdlK2LLqswpuS0CUKOBIDXwLX6FR2E1JoMwNTpSYSb03NZGuCPksSWirPmkXSh0sApE&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS7eN7k8aCqGtMyRZrhUPm_w7gaviVGy04jZ7RFWRe8PQ&oe=68745D77",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500864468_3702241033401529_5562620520041585974_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=9lZKQsPc-QUQ7kNvwFiS-Xz&_nc_oc=AdnHfIJq8pFTeSGgGkuM6GLALrpLWXGeQucSyLj2VcH1-R2Wdh341raibvdUokkMMZY&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSNDg-0U6nwbe1C7qWg3RW1N366Pa3KkErQOlNrs9-wpw&oe=68744F10",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 616,
+            "variant_count": 1
+        },
+        {
+            "id": 1271,
+            "ad_archive_id": "702830146025294",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500653690_702830176025291_7472492717884558530_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=CMws0DtIAv4Q7kNvwG6eTym&_nc_oc=Adl3YDSDQX5Sw75K0co49QHJEbMonFoLnNB3Yz3nA15XW1tVRGlXJV1n_VZuqbLTJ4c&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS8O8pcFWMpfOl6BTwfD7e9BVD4aASkDQU6fJS8cwkK0Q&oe=68746079",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500790782_740196858446604_1274882578634372929_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=90RG8HkABEIQ7kNvwH2RmeE&_nc_oc=AdmrCNBHBaeq-CDF7-HL3k_vF-SIYo2Tu_QSaA4ciPIBiGr21wPH4UNWLLaP8mA1Xe0&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ6mgATNTvr3Yt7zsBbyNxJHig4fsnRvvhV2I6z08qIwg&oe=687467A8"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500653690_702830176025291_7472492717884558530_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=CMws0DtIAv4Q7kNvwG6eTym&_nc_oc=Adl3YDSDQX5Sw75K0co49QHJEbMonFoLnNB3Yz3nA15XW1tVRGlXJV1n_VZuqbLTJ4c&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS8O8pcFWMpfOl6BTwfD7e9BVD4aASkDQU6fJS8cwkK0Q&oe=68746079",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501682832_702830186025290_1997197489775873955_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=uaseScVHcnEQ7kNvwFcdi6i&_nc_oc=Admj9QO7G118d3J91ArrO08cqLWB6j5uMxiLyoKQ4sK1iaPUfG1_VugTrr4hNcRtu4A&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTs25yhRYn6u3tIZlmhtwk7MCeinVdzO_VEt8_0LjL2Hg&oe=687485A5"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.894727Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "702830146025294-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/500653690_702830176025291_7472492717884558530_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=CMws0DtIAv4Q7kNvwG6eTym&_nc_oc=Adl3YDSDQX5Sw75K0co49QHJEbMonFoLnNB3Yz3nA15XW1tVRGlXJV1n_VZuqbLTJ4c&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfS8O8pcFWMpfOl6BTwfD7e9BVD4aASkDQU6fJS8cwkK0Q&oe=68746079",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501682832_702830186025290_1997197489775873955_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=uaseScVHcnEQ7kNvwFcdi6i&_nc_oc=Admj9QO7G118d3J91ArrO08cqLWB6j5uMxiLyoKQ4sK1iaPUfG1_VugTrr4hNcRtu4A&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTs25yhRYn6u3tIZlmhtwk7MCeinVdzO_VEt8_0LjL2Hg&oe=687485A5",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/500790782_740196858446604_1274882578634372929_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=90RG8HkABEIQ7kNvwH2RmeE&_nc_oc=AdmrCNBHBaeq-CDF7-HL3k_vF-SIYo2Tu_QSaA4ciPIBiGr21wPH4UNWLLaP8mA1Xe0&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ6mgATNTvr3Yt7zsBbyNxJHig4fsnRvvhV2I6z08qIwg&oe=687467A8",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 613,
+            "variant_count": 1
+        },
+        {
+            "id": 1270,
+            "ad_archive_id": "1339762570436270",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501910109_1339762627102931_8978064167740760780_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=XXCjjWu4ZswQ7kNvwHvN6N1&_nc_oc=Adk4DjOHXYa7h434htW0ADVm9Kw_h3z1XV7sxcWWzkbNCuIQ5Pdm3xRPFoRx8JQjcsA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSo8OAPFQcpwh54iJ7mxFipEa5vtPz5FAayrrEcSO3RmQ&oe=68747FDB",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502701069_1689782799080652_3700994513427706680_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7xIdPk0xc1sQ7kNvwHf9zSw&_nc_oc=AdmPG3S3QhOuv6caL4VM5-UzNUs6bVyM7_miU69rRFWLdRjkJFz-lqpQ5r_Sk3K3mlM&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSOrBkkZFTLwFByQ6b3MXVFofxbkJEezEa0FFUWJesMSA&oe=68745D11"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501910109_1339762627102931_8978064167740760780_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=XXCjjWu4ZswQ7kNvwHvN6N1&_nc_oc=Adk4DjOHXYa7h434htW0ADVm9Kw_h3z1XV7sxcWWzkbNCuIQ5Pdm3xRPFoRx8JQjcsA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSo8OAPFQcpwh54iJ7mxFipEa5vtPz5FAayrrEcSO3RmQ&oe=68747FDB",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/502372418_1339762630436264_3465648029686277777_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=wN4_U23lX1wQ7kNvwFHksTQ&_nc_oc=AdlFjrSRUU-Y8hIrTlZJv1g7xIasAOSoAMm6oGQp-7EhkVZ02ZJdBBG_4K_7lDUTEFk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRz0Z4ZrIuBknYwKYD0PGEu7GuE-dp1cpD9NLVt3d1Biw&oe=687456F3"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.878312Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1339762570436270-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501910109_1339762627102931_8978064167740760780_n.?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=XXCjjWu4ZswQ7kNvwHvN6N1&_nc_oc=Adk4DjOHXYa7h434htW0ADVm9Kw_h3z1XV7sxcWWzkbNCuIQ5Pdm3xRPFoRx8JQjcsA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSo8OAPFQcpwh54iJ7mxFipEa5vtPz5FAayrrEcSO3RmQ&oe=68747FDB",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/502372418_1339762630436264_3465648029686277777_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=wN4_U23lX1wQ7kNvwFHksTQ&_nc_oc=AdlFjrSRUU-Y8hIrTlZJv1g7xIasAOSoAMm6oGQp-7EhkVZ02ZJdBBG_4K_7lDUTEFk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRz0Z4ZrIuBknYwKYD0PGEu7GuE-dp1cpD9NLVt3d1Biw&oe=687456F3",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/502701069_1689782799080652_3700994513427706680_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7xIdPk0xc1sQ7kNvwHf9zSw&_nc_oc=AdmPG3S3QhOuv6caL4VM5-UzNUs6bVyM7_miU69rRFWLdRjkJFz-lqpQ5r_Sk3K3mlM&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSOrBkkZFTLwFByQ6b3MXVFofxbkJEezEa0FFUWJesMSA&oe=68745D11",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 612,
+            "variant_count": 1
+        },
+        {
+            "id": 1272,
+            "ad_archive_id": "735354562179821",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "عش رفاهية المنتجعات في قلب الخليج التجاري في بن غاطي أكوارايز! تملك استوديو فاخر بإطلالة بانورامية على أفق دبي ضمن مشروع \"بن غاطي أكوا رايز\" الأيقوني في قلب الخليج التجاري\n\nبأسعار تبدأ من 999,999 درهم إماراتي مع تصميم معاصر ومرافق متكاملة في واحدة من أكثر المناطق الحيوية في دبي.\n\nللمزيد من التفاصيل!\nاتصل بنا على 97180015+\nأو سجل اهتمامك الآن أسفل الشاشة",
+            "main_title": "عش رفاهية المنتجعات في قلب الخليج التجاري في بن غاطي أكوارايز!",
+            "main_body_text": "تملك استوديو فاخر بإطلالة بانورامية على أفق دبي ضمن مشروع \"بن غاطي أكوا رايز\" الأيقوني في قلب الخليج التجاري\n\nبأسعار تبدأ من 999,999 درهم إماراتي مع تصميم معاصر ومرافق متكاملة في واحدة من أكثر المناطق الحيوية في دبي.\n\nللمزيد من التفاصيل!\nاتصل بنا على 97180015+\nأو سجل اهتمامك الآن أسفل الشاشة",
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/497734929_1213860266849704_8051309884041369975_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Ipk2GN4Py9cQ7kNvwEqh3kV&_nc_oc=Admunl9XjoHaN1qazKbT5cjAualHdUy7ksWPL8HrgHo3t3DrPozq2Z8P09vJhPMbn-4&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfT7ejNpDN9Nh0gfbieCcOScbwafUR1aZ03jr42jJHAXew&oe=68747121",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/497027960_1034125622117463_7613831777172689880_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Xm-l1D7BKTgQ7kNvwFo8mAa&_nc_oc=AdnwroOe0Kt-sEa-d6RepTPnyzcfAkrfqlrjf1RHRFW6QHloIhfzV-De395V2oCJl2s&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRTz7SS1UZHUvrFr7mVP48GnfPVb_iA4OdIbQOsJMx9Mg&oe=68746645",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/497750919_1901458097278763_8226333042250431539_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7c_CIj7WXNYQ7kNvwGTFLh5&_nc_oc=AdnhvJAMqQRVNGcG3FjFETowcAQlgmWnqL8cvCZV0Cyd72RRTKFDqG0VLVlJxcqPrOo&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQC85fk_zpEtum7MuTa41xTjHagJEHFXkSH2Mtg00tDsA&oe=687451D2",
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/497436990_9983633678353996_2865252944619352700_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kf-BU-EtfYkQ7kNvwGrv_zH&_nc_oc=AdlI9mMObVCR9x9OrqPgXbh7o6iRlcGrwR2YXFHU3ZZrlv3QPVt0VMpfsqmFb2yuz4A&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQSKx-UCH_FJQc2GGQVbn36_npGIOWLw1NOkimdPG3WKg&oe=68747532"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/497734929_1213860266849704_8051309884041369975_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Ipk2GN4Py9cQ7kNvwEqh3kV&_nc_oc=Admunl9XjoHaN1qazKbT5cjAualHdUy7ksWPL8HrgHo3t3DrPozq2Z8P09vJhPMbn-4&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfT7ejNpDN9Nh0gfbieCcOScbwafUR1aZ03jr42jJHAXew&oe=68747121",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/496925786_679238568600733_8645261638091827885_n.mp4?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fogwFmxYlT8Q7kNvwGPoUZ8&_nc_oc=AdkIyq67uE1OkUlN34Oj5Z0zA388aJphx7nWxjG2fHtWUIiJoy_NeUGpLPU5ntaO-oY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRwaTz3pSCOX_Tu_yVKJXYVgeAG6XWDwsPNYDYYNHox_A&oe=68744E17",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/497766653_1213860263516371_6010989025947916270_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=1Qv037LRJr4Q7kNvwGS0N7x&_nc_oc=AdkF4upNjO0KBL9iN0kfl6vC56ekxe605ZvV6KU_Fg8pQuPwpbrff-YClj5lFSUWr0M&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTW5pxbbsMkqLBArWL-Qfg4w5vTbxIF9LKVIZGXcXASPQ&oe=68745474",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491518836_2101825006959453_5388292225199573804_n.mp4?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_oUReHNIkNoQ7kNvwGPuo_f&_nc_oc=AdkVXqN0pk5wLA2zX6karJwMvzbjMhcylnk0ilIodOL1yAbrdZQKmadfLpiX9dE5NzM&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSXis2g0dzplTJA33KvXUHFOJPp5-gZdroAPrQNsFT9Xg&oe=68746E26",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491522985_1213860270183037_5210527172459940368_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=UgBKMTj4N80Q7kNvwH29jpL&_nc_oc=Adl3urbDzv-7_W2v53N9KtzmbyQ0BCctq3HpQJJo3LgKWTriyQ21LoAI1fSIYm8hyeE&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRF2AiHvaW_Zj9oJ2-2SES9gZKzK9doYNUaYu3qTykI2g&oe=687475B7",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491527106_557038870465872_8684976892152608404_n.mp4?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=P1FfosWvMjcQ7kNvwFbsgVw&_nc_oc=AdnfR4BDpzsRaBryjY2AijPSqQh_diVb49nnA5Wx9pmVrfQ8JlElDMtulhrfQq8fCRc&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfR7oQYq12npYuDqiAzFUG6jTBWASKLp9RL4wRO0izA-ow&oe=6874609A"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": "Learn More",
+            "cta_type": "LEARN_MORE",
+            "date_found": "2025-07-09T16:21:17.909917Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "LEARN_MORE",
+                "display_format": "DCO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": {
+                    "يرجى إختيار نوع الوحدة المطلوبة :": [
+                        "ستوديو",
+                        "غرفة نوم وصالة",
+                        "غرفتين نوم وصالة",
+                        "ثلاثة غرف نوم وصالة",
+                        "محل تجاري"
+                    ]
+                },
+                "standalone_fields": [
+                    "Country",
+                    "Email",
+                    "Full name",
+                    "Phone number"
+                ]
+            },
+            "creatives": [
+                {
+                    "id": "735354562179821-0",
+                    "title": null,
+                    "body": "تملك استوديو فاخر بإطلالة بانورامية على أفق دبي ضمن مشروع \"بن غاطي أكوا رايز\" الأيقوني في قلب الخليج التجاري\n\nبأسعار تبدأ من 999,999 درهم إماراتي مع تصميم معاصر ومرافق متكاملة في واحدة من أكثر المناطق الحيوية في دبي.\n\nللمزيد من التفاصيل!\nاتصل بنا على 97180015+\nأو سجل اهتمامك الآن أسفل الشاشة",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/497734929_1213860266849704_8051309884041369975_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Ipk2GN4Py9cQ7kNvwEqh3kV&_nc_oc=Admunl9XjoHaN1qazKbT5cjAualHdUy7ksWPL8HrgHo3t3DrPozq2Z8P09vJhPMbn-4&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfT7ejNpDN9Nh0gfbieCcOScbwafUR1aZ03jr42jJHAXew&oe=68747121",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/496925786_679238568600733_8645261638091827885_n.mp4?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=fogwFmxYlT8Q7kNvwGPoUZ8&_nc_oc=AdkIyq67uE1OkUlN34Oj5Z0zA388aJphx7nWxjG2fHtWUIiJoy_NeUGpLPU5ntaO-oY&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRwaTz3pSCOX_Tu_yVKJXYVgeAG6XWDwsPNYDYYNHox_A&oe=68744E17",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/497027960_1034125622117463_7613831777172689880_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Xm-l1D7BKTgQ7kNvwFo8mAa&_nc_oc=AdnwroOe0Kt-sEa-d6RepTPnyzcfAkrfqlrjf1RHRFW6QHloIhfzV-De395V2oCJl2s&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRTz7SS1UZHUvrFr7mVP48GnfPVb_iA4OdIbQOsJMx9Mg&oe=68746645",
+                            "type": "Image"
+                        }
+                    ]
+                },
+                {
+                    "id": "735354562179821-1",
+                    "title": null,
+                    "body": "تملك استوديو فاخر بإطلالة بانورامية على أفق دبي ضمن مشروع \"بن غاطي أكوا رايز\" الأيقوني في قلب الخليج التجاري\n\nبأسعار تبدأ من 999,999 درهم إماراتي مع تصميم معاصر ومرافق متكاملة في واحدة من أكثر المناطق الحيوية في دبي.\n\nللمزيد من التفاصيل!\nاتصل بنا على 97180015+\nأو سجل اهتمامك الآن أسفل الشاشة",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/497766653_1213860263516371_6010989025947916270_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=1Qv037LRJr4Q7kNvwGS0N7x&_nc_oc=AdkF4upNjO0KBL9iN0kfl6vC56ekxe605ZvV6KU_Fg8pQuPwpbrff-YClj5lFSUWr0M&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfTW5pxbbsMkqLBArWL-Qfg4w5vTbxIF9LKVIZGXcXASPQ&oe=68745474",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491518836_2101825006959453_5388292225199573804_n.mp4?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_oUReHNIkNoQ7kNvwGPuo_f&_nc_oc=AdkVXqN0pk5wLA2zX6karJwMvzbjMhcylnk0ilIodOL1yAbrdZQKmadfLpiX9dE5NzM&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSXis2g0dzplTJA33KvXUHFOJPp5-gZdroAPrQNsFT9Xg&oe=68746E26",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/497750919_1901458097278763_8226333042250431539_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=7c_CIj7WXNYQ7kNvwGTFLh5&_nc_oc=AdnhvJAMqQRVNGcG3FjFETowcAQlgmWnqL8cvCZV0Cyd72RRTKFDqG0VLVlJxcqPrOo&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQC85fk_zpEtum7MuTa41xTjHagJEHFXkSH2Mtg00tDsA&oe=687451D2",
+                            "type": "Image"
+                        }
+                    ]
+                },
+                {
+                    "id": "735354562179821-2",
+                    "title": null,
+                    "body": "تملك استوديو فاخر بإطلالة بانورامية على أفق دبي ضمن مشروع \"بن غاطي أكوا رايز\" الأيقوني في قلب الخليج التجاري\n\nبأسعار تبدأ من 999,999 درهم إماراتي مع تصميم معاصر ومرافق متكاملة في واحدة من أكثر المناطق الحيوية في دبي.\n\nللمزيد من التفاصيل!\nاتصل بنا على 97180015+\nأو سجل اهتمامك الآن أسفل الشاشة",
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491522985_1213860270183037_5210527172459940368_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=UgBKMTj4N80Q7kNvwH29jpL&_nc_oc=Adl3urbDzv-7_W2v53N9KtzmbyQ0BCctq3HpQJJo3LgKWTriyQ21LoAI1fSIYm8hyeE&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRF2AiHvaW_Zj9oJ2-2SES9gZKzK9doYNUaYu3qTykI2g&oe=687475B7",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/491527106_557038870465872_8684976892152608404_n.mp4?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=P1FfosWvMjcQ7kNvwFbsgVw&_nc_oc=AdnfR4BDpzsRaBryjY2AijPSqQh_diVb49nnA5Wx9pmVrfQ8JlElDMtulhrfQq8fCRc&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfR7oQYq12npYuDqiAzFUG6jTBWASKLp9RL4wRO0izA-ow&oe=6874609A",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/497436990_9983633678353996_2865252944619352700_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=kf-BU-EtfYkQ7kNvwGrv_zH&_nc_oc=AdlI9mMObVCR9x9OrqPgXbh7o6iRlcGrwR2YXFHU3ZZrlv3QPVt0VMpfsqmFb2yuz4A&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQSKx-UCH_FJQc2GGQVbn36_npGIOWLw1NOkimdPG3WKg&oe=68747532",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 614,
+            "variant_count": 1
+        },
+        {
+            "id": 1273,
+            "ad_archive_id": "630029236728666",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501760182_1692156391417933_3680038811957282175_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=w8Ojad-FV0kQ7kNvwECC0DG&_nc_oc=AdnVrUYnYbcCw-ZcZT-CialCq17PgH_CAtLWKrIo3s63v8WoZqutnTOhaKcysRzbpfI&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQVcnU7m093u8E5XtFDc6l26p0tvGqHLX1ZqwlSmbXbhg&oe=68746511",
+            "main_image_urls": [
+                "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500741092_708026041595212_1705472952278847240_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IiUvDEm-5_YQ7kNvwHtaM86&_nc_oc=AdnB9j6xjbRvKJ80O24L_0ftv4iSOHGonEoZHy8MnqRp5cx8O1V6lDV1ufMG6mKrIDI&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQR2DdwWdCkAU5S3e1blPPpyjgdLR8trRDlL_iw7T6zYg&oe=68746266"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501760182_1692156391417933_3680038811957282175_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=w8Ojad-FV0kQ7kNvwECC0DG&_nc_oc=AdnVrUYnYbcCw-ZcZT-CialCq17PgH_CAtLWKrIo3s63v8WoZqutnTOhaKcysRzbpfI&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQVcnU7m093u8E5XtFDc6l26p0tvGqHLX1ZqwlSmbXbhg&oe=68746511",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.925206Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "630029236728666-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501760182_1692156391417933_3680038811957282175_n.?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=w8Ojad-FV0kQ7kNvwECC0DG&_nc_oc=AdnVrUYnYbcCw-ZcZT-CialCq17PgH_CAtLWKrIo3s63v8WoZqutnTOhaKcysRzbpfI&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQVcnU7m093u8E5XtFDc6l26p0tvGqHLX1ZqwlSmbXbhg&oe=68746511",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb2-1.fna.fbcdn.net/v/t39.35426-6/500741092_708026041595212_1705472952278847240_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=IiUvDEm-5_YQ7kNvwHtaM86&_nc_oc=AdnB9j6xjbRvKJ80O24L_0ftv4iSOHGonEoZHy8MnqRp5cx8O1V6lDV1ufMG6mKrIDI&_nc_zt=14&_nc_ht=scontent.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQR2DdwWdCkAU5S3e1blPPpyjgdLR8trRDlL_iw7T6zYg&oe=68746266",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 615,
+            "variant_count": 1
+        },
+        {
+            "id": 1275,
+            "ad_archive_id": "1169595381518101",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500313069_2030503187440955_4137394824675938251_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=rCJJpF9neNUQ7kNvwEJKpo4&_nc_oc=Adkfwjs_cFdEiy8oiihtt4IkwCcIZ13KMi4JXtryBrfU5zVRFkxu24BaMot2lmWrHiw&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQWP-78KvjR2T_240Vdnzclo-a00-zqQF_9YNMzKrWlDA&oe=687468BD",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501042412_706058762004517_875815083714851547_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=48MoCH4sWF0Q7kNvwEF3n9H&_nc_oc=Adl4uuLqGZC-kGtF62cdplUBSkIvXzZTcoMSZqZW1wFlPB1yf8GAt1ZibCfUrI0bW0c&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRNrR9vQkcJNN2dHOaQsXTmKbnjFFPgtEk5M0Ra21MYhQ&oe=68748142"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500313069_2030503187440955_4137394824675938251_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=rCJJpF9neNUQ7kNvwEJKpo4&_nc_oc=Adkfwjs_cFdEiy8oiihtt4IkwCcIZ13KMi4JXtryBrfU5zVRFkxu24BaMot2lmWrHiw&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQWP-78KvjR2T_240Vdnzclo-a00-zqQF_9YNMzKrWlDA&oe=687468BD",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.952810Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "VIEW_INSTAGRAM_PROFILE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1169595381518101-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500313069_2030503187440955_4137394824675938251_n.?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=rCJJpF9neNUQ7kNvwEJKpo4&_nc_oc=Adkfwjs_cFdEiy8oiihtt4IkwCcIZ13KMi4JXtryBrfU5zVRFkxu24BaMot2lmWrHiw&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQWP-78KvjR2T_240Vdnzclo-a00-zqQF_9YNMzKrWlDA&oe=687468BD",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/500585620_1041942271377990_6731322398365148630_n.mp4?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=sUfEhKHH6_QQ7kNvwGGKjZB&_nc_oc=AdnohsNPxbZfgLPAW-XeZOvzdf-P45TYm_z0XqS_OnGcY7eFl2qiQRt-tNKyH06-6Co&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSdpbczj-6bmC809e50qD2t80MjsVNwVQTbiuQl-5C1Pg&oe=687474F4",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501042412_706058762004517_875815083714851547_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=48MoCH4sWF0Q7kNvwEF3n9H&_nc_oc=Adl4uuLqGZC-kGtF62cdplUBSkIvXzZTcoMSZqZW1wFlPB1yf8GAt1ZibCfUrI0bW0c&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRNrR9vQkcJNN2dHOaQsXTmKbnjFFPgtEk5M0Ra21MYhQ&oe=68748142",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 617,
+            "variant_count": 1
+        },
+        {
+            "id": 1267,
+            "ad_archive_id": "1002583662030776",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501393016_1002583675364108_8961572445146579518_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nBwoWBuvGaQQ7kNvwHWDSzS&_nc_oc=Admz36gIPQvqjbKrlF8hzrN5-AmI7gX0H9pOx_iBcT2qYtMUmtpJvviTSEDzuIGSxkk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ9mzrQwpBo6qqNMzFZv9B_PNI8utSvAPhjGc5wMtMObQ&oe=68747E98",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501428798_1685541098799819_8534296611344850744_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=zB0GnH1odTwQ7kNvwFhLWgE&_nc_oc=Adne0EPdvTilFfq6fVfk9I6Z5mmrvCq2mx0j-qsoTq2x_JigW-vbKg76oun8hdIRHfo&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSyQXtB-EsBa-qGT12pJtJT2S-QnKkLvT_NKbT7N1qG-g&oe=68745CB8"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501393016_1002583675364108_8961572445146579518_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nBwoWBuvGaQQ7kNvwHWDSzS&_nc_oc=Admz36gIPQvqjbKrlF8hzrN5-AmI7gX0H9pOx_iBcT2qYtMUmtpJvviTSEDzuIGSxkk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ9mzrQwpBo6qqNMzFZv9B_PNI8utSvAPhjGc5wMtMObQ&oe=68747E98",
+                "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501822857_1002583678697441_6598106819593525923_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=0d0KWT20PcYQ7kNvwEtRdtn&_nc_oc=AdlaMah-H8h9vxJWknoe1UPl2xz9G2XRpcgF9v1tFVjM1YBhHR9ygEhDebizjiGuSj0&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQzAklAC3u-Wg92rc5YAeRBUJ-on364rlFFD1ZR9Ot7hQ&oe=687483EA"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.836823Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": false,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": false,
+                "cta_type": "WATCH_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": null,
+                "standalone_fields": null
+            },
+            "creatives": [
+                {
+                    "id": "1002583662030776-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501393016_1002583675364108_8961572445146579518_n.?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=nBwoWBuvGaQQ7kNvwHWDSzS&_nc_oc=Admz36gIPQvqjbKrlF8hzrN5-AmI7gX0H9pOx_iBcT2qYtMUmtpJvviTSEDzuIGSxkk&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQ9mzrQwpBo6qqNMzFZv9B_PNI8utSvAPhjGc5wMtMObQ&oe=68747E98",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb2-1.fna.fbcdn.net/v/t42.1790-2/501822857_1002583678697441_6598106819593525923_n.?_nc_cat=111&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=0d0KWT20PcYQ7kNvwEtRdtn&_nc_oc=AdlaMah-H8h9vxJWknoe1UPl2xz9G2XRpcgF9v1tFVjM1YBhHR9ygEhDebizjiGuSj0&_nc_zt=28&_nc_ht=video.fdxb2-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfQzAklAC3u-Wg92rc5YAeRBUJ-on364rlFFD1ZR9Ot7hQ&oe=687483EA",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501428798_1685541098799819_8534296611344850744_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=zB0GnH1odTwQ7kNvwFhLWgE&_nc_oc=Adne0EPdvTilFfq6fVfk9I6Z5mmrvCq2mx0j-qsoTq2x_JigW-vbKg76oun8hdIRHfo&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSyQXtB-EsBa-qGT12pJtJT2S-QnKkLvT_NKbT7N1qG-g&oe=68745CB8",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 609,
+            "variant_count": 1
+        },
+        {
+            "id": 1266,
+            "ad_archive_id": "719195100576667",
+            "competitor": {
+                "id": 1,
+                "name": "Binghatti",
+                "page_id": "1591077094491398",
+                "page_url": null,
+                "is_active": true,
+                "ads_count": 0,
+                "created_at": null,
+                "updated_at": null
+            },
+            "ad_copy": "",
+            "main_title": null,
+            "main_body_text": null,
+            "main_caption": null,
+            "media_type": "Video",
+            "media_url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501776535_719195117243332_6518044388596154580_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=TrWOcEq1OcYQ7kNvwFDulXC&_nc_oc=AdldFD4eJAvJOYIfBDIWGiQL7uHePQjohIY-eyLrY-rbCNX-MQh3h9IsDJHKwwyhcUA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRKqYl8S5FDSFSOmZpGqcPLoZLT5sOsouksrLQuK8M6rg&oe=68744EE9",
+            "main_image_urls": [
+                "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501273310_1097524025541506_1304271076651359944_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Ek_oS6ym-SUQ7kNvwFYurJR&_nc_oc=AdkV1K-pMufHJAxiUjdhZD2rFDkrItIW3l5vG8mY4KXrLCNNXXFwrViliY_XI2iFq2o&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRGSfLQYgokkgAhWDATOrAyNhmr2OCUEpdpY0_rKcAwwA&oe=687466E6"
+            ],
+            "main_video_urls": [
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501776535_719195117243332_6518044388596154580_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=TrWOcEq1OcYQ7kNvwFDulXC&_nc_oc=AdldFD4eJAvJOYIfBDIWGiQL7uHePQjohIY-eyLrY-rbCNX-MQh3h9IsDJHKwwyhcUA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRKqYl8S5FDSFSOmZpGqcPLoZLT5sOsouksrLQuK8M6rg&oe=68744EE9",
+                "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501269149_719195120576665_865591777166401191_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=EykZZ3io-8YQ7kNvwHsMSZM&_nc_oc=AdmbKOtHKJ8beewtErpaGLy7fTYyumAqwhIu9lNNv4XhEzfVDGKlgerwbpXCKnPG9Ig&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSPgRwAXI5UAfHQ_jmJET3lGGco6WtGLHwMg3RlcN1GuA&oe=687475DA"
+            ],
+            "page_name": "Binghatti",
+            "page_id": "1591077094491398",
+            "publisher_platform": [],
+            "targeted_countries": [],
+            "impressions_text": null,
+            "spend": null,
+            "cta_text": null,
+            "cta_type": null,
+            "date_found": "2025-07-09T16:21:17.824930Z",
+            "start_date": null,
+            "end_date": null,
+            "is_active": true,
+            "duration_days": null,
+            "created_at": "2025-07-09T16:21:17.647228Z",
+            "updated_at": "2025-07-09T16:21:17.647228Z",
+            "analysis": null,
+            "meta": {
+                "is_active": true,
+                "cta_type": "LEARN_MORE",
+                "display_format": "VIDEO",
+                "start_date": null,
+                "end_date": null
+            },
+            "targeting": {
+                "locations": null,
+                "age_range": null,
+                "gender": null,
+                "reach_breakdown": null,
+                "total_reach": null
+            },
+            "lead_form": {
+                "questions": {
+                    "Select the type of unit required:": [
+                        "Studio",
+                        "1 bedroom apartment",
+                        "2 bedroom apartment",
+                        "3 bedroom apartment",
+                        "Retail shop"
+                    ],
+                    "Select preferred language:": [
+                        "Arabic",
+                        "English",
+                        "French",
+                        "Hindi",
+                        "Russian",
+                        "Turkish",
+                        "German",
+                        "Italian",
+                        "Chinese"
+                    ]
+                },
+                "standalone_fields": [
+                    "Country",
+                    "Email",
+                    "Full name",
+                    "Phone number"
+                ]
+            },
+            "creatives": [
+                {
+                    "id": "719195100576667-0",
+                    "title": null,
+                    "body": null,
+                    "caption": null,
+                    "link_url": null,
+                    "link_description": null,
+                    "media": [
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501776535_719195117243332_6518044388596154580_n.?_nc_cat=104&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=TrWOcEq1OcYQ7kNvwFDulXC&_nc_oc=AdldFD4eJAvJOYIfBDIWGiQL7uHePQjohIY-eyLrY-rbCNX-MQh3h9IsDJHKwwyhcUA&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRKqYl8S5FDSFSOmZpGqcPLoZLT5sOsouksrLQuK8M6rg&oe=68744EE9",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://video.fdxb5-1.fna.fbcdn.net/v/t42.1790-2/501269149_719195120576665_865591777166401191_n.?_nc_cat=103&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=EykZZ3io-8YQ7kNvwHsMSZM&_nc_oc=AdmbKOtHKJ8beewtErpaGLy7fTYyumAqwhIu9lNNv4XhEzfVDGKlgerwbpXCKnPG9Ig&_nc_zt=28&_nc_ht=video.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfSPgRwAXI5UAfHQ_jmJET3lGGco6WtGLHwMg3RlcN1GuA&oe=687475DA",
+                            "type": "Video"
+                        },
+                        {
+                            "url": "https://scontent.fdxb5-1.fna.fbcdn.net/v/t39.35426-6/501273310_1097524025541506_1304271076651359944_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Ek_oS6ym-SUQ7kNvwFYurJR&_nc_oc=AdkV1K-pMufHJAxiUjdhZD2rFDkrItIW3l5vG8mY4KXrLCNNXXFwrViliY_XI2iFq2o&_nc_zt=14&_nc_ht=scontent.fdxb5-1.fna&_nc_gid=TqI__29MGuDEYbzMTzcE9Q&oh=00_AfRGSfLQYgokkgAhWDATOrAyNhmr2OCUEpdpY0_rKcAwwA&oe=687466E6",
+                            "type": "Image"
+                        }
+                    ]
+                }
+            ],
+            "ad_set_id": 608,
+            "variant_count": 1
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "page_size": 24,
+        "total_items": 106,
+        "total_pages": 5,
+        "has_next": true,
+        "has_previous": false
+    }
+}
