@@ -582,6 +582,19 @@ class EnhancedAdExtractionService:
             ad_id = ad_data.get("ad_archive_id", "unknown")
             self.logger.info(f"Finding AdSet for ad {ad_id} using direct comparison")
             
+            # First, generate content signature for this ad
+            content_signature = self._generate_content_signature(ad_data)
+            self.logger.info(f"Generated content signature for ad {ad_id}: {content_signature}")
+            
+            # Check if an AdSet with this content_signature already exists
+            existing_ad_set = self.db.query(AdSet).filter(
+                AdSet.content_signature == content_signature
+            ).first()
+            
+            if existing_ad_set:
+                self.logger.info(f"Found existing AdSet {existing_ad_set.id} with matching content_signature: {content_signature}")
+                return existing_ad_set
+            
             # Fetch all existing AdSets with their best_ad
             ad_sets = self.db.query(AdSet).all()
             self.logger.info(f"Found {len(ad_sets)} existing AdSets to compare against")
@@ -674,9 +687,6 @@ class EnhancedAdExtractionService:
                 
             # If no match found, create a new AdSet
             self.logger.info(f"No matching AdSet found for ad {ad_id}, creating new AdSet")
-            
-            # Generate a content signature for reference (not for matching)
-            content_signature = self._generate_content_signature(ad_data)
             
             # Create new ad set
             new_ad_set = AdSet(
@@ -830,6 +840,192 @@ class EnhancedAdExtractionService:
         stats = self.save_enhanced_ads_to_database(enhanced_data)
         
         return enhanced_data, stats 
+
+    def transform_raw_data_to_enhanced_format(self, raw_responses: List[Dict]) -> Dict[str, List[Dict]]:
+        """
+        Transform raw JSON responses into enhanced format grouped by competitor
+        
+        Args:
+            raw_responses: List of raw JSON responses from Facebook Ads Library
+            
+        Returns:
+            Dictionary mapping competitor names to lists of enhanced ad data
+        """
+        enhanced_data = {}
+        
+        self.logger.info(f"Starting transform with {len(raw_responses)} responses, types: {[type(r).__name__ for r in raw_responses[:3]]}")
+        
+        for i, response in enumerate(raw_responses):
+            try:
+                self.logger.info(f"Processing response {i}: type={type(response).__name__}, preview={str(response)[:100]}")
+                
+                # Handle case where response might be a JSON string
+                if isinstance(response, str):
+                    self.logger.info(f"Response {i} is string, attempting JSON parse")
+                    try:
+                        response = json.loads(response)
+                        self.logger.info(f"Successfully parsed JSON, new type: {type(response).__name__}")
+                    except json.JSONDecodeError as e:
+                        self.logger.error(f"Failed to parse JSON response {i}: {e}")
+                        continue
+                
+                # Ensure response is a dictionary
+                if not isinstance(response, dict):
+                    self.logger.warning(f"Response {i} is not a dictionary after parsing: {type(response)}")
+                    continue
+                
+                # Extract ads from response
+                self.logger.info(f"Extracting data from response {i}")
+                
+                # Handle GraphQL response structure
+                ads_data = []
+                if "data" in response:
+                    # Check for GraphQL structure: data.ad_library_main.search_results_connection.edges
+                    if "ad_library_main" in response["data"]:
+                        search_results = response["data"]["ad_library_main"].get("search_results_connection", {})
+                        edges = search_results.get("edges", [])
+                        self.logger.info(f"Found {len(edges)} edges in GraphQL response")
+                        
+                        for edge in edges:
+                            if "node" in edge:
+                                node_data = edge["node"]
+                                # Check for collated_results or direct ad data
+                                if "collated_results" in node_data:
+                                    collated = node_data["collated_results"]
+                                    if isinstance(collated, list):
+                                        ads_data.extend(collated)
+                                    else:
+                                        ads_data.append(collated)
+                                else:
+                                    ads_data.append(node_data)
+                    else:
+                        # Fallback to direct data array
+                        ads_data = response["data"] if isinstance(response["data"], list) else [response["data"]]
+                else:
+                    # Fallback for non-GraphQL responses
+                    ads_data = response.get("data", [])
+                
+                if not ads_data:
+                    self.logger.warning(f"No ads found in response {i}")
+                    continue
+                
+                self.logger.info(f"Found {len(ads_data)} ads in response {i}")
+                
+                # Process each ad
+                for j, ad_data in enumerate(ads_data):
+                    self.logger.info(f"Processing ad {j} from response {i}")
+                    self.logger.info(f"Ad {j} type: {type(ad_data).__name__}, content preview: {str(ad_data)[:200]}")
+                    
+                    # Ensure ad_data is a dictionary
+                    if not isinstance(ad_data, dict):
+                        self.logger.warning(f"Ad {j} is not a dictionary after parsing: {type(ad_data)}")
+                        continue
+                    
+                    # Build clean ad object
+                    clean_ad = self.build_clean_ad_object(ad_data)
+                    if not clean_ad:
+                        self.logger.warning(f"Failed to build clean ad object for ad {j}")
+                        continue
+                    
+                    # Extract competitor info
+                    page_name = clean_ad.get("meta", {}).get("page_name", "Unknown")
+                    self.logger.info(f"Ad {j} belongs to competitor: {page_name}")
+                    
+                    # Group by competitor
+                    if page_name not in enhanced_data:
+                        enhanced_data[page_name] = []
+                    
+                    enhanced_data[page_name].append(clean_ad)
+                    
+            except Exception as e:
+                self.logger.error(f"Error processing raw response {i}: {e}", exc_info=True)
+                continue
+                
+        self.logger.info(f"Transformed {len(raw_responses)} responses into {len(enhanced_data)} competitor groups")
+        return enhanced_data
+
+    def save_enhanced_ads_to_database(self, enhanced_data: Dict[str, List[Dict]]) -> Dict[str, int]:
+        """
+        Save enhanced ad data to database
+        
+        Args:
+            enhanced_data: Dictionary mapping competitor names to ad data lists
+            
+        Returns:
+            Dictionary with processing statistics
+        """
+        stats = {
+            "total_ads_processed": 0,
+            "new_ads_created": 0,
+            "existing_ads_updated": 0,
+            "errors": 0,
+            "competitors_processed": 0
+        }
+        
+        try:
+            for competitor_name, ads_list in enhanced_data.items():
+                try:
+                    stats["competitors_processed"] += 1
+                    
+                    # Find or create competitor
+                    competitor = self.db.query(Competitor).filter(
+                        Competitor.name == competitor_name
+                    ).first()
+                    
+                    if not competitor:
+                        # Extract page_id from first ad if available
+                        page_id = None
+                        if ads_list and ads_list[0].get("meta", {}).get("page_id"):
+                            page_id = ads_list[0]["meta"]["page_id"]
+                        
+                        competitor = Competitor(
+                            name=competitor_name,
+                            page_id=page_id,
+                            created_at=datetime.utcnow()
+                        )
+                        self.db.add(competitor)
+                        self.db.flush()
+                        self.logger.info(f"Created new competitor: {competitor_name}")
+                    
+                    # Process each ad for this competitor
+                    for ad_data in ads_list:
+                        try:
+                            stats["total_ads_processed"] += 1
+                            
+                            # Create or update the ad
+                            ad_obj, is_new = self._create_or_update_enhanced_ad(
+                                ad_data, 
+                                competitor.id
+                            )
+                            
+                            if ad_obj:
+                                if is_new:
+                                    stats["new_ads_created"] += 1
+                                else:
+                                    stats["existing_ads_updated"] += 1
+                            else:
+                                stats["errors"] += 1
+                                
+                        except Exception as e:
+                            self.logger.error(f"Error processing ad {ad_data.get('ad_archive_id', 'unknown')}: {e}")
+                            stats["errors"] += 1
+                            continue
+                            
+                except Exception as e:
+                    self.logger.error(f"Error processing competitor {competitor_name}: {e}")
+                    stats["errors"] += 1
+                    continue
+            
+            # Commit all changes
+            self.db.commit()
+            self.logger.info(f"Database save completed: {stats}")
+            
+        except Exception as e:
+            self.logger.error(f"Error saving to database: {e}")
+            self.db.rollback()
+            stats["errors"] += 1
+            
+        return stats
 
     def _extract_enhanced_ad_data(self, ad_data: Dict) -> Dict:
         """

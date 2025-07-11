@@ -448,8 +448,8 @@ class CreativeComparisonService:
         self.logger.info(f"Comparing creatives: {creative1_id} and {creative2_id}")
         
         # Extract ad text
-        text1 = creative1.get("body", "").strip() if creative1 else ""
-        text2 = creative2.get("body", "").strip() if creative2 else ""
+        text1 = (creative1.get("body") or "").strip() if creative1 else ""
+        text2 = (creative2.get("body") or "").strip() if creative2 else ""
         
         # If both creatives have significant text, compare the text
         if text1 and text2 and len(text1) > 20 and len(text2) > 20:
