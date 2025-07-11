@@ -17,6 +17,7 @@ Directory structure:
         │   ├── layout.tsx
         │   ├── page.tsx
         │   ├── ad-sets/
+        │   │   ├── page.tsx
         │   │   └── [id]/
         │   │       └── page.tsx
         │   ├── ads/
@@ -1103,6 +1104,195 @@ export default function Dashboard() {
 
 
 ================================================
+File: src/app/ad-sets/page.tsx
+================================================
+'use client';
+
+import { useEffect, useState } from 'react';
+import { adsApi, ApiError } from '@/lib/api';
+import { AdWithAnalysis } from '@/types/ad';
+import { transformAdsWithAnalysis } from '@/lib/transformers';
+import { DashboardLayout } from '@/components/dashboard';
+import { AdCard } from '@/features/dashboard/components/AdCard';
+import { Pagination } from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Grid, Layers, ChevronUp, ChevronDown, ImageIcon, Film, Calendar } from 'lucide-react';
+
+export default function AdSetsPage() {
+  const [adSets, setAdSets] = useState<AdWithAnalysis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(24);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  useEffect(() => {
+    fetchAdSets();
+  }, [page, sortBy, sortOrder]);
+
+  const fetchAdSets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await adsApi.getAllAdSets(page, pageSize, sortBy, sortOrder);
+      
+      setTotalItems(response.pagination.total_items);
+      setTotalPages(response.pagination.total_pages);
+      
+      const transformedAds = transformAdsWithAnalysis(response.data);
+      setAdSets(transformedAds);
+      
+    } catch (err) {
+      console.error('Error fetching ad sets:', err);
+      setError(err instanceof ApiError ? err.message : 'Failed to fetch ad sets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    setPage(1); // Reset to first page when changing sort
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    setPage(1); // Reset to first page when changing sort order
+  };
+
+  const renderSortIcon = () => {
+    return sortOrder === 'asc' ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
+  };
+
+  const renderAdSets = () => {
+    if (adSets.length === 0) {
+      return (
+        <Card className="col-span-full border-muted bg-muted/20">
+          <CardContent className="text-center p-12">
+            <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">No ad sets found.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return adSets.map(ad => (
+      <div key={ad.ad_set_id} className="group">
+        <AdCard ad={ad} />
+      </div>
+    ));
+  };
+
+  const renderLoading = () => (
+    <div className="col-span-full flex items-center justify-center h-96">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <p className="text-muted-foreground">Loading ad sets...</p>
+      </div>
+    </div>
+  );
+
+  const renderError = () => (
+    <Card className="col-span-full border-red-300 bg-red-50 dark:bg-red-900/10">
+      <CardHeader>
+        <CardTitle className="text-red-600 dark:text-red-400">Error</CardTitle>
+        <CardDescription className="text-red-500 dark:text-red-300">
+          Failed to load ad sets
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
+        <Button variant="outline" className="mt-4" onClick={fetchAdSets}>
+          Try Again
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStats = () => {
+    if (totalItems === 0) return null;
+    
+    return (
+      <div className="flex flex-wrap gap-3 mb-6">
+        <Badge variant="outline" className="bg-muted/50 text-foreground flex items-center gap-1 px-3 py-1.5">
+          <Layers className="h-4 w-4" />
+          <span>{totalItems} Ad Sets</span>
+        </Badge>
+      </div>
+    );
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Ad Sets</h1>
+            <p className="text-muted-foreground">
+              Browse all ad sets grouped by similar creative content
+            </p>
+            {renderStats()}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Date Created</SelectItem>
+                <SelectItem value="variant_count">Variant Count</SelectItem>
+                <SelectItem value="first_seen_date">First Seen Date</SelectItem>
+                <SelectItem value="last_seen_date">Last Seen Date</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button variant="outline" size="icon" onClick={toggleSortOrder} title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}>
+              {renderSortIcon()}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {loading && renderLoading()}
+          {error && renderError()}
+          {!loading && !error && renderAdSets()}
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+              onPageSizeChange={() => {}}
+            />
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+} 
+
+
+================================================
 File: src/app/ad-sets/[id]/page.tsx
 ================================================
 'use client';
@@ -1117,8 +1307,18 @@ import { AdCard } from '@/features/dashboard/components/AdCard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
-import { ArrowLeft, Layers, Star } from 'lucide-react';
+import { ArrowLeft, Layers, Star, Calendar, Clock, Info, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { formatAdSetDuration, cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+
+interface AdSetDetails {
+  id: number;
+  variant_count: number;
+  first_seen_date?: string;
+  last_seen_date?: string;
+  best_ad_id?: number;
+}
 
 export default function AdSetDetailPage() {
   const params = useParams();
@@ -1126,6 +1326,7 @@ export default function AdSetDetailPage() {
   const adSetId = Number(params.id);
   
   const [adVariants, setAdVariants] = useState<AdWithAnalysis[]>([]);
+  const [adSetDetails, setAdSetDetails] = useState<AdSetDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -1147,11 +1348,7 @@ export default function AdSetDetailPage() {
   const fetchAdSetDetails = async () => {
     try {
       // First, let's get the ad set details to find the best_ad_id
-      // This is a placeholder - you would need to implement this endpoint
-      // For now, we'll fetch the first page of variants and assume the first one is representative
-      
       fetchAdVariants();
-      
     } catch (err) {
       console.error('Error fetching ad set details:', err);
       setError('Failed to fetch ad set details');
@@ -1173,10 +1370,29 @@ export default function AdSetDetailPage() {
       // Transform the API response data
       const transformedAds = transformAdsWithAnalysis(response.data);
       
-      // For now, we'll assume the first ad is the representative one
-      // In a real implementation, you would get this from the ad set endpoint
+      // Extract AdSet details from the first ad (they should all have the same adset metadata)
       if (transformedAds.length > 0 && page === 1) {
-        setBestAdId(transformedAds[0].id || null);
+        const firstAd = transformedAds[0];
+        // Find the ad with the highest score to mark as best variant
+        let highestScoringAd = transformedAds[0];
+        
+        transformedAds.forEach(ad => {
+          if (ad.analysis?.overall_score && 
+              (!highestScoringAd.analysis?.overall_score || 
+               ad.analysis.overall_score > highestScoringAd.analysis.overall_score)) {
+            highestScoringAd = ad;
+          }
+        });
+        
+        setBestAdId(highestScoringAd.id || null);
+        
+        setAdSetDetails({
+          id: adSetId,
+          variant_count: response.pagination.total_items,
+          first_seen_date: firstAd.ad_set_first_seen_date,
+          last_seen_date: firstAd.ad_set_last_seen_date,
+          best_ad_id: highestScoringAd.id
+        });
       }
       
       setAdVariants(transformedAds);
@@ -1208,12 +1424,71 @@ export default function AdSetDetailPage() {
     setPage(newPage);
   };
 
+  const renderAdSetSummary = () => {
+    if (!adSetDetails) return null;
+    
+    const adSetDuration = formatAdSetDuration(
+      adSetDetails.first_seen_date,
+      adSetDetails.last_seen_date
+    );
+    
+    return (
+      <Card className="mb-6 bg-muted/30">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Layers className="h-5 w-5 text-indigo-500" />
+                Ad Set Details
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                This creative concept contains {adSetDetails.variant_count} variants that have been tested over time.
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              {adSetDetails.first_seen_date && adSetDetails.last_seen_date && (
+                <div className="flex items-center gap-1.5 rounded-md bg-indigo-100 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300 px-3 py-1.5">
+                  <Calendar className="h-4 w-4" />
+                  <div className="text-sm">
+                    <span className="font-medium">Lifetime:</span>{' '}
+                    <span>{adSetDuration.formattedDate}</span>
+                  </div>
+                </div>
+              )}
+              
+              {adSetDuration.duration && (
+                <div className="flex items-center gap-1.5 rounded-md bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300 px-3 py-1.5">
+                  <Clock className="h-4 w-4" />
+                  <div className="text-sm">
+                    <span className="font-medium">Duration:</span>{' '}
+                    <span>{adSetDuration.duration} days</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-1.5 rounded-md bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 px-3 py-1.5">
+                <Star className="h-4 w-4" />
+                <div className="text-sm font-medium">
+                  Best variant highlighted
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderAdVariants = () => {
     if (adVariants.length === 0) {
       return (
-        <div className="text-center py-20">
-          <p className="text-muted-foreground">No ad variants found in this set.</p>
-        </div>
+        <Card className="border-muted bg-muted/20">
+          <CardContent className="text-center p-12">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">No ad variants found in this set.</p>
+          </CardContent>
+        </Card>
       );
     }
 
@@ -1222,12 +1497,18 @@ export default function AdSetDetailPage() {
         {adVariants.map(ad => (
           <div key={ad.id} className="relative">
             {ad.id === bestAdId && (
-              <Badge className="absolute -top-2 -right-2 z-20 bg-amber-500 text-black flex items-center gap-1 px-2 py-1 shadow-lg">
-                <Star className="h-3 w-3 fill-current" />
-                <span className="font-semibold">Best Variant</span>
-              </Badge>
+              <div className="absolute -top-2 -right-2 z-20">
+                <Badge className="bg-amber-500 text-black flex items-center gap-1 px-2 py-1 shadow-lg">
+                  <Star className="h-3 w-3 fill-current" />
+                  <span className="font-semibold">Best Variant</span>
+                </Badge>
+              </div>
             )}
-            <AdCard ad={ad} hideSetBadge={true} />
+            <div className={cn(
+              ad.id === bestAdId && "ring-2 ring-amber-500 ring-offset-2 rounded-lg"
+            )}>
+              <AdCard ad={ad} hideSetBadge={true} />
+            </div>
           </div>
         ))}
       </div>
@@ -1237,7 +1518,7 @@ export default function AdSetDetailPage() {
   const renderLoading = () => (
     <div className="flex items-center justify-center h-96">
       <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
         <p className="text-muted-foreground">Loading ad variants...</p>
       </div>
     </div>
@@ -1264,12 +1545,12 @@ export default function AdSetDetailPage() {
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Button variant="outline" size="sm" onClick={handleBackClick}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <h1 className="text-2xl font-bold flex items-center">
-              <Layers className="h-6 w-6 mr-2" /> 
+              <Layers className="h-6 w-6 mr-2 text-indigo-500" /> 
               Ad Set #{adSetId}
               {totalItems > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -1282,18 +1563,19 @@ export default function AdSetDetailPage() {
 
         {loading ? renderLoading() : error ? renderError() : (
           <div className="space-y-6">
+            {renderAdSetSummary()}
             {renderAdVariants()}
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center mt-6">
+              <div className="flex justify-center mt-8">
                 <Pagination
                   currentPage={page}
                   totalPages={totalPages}
                   pageSize={pageSize}
                   totalItems={totalItems}
                   onPageChange={handlePageChange}
-                  onPageSizeChange={(size) => {}}
+                  onPageSizeChange={() => {}}
                 />
               </div>
             )}
@@ -4777,7 +5059,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Activity
+  Activity,
+  Layers
 } from "lucide-react";
 
 const navigation = [
@@ -4791,6 +5074,12 @@ const navigation = [
     name: "Ad Intelligence",
     href: "/ads",
     icon: Brain,
+    current: false
+  },
+  {
+    name: "Ad Sets",
+    href: "/ad-sets",
+    icon: Layers,
     current: false
   },
   {
@@ -6593,11 +6882,10 @@ import { AdWithAnalysis } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers } from 'lucide-react';
+import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { differenceInDays, format, parseISO } from 'date-fns';
 
 interface AdCardProps {
   ad: AdWithAnalysis;
@@ -6612,61 +6900,6 @@ interface AdCardProps {
 const getMainAdContent = (ad: AdWithAnalysis): string => {
   // Use the main body text, title, or caption from the individual fields
   return ad.main_body_text || ad.main_title || ad.main_caption || ad.ad_copy || 'No content available';
-};
-
-const formatAdDuration = (startDateStr?: string, endDateStr?: string, isActive?: boolean): { formattedDate: string | null, duration: number | null, isActive: boolean } => {
-  if (!startDateStr) return { formattedDate: null, duration: null, isActive: false };
-  try {
-    const startDate = parseISO(startDateStr);
-    const endDate = endDateStr ? parseISO(endDateStr) : new Date();
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null, isActive: false };
-    
-    let duration = differenceInDays(endDate, startDate);
-    duration = Math.max(duration, 1);
-
-    const formattedStartDate = format(startDate, 'MMM d, yyyy');
-    const formattedEndDate = endDateStr ? format(parseISO(endDateStr), 'MMM d, yyyy') : 'Present';
-
-    if (isActive) {
-      return { 
-        formattedDate: `Since ${formattedStartDate}`, 
-        duration, 
-        isActive: true 
-      };
-    }
-
-    return { 
-      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
-      duration, 
-      isActive: false 
-    };
-  } catch (error) {
-    console.error("Error formatting ad duration:", error);
-    return { formattedDate: null, duration: null, isActive: false };
-  }
-};
-
-const formatAdSetDuration = (startDateStr?: string, endDateStr?: string): { formattedDate: string | null, duration: number | null } => {
-  if (!startDateStr || !endDateStr) return { formattedDate: null, duration: null };
-  try {
-    const startDate = parseISO(startDateStr);
-    const endDate = parseISO(endDateStr);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return { formattedDate: null, duration: null };
-    
-    let duration = differenceInDays(endDate, startDate);
-    duration = Math.max(duration, 1); // An ad set exists for at least 1 day
-
-    const formattedStartDate = format(startDate, 'MMM d, yyyy');
-    const formattedEndDate = format(endDate, 'MMM d, yyyy');
-
-    return { 
-      formattedDate: `${formattedStartDate} - ${formattedEndDate}`, 
-      duration,
-    };
-  } catch (error) {
-    console.error("Error formatting ad set duration:", error);
-    return { formattedDate: null, duration: null };
-  }
 };
 
 export function AdCard({ 
@@ -6731,10 +6964,8 @@ export function AdCard({
       : !ad.end_date || new Date(ad.end_date) >= new Date());
 
   const adDuration = formatAdDuration(ad.start_date, ad.end_date, isActive);
-  const adSetDuration = formatAdSetDuration(ad.ad_set_first_seen_date, ad.ad_set_last_seen_date);
-
-  // Fallback for ad set date range if not available
   const displayAdSetDate = ad.variant_count && ad.variant_count > 1;
+  const adSetDuration = formatAdSetDuration(ad.ad_set_first_seen_date, ad.ad_set_last_seen_date);
 
   // Duration badge logic
   const durationDays = adDuration.duration;
@@ -6786,7 +7017,7 @@ export function AdCard({
         isSelected && "border-photon-500/50 bg-photon-500/5",
         isDeleting && "opacity-50 scale-95 pointer-events-none",
         // Add visual distinction for ad sets
-        ad.variant_count && ad.variant_count > 1 ? "border-l-4 border-l-photon-500" : ""
+        ad.variant_count && ad.variant_count > 1 ? "border-l-4 border-l-indigo-500" : ""
       )}>
         {/* High Score Indicator */}
         {hasHighScore && (
@@ -6848,35 +7079,62 @@ export function AdCard({
             )}
 
             {/* Media Type, Status & Duration Badges */}
-            <div className="absolute top-3 left-3 z-20 flex gap-1">
-              {ad.media_type && (
-                <div className="px-1.5 py-0.5 rounded-md bg-white/90 text-black text-[10px] font-semibold uppercase tracking-wide shadow-sm">
-                  {ad.media_type}
-                </div>
-              )}
-              {/* Status Badge */}
-              <div className={cn(
-                "px-1.5 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide shadow-sm",
-                isActive 
-                  ? "bg-green-500/90 text-white" 
-                  : "bg-gray-500/90 text-white"
-              )}
-              title={isActive ? "Ad is currently active" : "Ad has ended"}>
-                {isActive ? "ACTIVE" : "ENDED"}
+            <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-1">
+              {/* Media type badge */}
+              <div 
+                className="flex items-center gap-1 rounded-md bg-black/50 backdrop-blur-sm px-2 py-0.5"
+                title={`Media Type: ${isVideo ? 'Video' : 'Image'}`}
+              >
+                {isVideo ? (
+                  <Play className="h-3 w-3 text-blue-300" />
+                ) : (
+                  <Image className="h-3 w-3 text-purple-300" />
+                )}
+                <span className="text-xs font-medium text-white">
+                  {isVideo ? 'Video' : 'Image'}
+                </span>
               </div>
-              
-              {/* Variant Count Badge */}
-              {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
-                <div className="px-1.5 py-0.5 rounded-md bg-indigo-500/90 text-white text-[10px] font-semibold tracking-wide shadow-sm"
-                     title={`${ad.variant_count} variants in this set`}>
-                  {ad.variant_count} Variants
+
+              {/* Status badge */}
+              <div 
+                className={cn(
+                  "flex items-center gap-1 rounded-md backdrop-blur-sm px-2 py-0.5",
+                  isActive ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"
+                )}
+                title={`Status: ${isActive ? 'Active' : 'Inactive'}`}
+              >
+                <Power className="h-3 w-3" />
+                <span className="text-xs font-medium">
+                  {isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              {/* Ad duration badge */}
+              {adDuration.formattedDate && (
+                <div 
+                  className={cn(
+                    "flex items-center gap-1 rounded-md backdrop-blur-sm px-2 py-0.5", 
+                    durationBadgeClass
+                  )}
+                  title={`Ad Duration: ${adDuration.duration} days`}
+                >
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {adDuration.duration}d
+                  </span>
                 </div>
               )}
-
-              {durationDays !== null && (
-                <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-wide shadow-sm ${durationBadgeClass}`}
-                     title={`${durationDays} days running`}>
-                  {durationDays}d
+              
+              {/* Variant count badge */}
+              {ad.variant_count && ad.variant_count > 1 && !hideSetBadge && (
+                <div 
+                  className="flex items-center gap-1 rounded-md bg-indigo-500/90 text-white px-2 py-0.5"
+                  title={`${ad.variant_count} variants in this ad set`}
+                >
+                  <Layers className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {ad.variant_count}
+                  </span>
                 </div>
               )}
             </div>
@@ -6966,18 +7224,15 @@ export function AdCard({
             )}
 
             {/* Ad Set Lifetime */}
-            {displayAdSetDate && (
-              <div className="absolute bottom-2 left-2 z-20" title="Ad Set Lifetime">
-                <div className="flex items-center gap-1.5 rounded-md bg-black/50 backdrop-blur-sm px-2 py-1">
-                  <Layers className="h-3 w-3 text-indigo-300" />
-                  {adSetDuration.formattedDate ? (
-                    <>
-                      <span className="text-xs font-mono text-white">{adSetDuration.formattedDate}</span>
-                      <span className="text-xs font-mono text-indigo-300">({adSetDuration.duration}d)</span>
-                    </>
-                  ) : (
-                    <span className="text-xs font-mono text-gray-400">Date range N/A</span>
-                  )}
+            {displayAdSetDate && adSetDuration.formattedDate && (
+              <div 
+                className="flex items-center gap-1.5 rounded-md bg-indigo-100 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300 px-3 py-1.5"
+                title="Period this ad set has been active"
+              >
+                <Calendar className="h-4 w-4" />
+                <div className="text-sm">
+                  <span className="font-medium">Date Range:</span>{' '}
+                  <span>{adSetDuration.formattedDate}</span>
                 </div>
               </div>
             )}
@@ -7010,26 +7265,6 @@ export function AdCard({
                 )}
               </div>
               
-              {/* Improved Ad Duration Display */}
-              {adDuration.formattedDate && (
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{adDuration.formattedDate}</span>
-                  </div>
-                  
-                  {adDuration.duration && (
-                    <div className={cn(
-                      "flex items-center gap-1 font-medium",
-                      adDuration.isActive ? "text-photon-400" : "text-muted-foreground"
-                    )}>
-                      <Clock className="h-3 w-3" />
-                      <span>{adDuration.duration} {adDuration.duration === 1 ? 'day' : 'days'}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Ad Set Date Range - REMOVED, now overlaid on media */}
             </div>
             
@@ -7086,6 +7321,13 @@ export function AdCard({
                     {ctaText}
                   </span>
                 </div>
+              </div>
+            )}
+            
+            {(hideSetBadge ? adDuration.formattedDate : adSetDuration.formattedDate) && (
+              <div className="flex items-center gap-1 text-muted-foreground mt-2 text-xs">
+                <Calendar className="h-3 w-3" />
+                <span>{hideSetBadge ? adDuration.formattedDate : adSetDuration.formattedDate}</span>
               </div>
             )}
           </div>
@@ -8314,6 +8556,9 @@ export interface ApiAd {
   // New fields for Ad Sets
   ad_set_id?: number;
   variant_count?: number;
+  ad_set_created_at?: string;
+  ad_set_first_seen_date?: string;
+  ad_set_last_seen_date?: string;
 }
 
 export interface PaginationMetadata {
@@ -8499,6 +8744,17 @@ class ApiClient {
   async getCompetitor(id: number): Promise<ApiCompetitor> {
     return this.request<ApiCompetitor>(`/competitors/${id}`);
   }
+
+  async getAllAdSets(page: number = 1, pageSize: number = 20, sortBy: string = "created_at", sortOrder: string = "desc"): Promise<PaginatedAdsResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
+    params.append('sort_by', sortBy);
+    params.append('sort_order', sortOrder);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<PaginatedAdsResponse>(`/ad-sets${query}`);
+  }
 }
 
 // Create and export API client instance
@@ -8517,6 +8773,7 @@ export const adsApi = {
   getCompetitors: (skip?: number, limit?: number, isActive?: boolean) => apiClient.getCompetitors(skip, limit, isActive),
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
+  getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
 };
 
 export default apiClient;
@@ -8919,9 +9176,52 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
       };
 
   return {
-    ...ad,
-    competitor,
-    analysis,
+    id: ad.id,
+    ad_archive_id: ad.ad_archive_id,
+    ad_copy: ad.ad_copy,
+    media_type: ad.media_type,
+    media_url: ad.media_url,
+    date_found: ad.date_found,
+    
+    // Basic Facebook ad fields
+    page_name: ad.page_name,
+    publisher_platform: ad.publisher_platform,
+    impressions_text: ad.impressions_text,
+    cta_text: ad.cta_text,
+    
+    // Extended Facebook ad fields
+    page_id: ad.page_id,
+    start_date: ad.start_date,
+    end_date: ad.end_date,
+    spend: ad.spend,
+    page_profile_picture_url: ad.page_profile_picture_url,
+    
+    // Main ad content
+    main_title: ad.main_title,
+    main_body_text: ad.main_body_text,
+    main_caption: ad.main_caption,
+    
+    // Media URLs
+    main_image_urls: ad.main_image_urls,
+    main_video_urls: ad.main_video_urls,
+    
+    // Relationships
+    competitor_id: ad.competitor_id,
+    competitor: competitor,
+    analysis: analysis,
+
+    // New fields from the backend are now directly mapped
+    meta: ad.meta,
+    targeting: ad.targeting,
+    lead_form: ad.lead_form,
+    creatives: ad.creatives,
+
+    // AdSet related fields
+    ad_set_id: ad.ad_set_id,
+    variant_count: ad.variant_count,
+    ad_set_created_at: ad.ad_set_created_at,
+    ad_set_first_seen_date: ad.ad_set_first_seen_date,
+    ad_set_last_seen_date: ad.ad_set_last_seen_date,
   };
 }
 
@@ -9001,6 +9301,68 @@ export function formatDate(dateString: string): string {
   } catch (error) {
     console.error('Error formatting date:', error);
     return dateString;
+  }
+}
+
+export function formatAdSetDuration(startDateStr?: string | null, endDateStr?: string | null): { formattedDate: string | null, duration: number | null } {
+  // If both dates are missing, return null values
+  if (!startDateStr && !endDateStr) return { formattedDate: null, duration: null };
+  
+  try {
+    const startDate = startDateStr ? parseISO(startDateStr) : null;
+    const endDate = endDateStr ? parseISO(endDateStr) : null;
+    
+    // If we can't parse either date, return null values
+    if ((startDate && isNaN(startDate.getTime())) || (endDate && isNaN(endDate.getTime()))) {
+      return { formattedDate: null, duration: null };
+    }
+    
+    // If we only have a start date, format it as "Since [date]"
+    if (startDate && !endDate) {
+      const formattedStartDate = format(startDate, 'MMM d, yyyy');
+      return { 
+        formattedDate: `Since ${formattedStartDate}`,
+        duration: 1, // Assume at least one day
+      };
+    }
+    
+    // If we only have an end date, format it as "Until [date]"
+    if (!startDate && endDate) {
+      const formattedEndDate = format(endDate, 'MMM d, yyyy');
+      return { 
+        formattedDate: `Until ${formattedEndDate}`,
+        duration: 1, // Assume at least one day
+      };
+    }
+    
+    // If we have both dates, calculate duration and format
+    if (startDate && endDate) {
+      let duration = differenceInDays(endDate, startDate);
+      duration = Math.max(duration, 1); // An ad set exists for at least 1 day
+      
+      const formattedStartDate = format(startDate, 'MMM d, yyyy');
+      const formattedEndDate = format(endDate, 'MMM d, yyyy');
+      
+      // If dates are the same, just show one date
+      if (duration === 1 && formattedStartDate === formattedEndDate) {
+        return { 
+          formattedDate: formattedStartDate,
+          duration: 1,
+        };
+      }
+      
+      return { 
+        formattedDate: `${formattedStartDate} - ${formattedEndDate}`,
+        duration,
+      };
+    }
+    
+    // Fallback case (shouldn't happen based on the logic above)
+    return { formattedDate: null, duration: null };
+    
+  } catch (error) {
+    console.error("Error formatting ad set duration:", error);
+    return { formattedDate: null, duration: null };
   }
 }
 
@@ -9117,6 +9479,11 @@ export interface Ad {
 export interface AdWithAnalysis extends Ad {
   competitor: Competitor;
   analysis: AdAnalysis;
+  ad_set_id?: number;
+  variant_count?: number;
+  ad_set_created_at?: string;
+  ad_set_first_seen_date?: string;
+  ad_set_last_seen_date?: string;
 }
 
 // Campaign type structure

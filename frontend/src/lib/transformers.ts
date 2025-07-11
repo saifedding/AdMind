@@ -120,52 +120,18 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
       };
 
   return {
-    id: ad.id,
-    ad_archive_id: ad.ad_archive_id,
-    ad_copy: ad.ad_copy,
-    media_type: ad.media_type,
-    media_url: ad.media_url,
-    date_found: ad.date_found,
-    
-    // Basic Facebook ad fields
-    page_name: ad.page_name,
-    publisher_platform: ad.publisher_platform,
-    impressions_text: ad.impressions_text,
-    cta_text: ad.cta_text,
-    
-    // Extended Facebook ad fields
-    page_id: ad.page_id,
-    start_date: ad.start_date,
-    end_date: ad.end_date,
-    spend: ad.spend,
-    page_profile_picture_url: ad.page_profile_picture_url,
-    
-    // Main ad content
-    main_title: ad.main_title,
-    main_body_text: ad.main_body_text,
-    main_caption: ad.main_caption,
-    
-    // Media URLs
-    main_image_urls: ad.main_image_urls,
-    main_video_urls: ad.main_video_urls,
-    
-    // Relationships
-    competitor_id: ad.competitor_id,
+    ...ad,
+
+    // Ensure relationships are correctly attached/overwritten
     competitor: competitor,
     analysis: analysis,
 
-    // New fields from the backend are now directly mapped
-    meta: ad.meta,
-    targeting: ad.targeting,
-    lead_form: ad.lead_form,
-    creatives: ad.creatives,
-
-    // AdSet related fields
-    ad_set_id: ad.ad_set_id,
-    variant_count: ad.variant_count,
-    ad_set_created_at: ad.ad_set_created_at,
-    ad_set_first_seen_date: ad.ad_set_first_seen_date,
-    ad_set_last_seen_date: ad.ad_set_last_seen_date,
+    // Explicitly map AdSet fields from the raw API object (these may be undefined on the intermediate `ad`)
+    ad_set_id: apiAd.ad_set_id,
+    variant_count: apiAd.variant_count,
+    ad_set_created_at: apiAd.ad_set_created_at,
+    ad_set_first_seen_date: apiAd.ad_set_first_seen_date,
+    ad_set_last_seen_date: apiAd.ad_set_last_seen_date,
   };
 }
 

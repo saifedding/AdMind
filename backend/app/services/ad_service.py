@@ -959,10 +959,11 @@ class AdService:
             if not ad_set:
                 return None
                 
-            # Build query for ads in this set
+            # Build query for ads in this set and eagerly load the related AdSet
             query = self.db.query(Ad).options(
                 joinedload(Ad.competitor),
-                joinedload(Ad.analysis)
+                joinedload(Ad.analysis),
+                joinedload(Ad.ad_set)  # Eagerly load the parent AdSet to avoid N+1 queries
             ).filter(Ad.ad_set_id == ad_set_id)
             
             # Get total count before pagination
@@ -972,11 +973,16 @@ class AdService:
             offset = (page - 1) * page_size
             ads = query.offset(offset).limit(page_size).all()
             
-            # Convert to DTOs
+            # Convert to DTOs and include AdSet metadata
             ad_dtos = []
             for ad in ads:
                 try:
                     ad_dto = self._convert_to_dto(ad)
+                    # Attach AdSet metadata if available
+                    if ad_dto and ad.ad_set:
+                        ad_dto.variant_count = ad.ad_set.variant_count
+                        ad_dto.ad_set_first_seen_date = ad.ad_set.first_seen_date
+                        ad_dto.ad_set_last_seen_date = ad.ad_set.last_seen_date
                     if ad_dto:
                         ad_dtos.append(ad_dto)
                 except Exception as e:
