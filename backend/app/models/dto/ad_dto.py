@@ -339,6 +339,11 @@ class AdResponseDTO(BaseModel):
     # AdSet fields
     ad_set_id: Optional[int] = Field(None, description="ID of the ad set this ad belongs to")
     variant_count: Optional[int] = Field(None, description="Number of variants in the ad set")
+    ad_set_created_at: Optional[datetime] = Field(None, description="Timestamp when the ad set was first created")
+
+    # Date range for the entire ad set
+    ad_set_first_seen_date: Optional[datetime] = Field(None, description="The date the oldest ad in this set was found")
+    ad_set_last_seen_date: Optional[datetime] = Field(None, description="The date the newest ad in this set was found")
     
     model_config = {"from_attributes": True}
 

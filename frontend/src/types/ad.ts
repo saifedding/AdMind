@@ -98,6 +98,9 @@ export interface Ad {
   // New fields for Ad Sets
   ad_set_id?: number;
   variant_count?: number;
+  ad_set_created_at?: string;
+  ad_set_first_seen_date?: string;
+  ad_set_last_seen_date?: string;
 }
 
 export interface AdWithAnalysis extends Ad {

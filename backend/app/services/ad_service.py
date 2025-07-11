@@ -72,8 +72,12 @@ class AdService:
                 if ad_set.best_ad:
                     # Convert the best ad to DTO and add AdSet information
                     ad_dto = self._convert_to_dto(ad_set.best_ad)
+                    # Augment the Ad DTO with metadata from its parent AdSet
                     ad_dto.ad_set_id = ad_set.id
                     ad_dto.variant_count = ad_set.variant_count
+                    ad_dto.ad_set_created_at = ad_set.created_at
+                    ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
+                    ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
                     ad_dtos.append(ad_dto)
                 else:
                     # If there's no best_ad, fetch the first ad in the set
@@ -495,12 +499,17 @@ class AdService:
             Number of ads successfully deleted
         """
         try:
-            # Delete associated analyses first
+            # Unset best_ad_id in AdSets where it's one of the ads being deleted
+            self.db.query(AdSet).filter(
+                AdSet.best_ad_id.in_(ad_ids)
+            ).update({"best_ad_id": None}, synchronize_session=False)
+
+            # First, delete all analyses associated with the ads
             analyses_deleted = self.db.query(AdAnalysis).filter(
                 AdAnalysis.ad_id.in_(ad_ids)
             ).delete(synchronize_session=False)
             
-            # Delete the ads
+            # Then delete the ads
             ads_deleted = self.db.query(Ad).filter(
                 Ad.id.in_(ad_ids)
             ).delete(synchronize_session=False)
@@ -812,7 +821,10 @@ class AdService:
                 
                 # AdSet fields - will be populated later when needed
                 ad_set_id=ad.ad_set_id,
-                variant_count=None  # This will be set separately when needed
+                variant_count=None,  # This will be set separately when needed
+                ad_set_created_at=None,
+                ad_set_first_seen_date=None,
+                ad_set_last_seen_date=None
             )
             
         except Exception as e:

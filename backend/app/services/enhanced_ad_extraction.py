@@ -1,9 +1,10 @@
 import json
 import hashlib
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Dict, List, Optional, Any, Tuple, cast
 import logging
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Ad, Competitor, AdSet
@@ -142,7 +143,7 @@ class EnhancedAdExtractionService:
         except Exception as e:
             self.logger.error(f"Error calculating perceptual hash for ad: {e}")
             return None
-
+    
     def _update_ad_set_metadata(self, ad_set_id: int) -> None:
         """
         Update metadata for an AdSet including:
@@ -171,7 +172,7 @@ class EnhancedAdExtractionService:
             
             if best_ad:
                 ad_set.best_ad_id = best_ad.id
-                
+            
                 # Update content_signature if best_ad changed or if it's not set
                 if (previous_best_ad_id != best_ad.id or not ad_set.content_signature):
                     self.logger.info(f"Best ad changed or content_signature missing for AdSet {ad_set_id}, updating content_signature")
@@ -564,131 +565,17 @@ class EnhancedAdExtractionService:
                             
         return urls
     
-    def find_or_create_ad_set_for_ad(self, ad_data: Dict) -> Optional[AdSet]:
+    def _create_new_ad_set(self, content_signature: str) -> Optional[AdSet]:
         """
-        Find an existing AdSet for an ad by comparing against representative ads,
-        or create a new AdSet if no match is found.
-        
-        This replaces the signature-based grouping with direct visual comparison
-        against existing AdSets.
+        Creates a new AdSet with the given content_signature.
         
         Args:
-            ad_data: Ad data to find a matching AdSet for
+            content_signature: The content signature for the new AdSet.
             
         Returns:
-            AdSet object or None if creation failed
+            The newly created AdSet object or None if creation failed.
         """
         try:
-            ad_id = ad_data.get("ad_archive_id", "unknown")
-            self.logger.info(f"Finding AdSet for ad {ad_id} using direct comparison")
-            
-            # First, generate content signature for this ad
-            content_signature = self._generate_content_signature(ad_data)
-            self.logger.info(f"Generated content signature for ad {ad_id}: {content_signature}")
-            
-            # Check if an AdSet with this content_signature already exists
-            existing_ad_set = self.db.query(AdSet).filter(
-                AdSet.content_signature == content_signature
-            ).first()
-            
-            if existing_ad_set:
-                self.logger.info(f"Found existing AdSet {existing_ad_set.id} with matching content_signature: {content_signature}")
-                return existing_ad_set
-            
-            # Fetch all existing AdSets with their best_ad
-            ad_sets = self.db.query(AdSet).all()
-            self.logger.info(f"Found {len(ad_sets)} existing AdSets to compare against")
-            
-            # Track best match for debugging
-            best_match = None
-            best_match_id = None
-            
-            # For each AdSet, check if the ad should be grouped with its representative
-            for ad_set in ad_sets:
-                # Skip AdSets without a best_ad
-                if not ad_set.best_ad_id:
-                    continue
-                    
-                # Get the representative ad for this AdSet
-                representative_ad = self.db.query(Ad).filter(Ad.id == ad_set.best_ad_id).first()
-                if not representative_ad:
-                    self.logger.warning(f"AdSet {ad_set.id} has best_ad_id {ad_set.best_ad_id} but ad not found")
-                    continue
-                    
-                # Convert representative ad to dict format for comparison with necessary fields
-                try:
-                    # Start with the basic enhanced format
-                    representative_ad_data = representative_ad.to_enhanced_format()
-                    
-                    # Add required fields for comparison that might be missing
-                    representative_ad_data["ad_archive_id"] = representative_ad.ad_archive_id
-                    
-                    # Try to determine media type
-                    media_type = "unknown"
-                    if representative_ad.creatives and len(representative_ad.creatives) > 0:
-                        for creative in representative_ad.creatives:
-                            if creative.get("media"):
-                                for media in creative.get("media", []):
-                                    if media.get("type") == "image":
-                                        media_type = "image"
-                                        break
-                                    elif media.get("type") == "video":
-                                        media_type = "video"
-                                        break
-                    
-                    representative_ad_data["media_type"] = media_type
-                    
-                    # Ensure creatives have the required structure
-                    if "creatives" not in representative_ad_data or not representative_ad_data["creatives"]:
-                        representative_ad_data["creatives"] = []
-                    
-                    # Ensure we have at least one creative with proper structure for comparison
-                    if not representative_ad_data["creatives"]:
-                        # Create a minimal creative if none exists
-                        representative_ad_data["creatives"] = [{
-                            "id": f"{representative_ad.ad_archive_id}-0",
-                            "body": "",
-                            "title": "",
-                            "media": []
-                        }]
-                    else:
-                        # Ensure each creative has the minimal required fields
-                        for i, creative in enumerate(representative_ad_data["creatives"]):
-                            if "id" not in creative:
-                                creative["id"] = f"{representative_ad.ad_archive_id}-{i}"
-                            if "body" not in creative:
-                                creative["body"] = ""
-                            if "title" not in creative:
-                                creative["title"] = ""
-                            if "media" not in creative:
-                                creative["media"] = []
-                    
-                    rep_ad_id = representative_ad.ad_archive_id
-                    self.logger.info(f"Comparing ad {ad_id} with representative ad {rep_ad_id} of AdSet {ad_set.id}")
-                    
-                    # Use the creative comparison service to compare the ads
-                    should_group = self.creative_comparison_service.should_group_ads(
-                        ad_data, representative_ad_data
-                    )
-                    
-                    if should_group:
-                        self.logger.info(f"Match found! Grouping ad {ad_id} with AdSet {ad_set.id}")
-                        best_match = ad_set
-                        best_match_id = rep_ad_id
-                        break
-                except Exception as e:
-                    self.logger.warning(f"Error comparing ad {ad_id} with representative ad {representative_ad.ad_archive_id}: {e}")
-                    continue
-            
-            # If we found a match, return it
-            if best_match:
-                self.logger.info(f"Ad {ad_id} matched with AdSet {best_match.id} (rep ad: {best_match_id})")
-                return best_match
-                
-            # If no match found, create a new AdSet
-            self.logger.info(f"No matching AdSet found for ad {ad_id}, creating new AdSet")
-            
-            # Create new ad set
             new_ad_set = AdSet(
                 content_signature=content_signature,
                 variant_count=1,  # Initial count is 1 (this ad)
@@ -697,12 +584,81 @@ class EnhancedAdExtractionService:
             )
             self.db.add(new_ad_set)
             self.db.flush()  # Get the ID without committing
-            
-            self.logger.info(f"Created new AdSet {new_ad_set.id} for ad {ad_id}")
+            self.logger.info(f"Created new AdSet {new_ad_set.id} for content signature: {content_signature}")
             return new_ad_set
-            
         except Exception as e:
-            self.logger.error(f"Error finding/creating ad set via direct comparison: {e}")
+            self.logger.error(f"Error creating new AdSet for content signature {content_signature}: {e}")
+            return None
+
+    def find_or_create_ad_set_for_ad(self, ad_data: Dict) -> Optional[AdSet]:
+        """
+        Finds or creates an AdSet for a new ad using a highly performant,
+        index-driven candidate selection process based on perceptual hashes.
+        """
+        try:
+            ad_id = ad_data.get("ad_archive_id", "unknown")
+            self.logger.info(f"Finding AdSet for ad {ad_id} using visual index pre-filtering.")
+
+            # 1. Calculate perceptual hash for the new ad
+            new_hash = self._calculate_perceptual_hash_for_ad(ad_data)
+            if not new_hash:
+                self.logger.warning(f"Could not generate perceptual hash for ad {ad_id}. Creating new AdSet via fallback.")
+                return self._create_new_ad_set(str(ad_id))  # Fallback to ad ID as signature
+
+            # 2. Quick exact match: check if hash already exists (avoids pg_trgm call if identical)
+            exact_match = self.db.query(AdSet).filter(AdSet.content_signature == new_hash).first()
+            if exact_match:
+                self.logger.info(f"Exact content_signature match found – using existing AdSet {exact_match.id}.")
+                return exact_match
+
+            # 3. Use pg_trgm similarity to fetch top candidate AdSets quickly
+            candidate_query = text(
+                """
+                SELECT id
+                FROM ad_sets
+                WHERE similarity(content_signature, :hash) > 0.8
+                ORDER BY similarity(content_signature, :hash) DESC
+                LIMIT 20
+                """
+            )
+
+            try:
+                result = self.db.execute(candidate_query, {"hash": new_hash})
+                candidate_ids = [row[0] for row in result]
+            except Exception as e:
+                # pg_trgm not enabled or other error – fallback to creating new set
+                self.logger.error(f"pg_trgm similarity query failed: {e}. Falling back to new AdSet.")
+                return self._create_new_ad_set(new_hash)
+
+            self.logger.info(f"{len(candidate_ids)} candidate AdSets retrieved for visual hash {new_hash}.")
+
+            # 4. Compare only with candidate AdSets' representative ads
+            if candidate_ids:
+                candidates = (
+                    self.db.query(AdSet)
+                    .options(joinedload(AdSet.best_ad))
+                    .filter(AdSet.id.in_(candidate_ids))
+                    .all()
+                )
+
+                for ad_set in candidates:
+                    if not ad_set.best_ad:
+                        continue
+                
+                    rep_ad_data = ad_set.best_ad.to_enhanced_format()
+                    try:
+                        if self.creative_comparison_service.should_group_ads(ad_data, rep_ad_data):
+                            self.logger.info(f"Grouping ad {ad_id} with existing AdSet {ad_set.id} (hash match).")
+                            return ad_set
+                    except Exception as e:
+                        self.logger.warning(f"Comparison failed between ad {ad_id} and AdSet {ad_set.id}: {e}")
+                        continue
+
+            # 5. No suitable candidate – create a new AdSet with the new perceptual hash
+            self.logger.info(f"No AdSet matched. Creating new AdSet for hash {new_hash}.")
+            return self._create_new_ad_set(new_hash)
+        except Exception as e:
+            self.logger.error(f"Error in find_or_create_ad_set_for_ad: {e}")
             return None
     
     def _create_or_update_enhanced_ad(
@@ -770,6 +726,14 @@ class EnhancedAdExtractionService:
                     duration_days=enhanced_data.get("duration_days", 0)
                 )
                 
+                # --- Maintain AdSet date range ---
+                ad_found_date = new_ad.date_found.astimezone(timezone.utc)
+                if ad_set.first_seen_date is None or ad_found_date < ad_set.first_seen_date:
+                    ad_set.first_seen_date = ad_found_date
+                if ad_set.last_seen_date is None or ad_found_date > ad_set.last_seen_date:
+                    ad_set.last_seen_date = ad_found_date
+                # ---------------------------------
+
                 self.db.add(new_ad)
                 self.db.flush()
                 

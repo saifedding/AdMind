@@ -393,6 +393,20 @@ export function AdCard({
                   )}
                 </div>
               )}
+
+              {/* Ad Set Date Range */}
+              {ad.ad_set_first_seen_date && ad.ad_set_last_seen_date && (
+                <div className="flex items-center justify-between text-xs mt-1 pt-1 border-t border-border/20">
+                  <div className="flex items-center gap-1 text-muted-foreground" title="Ad Set Date Range">
+                    <Layers className="h-3 w-3" />
+                    <span>
+                      {format(parseISO(ad.ad_set_first_seen_date), 'MMM d')}
+                       - 
+                      {format(parseISO(ad.ad_set_last_seen_date), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Score Badge */}

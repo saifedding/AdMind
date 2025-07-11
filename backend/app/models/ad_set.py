@@ -14,6 +14,10 @@ class AdSet(Base):
     
     # Count of ad variants in this set
     variant_count = Column(Integer, default=0, nullable=False)
+
+    # Earliest and latest discovery dates among ads in this set
+    first_seen_date = Column(DateTime(timezone=True), nullable=True, index=True)
+    last_seen_date = Column(DateTime(timezone=True), nullable=True, index=True)
     
     # Reference to the best/representative ad in the set
     best_ad_id = Column(Integer, ForeignKey("ads.id"), nullable=True, index=True)
