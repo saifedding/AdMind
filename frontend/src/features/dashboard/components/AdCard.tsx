@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -217,6 +217,20 @@ export function AdCard({
                 </span>
               </div>
 
+              {/* Status badge */}
+              <div 
+                className={cn(
+                  "flex items-center gap-1 rounded-md backdrop-blur-sm px-2 py-0.5",
+                  isActive ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"
+                )}
+                title={`Status: ${isActive ? 'Active' : 'Inactive'}`}
+              >
+                <Power className="h-3 w-3" />
+                <span className="text-xs font-medium">
+                  {isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
               {/* Ad duration badge */}
               {adDuration.formattedDate && (
                 <div 
@@ -373,26 +387,6 @@ export function AdCard({
                 )}
               </div>
               
-              {/* Improved Ad Duration Display */}
-              {adDuration.formattedDate && (
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{adDuration.formattedDate}</span>
-                  </div>
-                  
-                  {adDuration.duration && (
-                    <div className={cn(
-                      "flex items-center gap-1 font-medium",
-                      adDuration.isActive ? "text-photon-400" : "text-muted-foreground"
-                    )}>
-                      <Clock className="h-3 w-3" />
-                      <span>{adDuration.duration} {adDuration.duration === 1 ? 'day' : 'days'}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Ad Set Date Range - REMOVED, now overlaid on media */}
             </div>
             
@@ -449,6 +443,13 @@ export function AdCard({
                     {ctaText}
                   </span>
                 </div>
+              </div>
+            )}
+            
+            {(hideSetBadge ? adDuration.formattedDate : adSetDuration.formattedDate) && (
+              <div className="flex items-center gap-1 text-muted-foreground mt-2 text-xs">
+                <Calendar className="h-3 w-3" />
+                <span>{hideSetBadge ? adDuration.formattedDate : adSetDuration.formattedDate}</span>
               </div>
             )}
           </div>

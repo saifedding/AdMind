@@ -106,6 +106,11 @@ export interface Ad {
 export interface AdWithAnalysis extends Ad {
   competitor: Competitor;
   analysis: AdAnalysis;
+  ad_set_id?: number;
+  variant_count?: number;
+  ad_set_created_at?: string;
+  ad_set_first_seen_date?: string;
+  ad_set_last_seen_date?: string;
 }
 
 // Campaign type structure

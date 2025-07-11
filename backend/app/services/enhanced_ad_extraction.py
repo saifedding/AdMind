@@ -578,7 +578,7 @@ class EnhancedAdExtractionService:
         try:
             new_ad_set = AdSet(
                 content_signature=content_signature,
-                variant_count=1,  # Initial count is 1 (this ad)
+                variant_count=0,  # Initial count is 0, will be incremented when ad is added
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
