@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads Viewer</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        h1 {
+            text-align: center;
+            color: #1c1e21;
+        }
+        #ads-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .ad {
+            background-color: #fff;
+            border: 1px solid #dddfe2;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .ad h2 {
+            font-size: 1.1rem;
+            margin: 0 0 10px 0;
+            color: #050505;
+        }
+        .ad p {
+            font-size: 0.9rem;
+            margin: 0 0 5px 0;
+            color: #65676b;
+        }
+        .ad p strong {
+            color: #050505;
+        }
+        .media {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        img, video {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ads from ads.json</h1>
+    <div id="ads-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('ads.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(jsonData => {
+                    const container = document.getElementById('ads-container');
+                    const ads = jsonData.data; // Access the 'data' property which is the array
+
+                    if (!Array.isArray(ads)) {
+                        console.error('The "data" property in ads.json is not an array:', ads);
+                        container.innerHTML = '<p>Error: The ads.json file does not contain a valid array under the "data" key.</p>';
+                        return;
+                    }
+                    
+                    ads.forEach(ad => {
+                        const adDiv = document.createElement('div');
+                        adDiv.className = 'ad';
+
+                        let adInfoHTML = `<h2>${ad.main_title || ad.page_name || 'Untitled Ad'}</h2>`;
+                        adInfoHTML += `<p><strong>By:</strong> ${ad.page_name || 'N/A'}</p>`;
+                        if (ad.main_body_text) {
+                            adInfoHTML += `<p>${ad.main_body_text}</p>`;
+                        }
+                        adInfoHTML += `<p><strong>Start Date:</strong> ${ad.start_date ? new Date(ad.start_date).toLocaleDateString() : 'N/A'}</p>`;
+                        
+                        adDiv.innerHTML = adInfoHTML;
+
+                        const mediaDiv = document.createElement('div');
+                        mediaDiv.className = 'media';
+
+                        // Prioritize showing the first video if it exists
+                        if (ad.main_video_urls && ad.main_video_urls.length > 0 && ad.main_video_urls[0]) {
+                            const video = document.createElement('video');
+                            video.src = ad.main_video_urls[0];
+                            video.controls = true;
+                            video.onerror = () => video.style.display='none';
+                            mediaDiv.appendChild(video);
+                        } 
+                        // Otherwise, show the first image if it exists
+                        else if (ad.main_image_urls && ad.main_image_urls.length > 0 && ad.main_image_urls[0]) {
+                            const img = document.createElement('img');
+                            img.src = ad.main_image_urls[0];
+                            img.alt = ad.main_title || "Ad image";
+                            img.onerror = () => img.style.display='none';
+                            mediaDiv.appendChild(img);
+                        }
+
+                        if (mediaDiv.hasChildNodes()) {
+                            adDiv.appendChild(mediaDiv);
+                        }
+                        
+                        container.appendChild(adDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading or parsing ads.json:', error);
+                    const container = document.getElementById('ads-container');
+                    container.innerHTML = `<p><strong>Error loading ads.json:</strong> ${error.message}. Please check the console for more details and ensure the file is in the same directory and is a valid JSON file.</p>`;
+                });
+        });
+    </script>
+</body>
+</html> 
