@@ -1,7 +1,7 @@
 import json
 import hashlib
 from datetime import datetime, date
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, cast
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -55,71 +55,100 @@ class EnhancedAdExtractionService:
     
     def _generate_content_signature(self, ad_data: Dict) -> str:
         """
-        Generate a content signature for an ad based on its content
-        This is used to group identical ads together quickly
+        Generate a content signature for an AdSet based on the perceptual hash of its representative ad's media.
+        This creates a stable, visual identifier that persists across ingestion processes.
         
         Args:
-            ad_data: Ad data object
+            ad_data: Ad data object containing media information
             
         Returns:
-            Content signature string
+            Content signature string (perceptual hash or fallback)
         """
         ad_id = ad_data.get("ad_archive_id", ad_data.get("id", "unknown"))
-        self.logger.info(f"Generating content signature for ad {ad_id}")
+        self.logger.info(f"Generating perceptual hash content signature for ad {ad_id}")
         
-        signature_components = []
-        
-        # Add media URL if available
-        if media_url := ad_data.get("media_url"):
-            signature_components.append(f"media:{media_url}")
-            self.logger.info(f"Using primary media URL for signature: {media_url[:50]}...")
+        # Try to generate perceptual hash based on media
+        perceptual_hash = self._calculate_perceptual_hash_for_ad(ad_data)
+        if perceptual_hash:
+            self.logger.info(f"Generated perceptual hash signature for ad {ad_id}: {perceptual_hash}")
+            return perceptual_hash
             
-        # Add text content from creatives
-        if creatives := ad_data.get("creatives"):
-            for i, creative in enumerate(creatives):
-                if body := creative.get("body"):
-                    # Normalize text by removing spaces, lowercasing
-                    normalized_body = body.lower().strip()
-                    signature_components.append(f"text:{normalized_body[:100]}")
-                    self.logger.info(f"Added creative {i} text to signature: {normalized_body[:50]}...")
-                    
-                # Add media URLs from creatives
-                if media := creative.get("media"):
-                    for j, media_item in enumerate(media):
-                        if media_url := media_item.get("url"):
-                            signature_components.append(f"creative_media:{media_url}")
-                            self.logger.info(f"Added creative {i} media {j} URL to signature: {media_url[:50]}...")
-        
-        # Also include image and video URLs if available
-        if image_urls := ad_data.get("main_image_urls", []):
-            for i, url in enumerate(image_urls):
-                signature_components.append(f"image:{url}")
-                self.logger.info(f"Added image URL {i} to signature: {url[:50]}...")
-                
-        if video_urls := ad_data.get("main_video_urls", []):
-            for i, url in enumerate(video_urls):
-                signature_components.append(f"video:{url}")
-                self.logger.info(f"Added video URL {i} to signature: {url[:50]}...")
-        
-        if not signature_components:
-            # Fallback: use ad_archive_id as signature
-            fallback = str(ad_id)
-            self.logger.warning(f"No content found for signature, using ad ID as fallback: {fallback}")
-            return fallback
-            
-        # Generate a hash of all components
-        signature_text = "|".join(signature_components)
-        import hashlib
-        signature = hashlib.md5(signature_text.encode()).hexdigest()
-        
-        self.logger.info(f"Generated signature {signature} for ad {ad_id} from {len(signature_components)} components")
-        return signature
+        # Fallback: use ad_archive_id as signature if no media hash available
+        fallback = str(ad_id)
+        self.logger.warning(f"No perceptual hash available for ad {ad_id}, using ad ID as fallback: {fallback}")
+        return fallback
     
+    def _calculate_perceptual_hash_for_ad(self, ad_data: Dict) -> Optional[str]:
+        """
+        Calculate a perceptual hash for an ad's primary media.
+        This creates a stable visual identifier for the ad set based on the representative ad.
+        
+        Args:
+            ad_data: Ad data object containing media information
+            
+        Returns:
+            Perceptual hash string or None if no media found
+        """
+        try:
+            ad_id = ad_data.get("ad_archive_id", "unknown")
+            self.logger.info(f"Calculating perceptual hash for ad {ad_id}")
+            
+            # Try to find primary media URL
+            media_url = ad_data.get("media_url")
+            if not media_url:
+                # Fallback to main image URLs
+                if main_images := ad_data.get("main_image_urls", []):
+                    media_url = main_images[0]
+                elif main_videos := ad_data.get("main_video_urls", []):
+                    media_url = main_videos[0]
+                else:
+                    # Check creatives for media
+                    if creatives := ad_data.get("creatives", []):
+                        for creative in creatives:
+                            if media_list := creative.get("media", []):
+                                for media_item in media_list:
+                                    if media_item.get("url"):
+                                        media_url = media_item["url"]
+                                        break
+                                if media_url:
+                                    break
+            
+            if not media_url:
+                self.logger.warning(f"No media URL found for ad {ad_id}, cannot calculate perceptual hash")
+                return None
+            
+            # Determine media type and calculate appropriate hash
+            media_type = self.creative_comparison_service.get_media_type(media_url)
+            
+            if media_type == "image":
+                # Use image hashing
+                image_hash = self.creative_comparison_service._download_and_hash_image(media_url)
+                if image_hash:
+                    hash_str = str(image_hash)
+                    self.logger.info(f"Generated image perceptual hash for ad {ad_id}: {hash_str}")
+                    return hash_str
+                    
+            elif media_type == "video":
+                # Use video hashing - take the first frame hash as representative
+                video_hashes = self.creative_comparison_service._sample_video_hashes(media_url, samples=1)
+                if video_hashes and len(video_hashes) > 0:
+                    hash_str = str(video_hashes[0])
+                    self.logger.info(f"Generated video perceptual hash for ad {ad_id}: {hash_str}")
+                    return hash_str
+            
+            self.logger.warning(f"Could not generate perceptual hash for ad {ad_id}, media type: {media_type}")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating perceptual hash for ad: {e}")
+            return None
+
     def _update_ad_set_metadata(self, ad_set_id: int) -> None:
         """
         Update metadata for an AdSet including:
         - variant_count: Count of ads in the set
         - best_ad_id: ID of the ad with highest overall_score
+        - content_signature: Perceptual hash of the best ad's media
         
         Args:
             ad_set_id: ID of the AdSet to update
@@ -138,10 +167,31 @@ class EnhancedAdExtractionService:
             # Find best ad (currently using first ad in set as we don't have overall_score yet)
             # TODO: Update this logic when overall_score is implemented
             best_ad = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).first()
+            previous_best_ad_id = ad_set.best_ad_id
+            
             if best_ad:
                 ad_set.best_ad_id = best_ad.id
+                
+                # Update content_signature if best_ad changed or if it's not set
+                if (previous_best_ad_id != best_ad.id or not ad_set.content_signature):
+                    self.logger.info(f"Best ad changed or content_signature missing for AdSet {ad_set_id}, updating content_signature")
+                    
+                    # Convert the best ad back to dict format for hash calculation
+                    try:
+                        best_ad_data = best_ad.to_enhanced_format()
+                        if best_ad_data:
+                            new_signature = self._generate_content_signature(best_ad_data)
+                            if new_signature:
+                                ad_set.content_signature = new_signature
+                                self.logger.info(f"Updated content_signature for AdSet {ad_set_id}: {new_signature}")
+                            else:
+                                self.logger.warning(f"Could not generate content_signature for AdSet {ad_set_id}")
+                        else:
+                            self.logger.warning(f"Could not convert best ad to dict format for AdSet {ad_set_id}")
+                    except Exception as e:
+                        self.logger.error(f"Error updating content_signature for AdSet {ad_set_id}: {e}")
             
-            self.logger.info(f"Updated AdSet metadata: id={ad_set_id}, variants={variant_count}")
+            self.logger.info(f"Updated AdSet metadata: id={ad_set_id}, variants={variant_count}, best_ad_id={ad_set.best_ad_id}")
             
         except Exception as e:
             self.logger.error(f"Error updating AdSet metadata: {e}")
@@ -678,6 +728,15 @@ class EnhancedAdExtractionService:
             
             # Enhanced data extraction
             enhanced_data = self._extract_enhanced_ad_data(ad_data)
+
+            # Prepare meta dictionary, ensuring it's a plain dict we can mutate safely
+            base_meta: Dict[str, Any] = cast(Dict[str, Any], ad_data.get("meta") or {})
+
+            # Inject campaign name and platforms if provided
+            if campaign_name:
+                base_meta["campaign_name"] = campaign_name
+            if platforms:
+                base_meta["platforms"] = platforms
             
             if is_new:
                 # Create a new ad
@@ -694,20 +753,12 @@ class EnhancedAdExtractionService:
                     competitor_id=competitor_id,
                     ad_set_id=ad_set.id,
                     date_found=datetime.utcnow(),
-                    meta=ad_data.get("meta", {}),
+                    meta=base_meta,
                     targeting=ad_data.get("targeting", {}),
                     lead_form=ad_data.get("lead_form", {}),
                     creatives=ad_data.get("creatives", []),
                     duration_days=enhanced_data.get("duration_days", 0)
                 )
-                
-                # Store campaign name in meta if provided
-                if campaign_name and new_ad.meta:
-                    new_ad.meta["campaign_name"] = campaign_name
-                
-                # Store platforms in meta if provided
-                if platforms and new_ad.meta:
-                    new_ad.meta["platforms"] = platforms
                 
                 self.db.add(new_ad)
                 self.db.flush()
@@ -735,16 +786,18 @@ class EnhancedAdExtractionService:
                 if meta_data and existing_ad.meta:
                     existing_ad.meta.update(meta_data)
                 
-                # Update campaign name in meta if provided
-                if campaign_name and existing_ad.meta:
-                    existing_ad.meta["campaign_name"] = campaign_name
-                
-                # Update platforms in meta if provided
-                if platforms and existing_ad.meta:
-                    existing_platforms = set(existing_ad.meta.get("platforms", []))
-                    for platform in platforms:
-                        existing_platforms.add(platform)
-                    existing_ad.meta["platforms"] = list(existing_platforms)
+                # Safely update meta information (campaign name / platforms)
+                try:
+                    current_meta: Dict[str, Any] = cast(Dict[str, Any], existing_ad.meta or {})
+                    if campaign_name:
+                        current_meta["campaign_name"] = campaign_name
+                    if platforms:
+                        existing_platforms = set(current_meta.get("platforms", []))
+                        existing_platforms.update(platforms)
+                        current_meta["platforms"] = list(existing_platforms)
+                    existing_ad.meta = current_meta
+                except Exception as meta_err:
+                    self.logger.error(f"Failed to update ad meta for {ad_id}: {meta_err}")
                 
                 # Update creatives if provided
                 if ad_data.get("creatives"):
@@ -844,38 +897,3 @@ class EnhancedAdExtractionService:
             self.logger.error(f"Error extracting enhanced ad data: {e}")
             return {}
 
-    def calculate_duration_days(self, start_date_str: str, end_date_str: Optional[str], is_active: bool) -> int:
-        """
-        Calculate the duration of an ad in days.
-        
-        Args:
-            start_date_str: Start date string
-            end_date_str: End date string, or None if not ended
-            is_active: Whether the ad is still active
-            
-        Returns:
-            Number of days the ad has been or was running
-        """
-        try:
-            # Parse start date
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
-            if not start_date:
-                return 0
-                
-            # Parse end date or use current date if ad is active
-            if end_date_str:
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            elif is_active:
-                # If ad is active and no end date, use current date
-                end_date = datetime.now().date()
-            else:
-                # If ad is not active and no end date, assume it ran for 1 day
-                return 1
-                
-            # Calculate difference in days
-            duration = (end_date - start_date).days
-            return max(1, duration)  # Ensure at least 1 day
-            
-        except Exception as e:
-            self.logger.error(f"Error calculating duration days: {e}")
-            return 0 

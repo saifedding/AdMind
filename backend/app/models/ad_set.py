@@ -9,7 +9,7 @@ class AdSet(Base):
     # Primary key
     id = Column(Integer, primary_key=True, index=True)
     
-    # Content signature - unique identifier for grouping similar ads
+    # Content signature - perceptual hash of the representative ad's media (stable visual identifier)
     content_signature = Column(String, unique=True, nullable=False, index=True)
     
     # Count of ad variants in this set
