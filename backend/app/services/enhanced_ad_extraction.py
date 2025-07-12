@@ -149,53 +149,74 @@ class EnhancedAdExtractionService:
         Update metadata for an AdSet including:
         - variant_count: Count of ads in the set
         - best_ad_id: ID of the ad with highest overall_score
+        - first_seen_date / last_seen_date: The min/max start_date of all ads in the set.
         - content_signature: Perceptual hash of the best ad's media
         
         Args:
             ad_set_id: ID of the AdSet to update
         """
         try:
-            # Get the AdSet
             ad_set = self.db.query(AdSet).filter(AdSet.id == ad_set_id).first()
             if not ad_set:
                 self.logger.warning(f"AdSet not found for updating metadata: {ad_set_id}")
                 return
             
-            # Count variants (ads in this set)
-            variant_count = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).count()
-            ad_set.variant_count = variant_count
+            # --- FIX: Query all ads in the set to calculate date range and best ad ---
+            ads_in_set = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).all()
+            if not ads_in_set:
+                ad_set.variant_count = 0
+                self.db.commit()
+                return
+
+            ad_set.variant_count = len(ads_in_set)
             
-            # Find best ad (currently using first ad in set as we don't have overall_score yet)
-            # TODO: Update this logic when overall_score is implemented
-            best_ad = self.db.query(Ad).filter(Ad.ad_set_id == ad_set_id).first()
-            previous_best_ad_id = ad_set.best_ad_id
+            # Find min and max start_date from all variants
+            min_date = None
+            max_date = None
+            for ad in ads_in_set:
+                # The start_date is stored inside the meta JSONB field
+                ad_start_date_str = ad.meta.get("start_date") if ad.meta else None
+                if ad_start_date_str:
+                    try:
+                        ad_start_date = datetime.strptime(ad_start_date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                        if min_date is None or ad_start_date < min_date:
+                            min_date = ad_start_date
+                        if max_date is None or ad_start_date > max_date:
+                            max_date = ad_start_date
+                    except (ValueError, TypeError):
+                        continue  # Ignore ads with invalid date formats
             
+            ad_set.first_seen_date = min_date
+            # The 'last_seen_date' should reflect the latest start date of a variant
+            ad_set.last_seen_date = max_date 
+
+            # TODO: Find best ad based on analysis score when available. For now, use the newest ad.
+            best_ad = max(ads_in_set, key=lambda ad: ad.meta.get("start_date", "0") if ad.meta else "0", default=None)
+
             if best_ad:
+                previous_best_ad_id = ad_set.best_ad_id
                 ad_set.best_ad_id = best_ad.id
             
-                # Update content_signature if best_ad changed or if it's not set
                 if (previous_best_ad_id != best_ad.id or not ad_set.content_signature):
-                    self.logger.info(f"Best ad changed or content_signature missing for AdSet {ad_set_id}, updating content_signature")
-                    
-                    # Convert the best ad back to dict format for hash calculation
+                    self.logger.info(f"Best ad changed or content_signature missing for AdSet {ad_set.id}, updating content_signature")
                     try:
                         best_ad_data = best_ad.to_enhanced_format()
                         if best_ad_data:
                             new_signature = self._generate_content_signature(best_ad_data)
                             if new_signature:
                                 ad_set.content_signature = new_signature
-                                self.logger.info(f"Updated content_signature for AdSet {ad_set_id}: {new_signature}")
-                            else:
-                                self.logger.warning(f"Could not generate content_signature for AdSet {ad_set_id}")
-                        else:
-                            self.logger.warning(f"Could not convert best ad to dict format for AdSet {ad_set_id}")
+                                self.logger.info(f"Updated content_signature for AdSet {ad_set.id}: {new_signature}")
                     except Exception as e:
-                        self.logger.error(f"Error updating content_signature for AdSet {ad_set_id}: {e}")
+                        self.logger.error(f"Error updating content_signature for AdSet {ad_set.id}: {e}")
+            # --- END FIX ---
             
-            self.logger.info(f"Updated AdSet metadata: id={ad_set_id}, variants={variant_count}, best_ad_id={ad_set.best_ad_id}")
+            ad_set.updated_at = datetime.utcnow()
+            self.db.commit()  # Commit the changes for this ad set
+            self.logger.info(f"Updated AdSet metadata: id={ad_set_id}, variants={ad_set.variant_count}, best_ad_id={ad_set.best_ad_id}, first_seen={ad_set.first_seen_date}, last_seen={ad_set.last_seen_date}")
             
         except Exception as e:
-            self.logger.error(f"Error updating AdSet metadata: {e}")
+            self.logger.error(f"Error updating AdSet metadata for ID {ad_set_id}: {e}")
+            self.db.rollback()
     
     def parse_dynamic_lead_form(self, extra_texts: List[Dict]) -> Dict:
         """
@@ -679,32 +700,38 @@ class EnhancedAdExtractionService:
                 self.logger.error("Ad data missing ad_archive_id, cannot process")
                 return None, False
                 
-            # Check if the ad already exists
             existing_ad = self.db.query(Ad).filter(Ad.ad_archive_id == ad_id).first()
             is_new = existing_ad is None
             
-            # Enhanced data extraction
             enhanced_data = self._extract_enhanced_ad_data(ad_data)
 
-            # Prepare meta dictionary, ensuring it's a plain dict we can mutate safely
-            base_meta: Dict[str, Any] = cast(Dict[str, Any], ad_data.get("meta") or {})
+            # --- FIX: Extract and convert dates from the raw ad_data ---
+            snapshot = ad_data.get("snapshot", {})
+            start_date_str = self.convert_timestamp_to_date(snapshot.get("start_date"))
+            end_date_str = self.convert_timestamp_to_date(snapshot.get("end_date"))
+            is_active = ad_data.get("is_active", False)
+            duration_days = self.calculate_duration_days(start_date_str, end_date_str, is_active)
+            # --- END FIX ---
 
-            # Inject campaign name and platforms if provided
+            base_meta: Dict[str, Any] = cast(Dict[str, Any], ad_data.get("meta") or {})
+            
+            # --- FIX: Inject extracted dates and activity into meta ---
+            base_meta["start_date"] = start_date_str
+            base_meta["end_date"] = end_date_str
+            base_meta["is_active"] = is_active
+            # --- END FIX ---
+            
             if campaign_name:
                 base_meta["campaign_name"] = campaign_name
             if platforms:
                 base_meta["platforms"] = platforms
             
             if is_new:
-                # Create a new ad
-                
-                # First, find or create the appropriate AdSet using direct comparison
                 ad_set = self.find_or_create_ad_set_for_ad(ad_data)
                 if not ad_set:
                     self.logger.error(f"Failed to find or create AdSet for ad {ad_id}")
                     return None, False
                 
-                # Create the new ad
                 new_ad = Ad(
                     ad_archive_id=ad_id,
                     competitor_id=competitor_id,
@@ -714,61 +741,34 @@ class EnhancedAdExtractionService:
                     targeting=ad_data.get("targeting", {}),
                     lead_form=ad_data.get("lead_form", {}),
                     creatives=ad_data.get("creatives", []),
-                    duration_days=enhanced_data.get("duration_days", 0)
+                    duration_days=duration_days  # Use calculated duration
                 )
-                
-                # --- Maintain AdSet date range ---
-                ad_found_date = new_ad.date_found.astimezone(timezone.utc)
-                if ad_set.first_seen_date is None or ad_found_date < ad_set.first_seen_date:
-                    ad_set.first_seen_date = ad_found_date
-                if ad_set.last_seen_date is None or ad_found_date > ad_set.last_seen_date:
-                    ad_set.last_seen_date = ad_found_date
-                # ---------------------------------
                 
                 self.db.add(new_ad)
                 self.db.flush()
                 
                 # Update the ad set's metadata
-                if not ad_set.best_ad_id:
-                    ad_set.best_ad_id = new_ad.id
-                    
-                ad_set.variant_count = ad_set.variant_count + 1
-                ad_set.updated_at = datetime.utcnow()
-                
-                self.logger.info(f"Updated AdSet metadata: id={ad_set.id}, variants={ad_set.variant_count}")
+                self._update_ad_set_metadata(ad_set.id)  # Call the updated metadata function
                 
                 return new_ad, True
                 
             else:
-                # Update existing ad
                 existing_ad.updated_at = datetime.utcnow()
+                existing_ad.duration_days = duration_days  # Update duration
                 
-                # Update duration_days if available in enhanced data
-                if "duration_days" in enhanced_data:
-                    existing_ad.duration_days = enhanced_data.get("duration_days")
+                current_meta: Dict[str, Any] = cast(Dict[str, Any], existing_ad.meta or {})
+                current_meta.update(base_meta)  # Update with new meta info
+                existing_ad.meta = current_meta
                 
-                # Update meta data if provided
-                if meta_data and existing_ad.meta:
-                    existing_ad.meta.update(meta_data)
-                
-                # Safely update meta information (campaign name / platforms)
-                try:
-                    current_meta: Dict[str, Any] = cast(Dict[str, Any], existing_ad.meta or {})
-                    if campaign_name:
-                        current_meta["campaign_name"] = campaign_name
-                    if platforms:
-                        existing_platforms = set(current_meta.get("platforms", []))
-                        existing_platforms.update(platforms)
-                        current_meta["platforms"] = list(existing_platforms)
-                    existing_ad.meta = current_meta
-                except Exception as meta_err:
-                    self.logger.error(f"Failed to update ad meta for {ad_id}: {meta_err}")
-                
-                # Update creatives if provided
                 if ad_data.get("creatives"):
                     existing_ad.creatives = ad_data.get("creatives")
                 
                 self.db.flush()
+
+                # Also update ad set metadata if an existing ad is updated
+                if existing_ad.ad_set_id:
+                    self._update_ad_set_metadata(existing_ad.ad_set_id)
+                
                 return existing_ad, False
                 
         except Exception as e:
