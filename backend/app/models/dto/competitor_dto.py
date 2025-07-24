@@ -60,7 +60,7 @@ class PaginatedCompetitorResponseDTO(BaseModel):
 class CompetitorFilterParams(BaseModel):
     """DTO for competitor filtering parameters"""
     page: int = Field(1, ge=1, description="Page number")
-    page_size: int = Field(20, ge=1, le=100, description="Number of items per page")
+    page_size: int = Field(20, ge=1, le=1000, description="Number of items per page")
     is_active: Optional[bool] = Field(None, description="Filter by active status")
     search: Optional[str] = Field(None, description="Search in competitor names")
     sort_by: Optional[str] = Field("created_at", description="Sort by field")

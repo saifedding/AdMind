@@ -94,6 +94,7 @@ export default function CompetitorsPage() {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   
@@ -124,7 +125,7 @@ export default function CompetitorsPage() {
   // Load data
   useEffect(() => {
     loadData();
-  }, [currentPage, searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [currentPage, pageSize, searchTerm, statusFilter, sortBy, sortOrder]);
 
   const loadData = async () => {
     try {
@@ -134,7 +135,7 @@ export default function CompetitorsPage() {
       const [competitorsData, statsData] = await Promise.all([
         getCompetitors({
           page: currentPage,
-          page_size: 20,
+          page_size: pageSize,
           is_active: statusFilter === 'all' ? undefined : statusFilter === 'active',
           search: searchTerm || undefined,
           sort_by: sortBy,
@@ -211,7 +212,16 @@ export default function CompetitorsPage() {
       const result = await bulkDeleteCompetitors(selectedIds);
       alert(`${result.message} Soft-deleted: ${result.soft_deleted_count}, Hard-deleted: ${result.hard_deleted_count}.`);
       setSelectedIds([]);
-      loadData();
+      
+      // Adjust current page if it becomes empty
+      const remainingItems = competitors.total - selectedIds.length;
+      const totalPagesAfterDelete = Math.ceil(remainingItems / pageSize);
+      
+      if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
+        setCurrentPage(totalPagesAfterDelete);
+      } else {
+        loadData();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete competitors');
     } finally {
@@ -586,28 +596,49 @@ export default function CompetitorsPage() {
 
         {/* Pagination */}
         {competitors.total_pages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-6">
-            <Button
-              variant="outline"
-              disabled={!competitors.has_previous}
-              onClick={() => setCurrentPage(currentPage - 1)}
-              className="border-border"
-            >
-              Previous
-            </Button>
-            
-            <span className="text-sm text-muted-foreground">
-              Page {currentPage} of {competitors.total_pages}
-            </span>
-            
-            <Button
-              variant="outline"
-              disabled={!competitors.has_next}
-              onClick={() => setCurrentPage(currentPage + 1)}
-              className="border-border"
-            >
-              Next
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-6">
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page</span>
+                <Select
+                    value={`${pageSize}`}
+                    onValueChange={(value) => {
+                        setPageSize(Number(value));
+                        setCurrentPage(1);
+                    }}
+                >
+                    <SelectTrigger className="w-24 bg-card border-border">
+                        <SelectValue placeholder={pageSize} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {[20, 50, 100, 500, 1000].map(size => (
+                            <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+                <Button
+                    variant="outline"
+                    disabled={!competitors.has_previous}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="border-border"
+                >
+                    Previous
+                </Button>
+                
+                <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {competitors.total_pages}
+                </span>
+                
+                <Button
+                    variant="outline"
+                    disabled={!competitors.has_next}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="border-border"
+                >
+                    Next
+                </Button>
+            </div>
           </div>
         )}
 

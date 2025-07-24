@@ -191,7 +191,13 @@ class EnhancedAdExtractionService:
             ad_set.last_seen_date = max_date 
 
             # TODO: Find best ad based on analysis score when available. For now, use the newest ad.
-            best_ad = max(ads_in_set, key=lambda ad: ad.meta.get("start_date", "0") if ad.meta else "0", default=None)
+            # Handle None values properly in date comparison
+            def get_ad_date_for_comparison(ad):
+                if ad.meta and ad.meta.get("start_date"):
+                    return ad.meta.get("start_date")
+                return "0"  # Default for None dates to sort them first
+            
+            best_ad = max(ads_in_set, key=get_ad_date_for_comparison, default=None)
 
             if best_ad:
                 previous_best_ad_id = ad_set.best_ad_id
@@ -370,8 +376,16 @@ class EnhancedAdExtractionService:
         Transforms a single raw ad variation into a clean, structured object.
         This is the main transformation logic from test_ad_extraction.py
         """
+        # TRACE: Method entry
+        ad_id = ad_data.get("ad_archive_id", "unknown")
+        print(f"TRACE: ENTERED build_clean_ad_object for {ad_id}")
+        print(f"TRACE: ad_data keys: {list(ad_data.keys())}")
+        
         snapshot = ad_data.get("snapshot", {})
+        print(f"TRACE: snapshot exists: {snapshot is not None}, has content: {bool(snapshot)}")
+        
         if not snapshot:
+            print(f"TRACE: No snapshot found for {ad_id} - RETURNING None")
             return None
         
         # Extract page information directly from ad_data and snapshot
@@ -379,6 +393,29 @@ class EnhancedAdExtractionService:
         page_name = ad_data.get("page_name") or snapshot.get("page_name")
         page_url = snapshot.get("page_profile_uri")
         
+        # TRACE: Show actual values for date debugging - ALWAYS log for now
+        ad_id = ad_data.get("ad_archive_id", "unknown")
+        
+        # ALWAYS log the first ad we process (reset counter)
+        print(f"TRACE: RAW VALUES for {ad_id}:")
+        print(f"  start_date = {repr(ad_data.get('start_date'))}")
+        print(f"  end_date = {repr(ad_data.get('end_date'))}")
+        print(f"  is_active = {repr(ad_data.get('is_active'))}")
+        
+        # Test conversion
+        raw_start = ad_data.get("start_date")
+        raw_end = ad_data.get("end_date")
+        
+        converted_start = self.convert_timestamp_to_date(raw_start)
+        converted_end = self.convert_timestamp_to_date(raw_end)
+        
+        print(f"  CONVERTED start_date = {repr(converted_start)}")
+        print(f"  CONVERTED end_date = {repr(converted_end)}")
+        
+        # Test conversion function directly
+        if raw_start is not None:
+            print(f"  CONVERSION TEST: {raw_start} -> {self.convert_timestamp_to_date(raw_start)}")
+
         ad_object = {
             "ad_archive_id": ad_data.get("ad_archive_id"),
             "meta": {
@@ -387,7 +424,9 @@ class EnhancedAdExtractionService:
                 "display_format": snapshot.get("display_format"),
                 "page_id": page_id,
                 "page_name": page_name,
-                "page_url": page_url
+                "page_url": page_url,
+                "start_date": converted_start,
+                "end_date": converted_end
             },
             "targeting": self.extract_targeting_data(ad_data),
             "lead_form": self.parse_dynamic_lead_form(snapshot.get("extra_texts", [])),
@@ -414,7 +453,65 @@ class EnhancedAdExtractionService:
                 detailed_creative['id'] = f"{ad_object['ad_archive_id']}-{i}"
                 ad_object['creatives'].append(detailed_creative)
         
+        # Detect media type based on the creative content
+        media_type = self._detect_ad_media_type(snapshot, ad_object['creatives'])
+        ad_object['media_type'] = media_type
+        
         return ad_object
+    
+    def _detect_ad_media_type(self, snapshot: Dict, creatives: List[Dict]) -> str:
+        """
+        Detect the primary media type for an ad based on snapshot and creatives content.
+        
+        Args:
+            snapshot: The snapshot data from Facebook
+            creatives: List of processed creative objects
+            
+        Returns:
+            Media type string: 'carousel', 'video', 'image', or 'text'
+        """
+        try:
+            # Check for carousel (multiple cards)
+            if snapshot.get("cards") and len(snapshot["cards"]) > 1:
+                return "carousel"
+                
+            # Check for videos in snapshot
+            if snapshot.get("videos"):
+                return "video"
+                
+            # Check for images in snapshot
+            if snapshot.get("images"):
+                return "image"
+                
+            # Check creatives for media content
+            if creatives:
+                has_video = False
+                has_image = False
+                
+                for creative in creatives:
+                    if creative.get("media"):
+                        for media_item in creative["media"]:
+                            media_type = media_item.get("type", "").lower()
+                            if media_type == "video":
+                                has_video = True
+                            elif media_type == "image":
+                                has_image = True
+                
+                if has_video:
+                    return "video"
+                elif has_image:
+                    return "image"
+                    
+            # Check if there's any text content
+            if (snapshot.get("title") or snapshot.get("body") or 
+                any(creative.get("body") or creative.get("headline") for creative in creatives)):
+                return "text"
+                
+            return "unknown"
+            
+        except Exception as e:
+            self.logger.error(f"Error detecting media type: {e}")
+            return "unknown"
     
     def _group_ads_into_sets(self, ads_data: List[Dict]) -> Dict[str, List[Dict]]:
         """
@@ -705,21 +802,27 @@ class EnhancedAdExtractionService:
             
             enhanced_data = self._extract_enhanced_ad_data(ad_data)
 
-            # --- FIX: Extract and convert dates from the raw ad_data ---
-            snapshot = ad_data.get("snapshot", {})
-            start_date_str = self.convert_timestamp_to_date(snapshot.get("start_date"))
-            end_date_str = self.convert_timestamp_to_date(snapshot.get("end_date"))
-            is_active = ad_data.get("is_active", False)
-            duration_days = self.calculate_duration_days(start_date_str, end_date_str, is_active)
-            # --- END FIX ---
-
+            # Get dates from the already-processed meta (primary extraction already handled this correctly)
             base_meta: Dict[str, Any] = cast(Dict[str, Any], ad_data.get("meta") or {})
             
-            # --- FIX: Inject extracted dates and activity into meta ---
-            base_meta["start_date"] = start_date_str
-            base_meta["end_date"] = end_date_str
-            base_meta["is_active"] = is_active
-            # --- END FIX ---
+            # Extract dates that were already processed by primary extraction
+            start_date_str = base_meta.get("start_date")
+            end_date_str = base_meta.get("end_date") 
+            is_active = base_meta.get("is_active", False)
+            
+            print(f"✅ USING PRIMARY EXTRACTION DATES for {ad_id}:")
+            print(f"  start_date from meta: {repr(start_date_str)}")
+            print(f"  end_date from meta: {repr(end_date_str)}")
+            print(f"  is_active from meta: {repr(is_active)}")
+            
+            duration_days = self.calculate_duration_days(start_date_str, end_date_str, is_active)
+            
+            # TRACE: Check what's in base_meta before save
+            print(f"📦 FINAL META BEFORE SAVE for {ad_id}:")
+            print(f"  base_meta keys: {list(base_meta.keys())}")
+            print(f"  base_meta.start_date: {repr(base_meta.get('start_date'))}")
+            print(f"  base_meta.end_date: {repr(base_meta.get('end_date'))}")
+            print(f"  base_meta.is_active: {repr(base_meta.get('is_active'))}")
             
             if campaign_name:
                 base_meta["campaign_name"] = campaign_name
@@ -727,6 +830,7 @@ class EnhancedAdExtractionService:
                 base_meta["platforms"] = platforms
             
             if is_new:
+                print(f"🆕 CREATING NEW AD {ad_id} with meta: {repr(base_meta)}")
                 ad_set = self.find_or_create_ad_set_for_ad(ad_data)
                 if not ad_set:
                     self.logger.error(f"Failed to find or create AdSet for ad {ad_id}")
@@ -753,6 +857,10 @@ class EnhancedAdExtractionService:
                 return new_ad, True
                 
             else:
+                print(f"🔄 UPDATING EXISTING AD {ad_id}")
+                print(f"  existing_ad.meta before: {repr(existing_ad.meta)}")
+                print(f"  base_meta to merge: {repr(base_meta)}")
+                
                 existing_ad.updated_at = datetime.utcnow()
                 existing_ad.duration_days = duration_days  # Update duration
                 
@@ -760,10 +868,15 @@ class EnhancedAdExtractionService:
                 current_meta.update(base_meta)  # Update with new meta info
                 existing_ad.meta = current_meta
                 
+                print(f"  existing_ad.meta after: {repr(existing_ad.meta)}")
+                
                 if ad_data.get("creatives"):
                     existing_ad.creatives = ad_data.get("creatives")
                 
+                # IMMEDIATE COMMIT: Force the meta data to be saved immediately
                 self.db.flush()
+                self.db.commit()
+                print(f"🔥 IMMEDIATE COMMIT EXECUTED for {ad_id} - meta should now be in DB!")
 
                 # Also update ad set metadata if an existing ad is updated
                 if existing_ad.ad_set_id:
@@ -806,6 +919,8 @@ class EnhancedAdExtractionService:
         Returns:
             Dictionary mapping competitor names to lists of enhanced ad data
         """
+        print(f"TRACE: ENTERED transform_raw_data_to_enhanced_format with {len(raw_responses)} responses")
+        
         enhanced_data = {}
         
         self.logger.info(f"Starting transform with {len(raw_responses)} responses, types: {[type(r).__name__ for r in raw_responses[:3]]}")
@@ -877,7 +992,12 @@ class EnhancedAdExtractionService:
                         continue
                     
                     # Build clean ad object
+                    ad_id = ad_data.get("ad_archive_id", "unknown")
+                    print(f"TRACE: About to call build_clean_ad_object for {ad_id}")
+                    
                     clean_ad = self.build_clean_ad_object(ad_data)
+                    
+                    print(f"TRACE: build_clean_ad_object returned: {clean_ad is not None}")
                     if not clean_ad:
                         self.logger.warning(f"Failed to build clean ad object for ad {j}")
                         continue
@@ -922,25 +1042,14 @@ class EnhancedAdExtractionService:
                 try:
                     stats["competitors_processed"] += 1
                     
-                    # Find or create competitor
+                    # Find competitor
                     competitor = self.db.query(Competitor).filter(
                         Competitor.name == competitor_name
                     ).first()
                     
                     if not competitor:
-                        # Extract page_id from first ad if available
-                        page_id = None
-                        if ads_list and ads_list[0].get("meta", {}).get("page_id"):
-                            page_id = ads_list[0]["meta"]["page_id"]
-                        
-                        competitor = Competitor(
-                            name=competitor_name,
-                            page_id=page_id,
-                            created_at=datetime.utcnow()
-                        )
-                        self.db.add(competitor)
-                        self.db.flush()
-                        self.logger.info(f"Created new competitor: {competitor_name}")
+                        self.logger.warning(f"Competitor '{competitor_name}' not found in database. Skipping {len(ads_list)} ads.")
+                        continue # Skip this competitor if not found
                     
                     # Process each ad for this competitor
                     for ad_data in ads_list:

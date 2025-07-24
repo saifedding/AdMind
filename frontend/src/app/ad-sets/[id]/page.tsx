@@ -210,7 +210,7 @@ export default function AdSetDetailPage() {
             <div className={cn(
               ad.id === bestAdId && "ring-2 ring-amber-500 ring-offset-2 rounded-lg"
             )}>
-              <AdCard ad={ad} hideSetBadge={true} />
+              <AdCard ad={ad} hideSetBadge={true} disableSetNavigation={true} />
             </div>
           </div>
         ))}

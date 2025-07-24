@@ -38,7 +38,7 @@ def get_competitor_service_dependency(db: Session = Depends(get_db)) -> "Competi
 @router.get("/", response_model=PaginatedCompetitorResponseDTO)
 async def get_competitors(
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    page_size: int = Query(20, ge=1, le=1000, description="Number of items per page"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     search: Optional[str] = Query(None, description="Search in competitor names and page IDs"),
     sort_by: Optional[str] = Query("created_at", description="Sort by field"),

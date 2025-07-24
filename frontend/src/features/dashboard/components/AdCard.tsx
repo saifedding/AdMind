@@ -16,6 +16,7 @@ interface AdCardProps {
   onSelectionChange?: (adId: number, selected: boolean) => void;
   showSelection?: boolean;
   hideSetBadge?: boolean; // Add this prop to hide the "Set of X" badge when viewing variants
+  disableSetNavigation?: boolean; // Add this prop to disable navigation to ad set when already viewing set details
 }
 
 // Helper function to get main ad content for display
@@ -30,7 +31,8 @@ export function AdCard({
   isDeleting = false, 
   onSelectionChange, 
   showSelection = false,
-  hideSetBadge = false
+  hideSetBadge = false,
+  disableSetNavigation = false
 }: AdCardProps) {
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -105,6 +107,12 @@ export function AdCard({
       return;
     }
     if ((e.target as HTMLElement).closest('.carousel-control')) {
+      return;
+    }
+    
+    // If disableSetNavigation is true, always go to individual ad
+    if (disableSetNavigation) {
+      router.push(`/ads/${ad.id}`);
       return;
     }
     
