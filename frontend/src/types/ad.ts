@@ -59,6 +59,7 @@ export interface Ad {
   // Extended Facebook ad fields
   page_id?: string;
   is_active?: boolean;
+  is_favorite?: boolean;
   start_date?: string;
   currency?: string;
   spend?: string;

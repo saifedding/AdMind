@@ -193,6 +193,7 @@ class AdFilterParams(BaseModel):
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
     is_active: Optional[bool] = None
+    is_favorite: Optional[bool] = None
     search: Optional[str] = None
     sort_by: Optional[str] = "date_found"
     sort_order: Optional[str] = "desc"
@@ -323,6 +324,9 @@ class AdResponseDTO(BaseModel):
     is_active: Optional[bool] = Field(None, description="Whether ad is active")
     duration_days: Optional[int] = Field(None, description="Duration in days the ad has been running")
     
+    # User preferences
+    is_favorite: bool = Field(default=False, description="Whether ad is marked as favorite")
+    
     # Timestamps
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Update timestamp")
@@ -406,6 +410,9 @@ class AdDetailResponseDTO(BaseModel):
     start_date: Optional[str] = Field(None, description="Ad start date")
     end_date: Optional[str] = Field(None, description="Ad end date")
     is_active: Optional[bool] = Field(None, description="Whether ad is active")
+    
+    # User preferences
+    is_favorite: bool = Field(default=False, description="Whether ad is marked as favorite")
     
     # Timestamps
     created_at: datetime = Field(..., description="Creation timestamp")

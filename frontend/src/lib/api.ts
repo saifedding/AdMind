@@ -128,6 +128,7 @@ export interface ApiAd {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
+  is_favorite?: boolean;
   duration_days?: number;
   created_at: string;
   updated_at: string;
@@ -177,6 +178,7 @@ export interface AdFilterParams {
   date_from?: string;
   date_to?: string;
   is_active?: boolean;
+  is_favorite?: boolean;
   search?: string;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
@@ -299,6 +301,33 @@ class ApiClient {
     );
   }
 
+  async toggleFavorite(id: number): Promise<{ ad_id: number; is_favorite: boolean; message: string }> {
+    return this.request<{ ad_id: number; is_favorite: boolean; message: string }>(
+      `/ads/${id}/favorite`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+  
+  async toggleAdSetFavorite(adSetId: number): Promise<{ ad_id: number; is_favorite: boolean; message: string }> {
+    return this.request<{ ad_id: number; is_favorite: boolean; message: string }>(
+      `/ad-sets/${adSetId}/favorite`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  async refreshMediaFromFacebook(adId: number): Promise<{ success: boolean; ad_id: number; old_media_url?: string; new_media_url?: string; message: string; error?: string }> {
+    return this.request<{ success: boolean; ad_id: number; old_media_url?: string; new_media_url?: string; message: string; error?: string }>(
+      `/ads/${adId}/refresh-media`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
   async deleteAllAds(): Promise<{ message: string; count: number }> {
     return this.request<{ message: string; count: number }>(
       `/ads/all`,
@@ -353,6 +382,9 @@ export const adsApi = {
   deleteAd: (id: number) => apiClient.deleteAd(id),
   bulkDeleteAds: (ids: number[]) => apiClient.bulkDeleteAds(ids),
   deleteAllAds: () => apiClient.deleteAllAds(),
+  toggleFavorite: (id: number) => apiClient.toggleFavorite(id),
+  toggleAdSetFavorite: (adSetId: number) => apiClient.toggleAdSetFavorite(adSetId),
+  refreshMediaFromFacebook: (adId: number) => apiClient.refreshMediaFromFacebook(adId),
   getTopPerformingAds: (limit?: number) => apiClient.getTopPerformingAds(limit),
   searchAds: (query: string, limit?: number) => apiClient.searchAds(query, limit),
   getCompetitorAds: (competitorId: number, limit?: number) => apiClient.getCompetitorAds(competitorId, limit),

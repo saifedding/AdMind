@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Activity,
   Layers,
-  Clock
+  Clock,
+  Heart
 } from "lucide-react";
 
 const navigation = [
@@ -42,6 +43,12 @@ const navigation = [
     name: "Ad Sets",
     href: "/ad-sets",
     icon: Layers,
+    current: false
+  },
+  {
+    name: "Favorites",
+    href: "/favorites",
+    icon: Heart,
     current: false
   },
   {

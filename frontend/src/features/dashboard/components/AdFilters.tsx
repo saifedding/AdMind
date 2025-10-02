@@ -23,7 +23,8 @@ import {
   CalendarRange,
   Target,
   Star,
-  Activity
+  Activity,
+  Heart
 } from 'lucide-react';
 import { AdFilterParams, getCompetitors, type Competitor } from '@/lib/api';
 
@@ -249,6 +250,27 @@ export function AdFilters({
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="true">Active</SelectItem>
                 <SelectItem value="false">Ended</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Favorites */}
+          <div className="space-y-2 min-w-0">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              Favorites
+            </label>
+            <Select 
+              value={filters.is_favorite !== undefined ? String(filters.is_favorite) : 'all'} 
+              onValueChange={(v) => setFilters(p => ({ ...p, is_favorite: v === 'all' ? undefined : v === 'true' }))}
+            >
+              <SelectTrigger className="h-9 text-sm bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 min-w-0">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="true">Favorites</SelectItem>
+                <SelectItem value="false">Not Favorites</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -495,6 +517,29 @@ export function AdFilters({
                 <SelectItem value="all">All Ads</SelectItem>
                 <SelectItem value="true">Active Ads</SelectItem>
                 <SelectItem value="false">Ended Ads</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Favorites */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-1">
+              <Heart className="h-4 w-4 text-muted-foreground" />
+              Favorites
+            </label>
+            <Select 
+              value={filters.is_favorite !== undefined ? String(filters.is_favorite) : 'all'}
+              onValueChange={(value) => {
+                const isFavorite = value === 'all' ? undefined : value === 'true';
+                setFilters(prev => ({ ...prev, is_favorite: isFavorite }));
+              }}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Ads" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Ads</SelectItem>
+                <SelectItem value="true">Favorites Only</SelectItem>
+                <SelectItem value="false">Not Favorites</SelectItem>
               </SelectContent>
             </Select>
           </div>

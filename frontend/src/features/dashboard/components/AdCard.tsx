@@ -1,13 +1,14 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { AdWithAnalysis } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { adsApi } from '@/lib/api';
 
 interface AdCardProps {
   ad: AdWithAnalysis;
@@ -17,6 +18,7 @@ interface AdCardProps {
   showSelection?: boolean;
   hideSetBadge?: boolean; // Add this prop to hide the "Set of X" badge when viewing variants
   disableSetNavigation?: boolean; // Add this prop to disable navigation to ad set when already viewing set details
+  onFavoriteToggle?: (adId: number, isFavorite: boolean) => void; // Callback when favorite status changes
 }
 
 // Helper function to get main ad content for display
@@ -32,12 +34,21 @@ export function AdCard({
   onSelectionChange, 
   showSelection = false,
   hideSetBadge = false,
-  disableSetNavigation = false
+  disableSetNavigation = false,
+  onFavoriteToggle
 }: AdCardProps) {
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(ad.is_favorite || false);
+  const [isFavoriting, setIsFavoriting] = useState(false);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
+  
+  // Sync isFavorite state when ad prop changes (e.g., after page refresh)
+  useEffect(() => {
+    console.log(`AdCard ${ad.id} - is_favorite from backend:`, ad.is_favorite, 'ad_set_id:', ad.ad_set_id);
+    setIsFavorite(ad.is_favorite || false);
+  }, [ad.is_favorite, ad.id, ad.ad_set_id]);
   
   const hasMultipleCreatives = ad.creatives && ad.creatives.length > 1;
   const currentCreative = ad.creatives?.[currentCardIndex];
@@ -137,6 +148,23 @@ export function AdCard({
     setShowFullContent(!showFullContent);
   };
 
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!ad.ad_set_id || isFavoriting) return;
+    
+    setIsFavoriting(true);
+    try {
+      // Toggle favorite at AdSet level
+      const response = await adsApi.toggleAdSetFavorite(ad.ad_set_id);
+      setIsFavorite(response.is_favorite);
+      onFavoriteToggle?.(ad.ad_set_id, response.is_favorite);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    } finally {
+      setIsFavoriting(false);
+    }
+  };
+
   return (
     <div className="group relative cursor-pointer" onClick={handleCardClick}>
       <Card className={cn(
@@ -156,7 +184,7 @@ export function AdCard({
         
         {/* Selection Checkbox */}
         {showSelection && (
-          <div className="absolute top-0.5 right-0.5 z-10 checkbox-container">
+          <div className="absolute top-0.5 right-0.5 z-30 checkbox-container">
             <input
               type="checkbox"
               checked={isSelected}
@@ -165,6 +193,29 @@ export function AdCard({
             />
           </div>
         )}
+        
+        {/* Favorite Heart Icon */}
+        <button
+          onClick={handleFavoriteClick}
+          disabled={isFavoriting}
+          className={cn(
+            "absolute z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+            "hover:scale-110 active:scale-95",
+            showSelection ? "top-0.5 right-7" : "top-2 right-2", // Position left of checkbox when selection is active
+            isFavorite 
+              ? "bg-red-500/90 text-white hover:bg-red-600/90" 
+              : "bg-black/40 text-white hover:bg-black/60",
+            isFavoriting && "opacity-50 cursor-not-allowed"
+          )}
+          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart
+            className={cn(
+              "h-4 w-4 transition-all",
+              isFavorite && "fill-current"
+            )}
+          />
+        </button>
         
         {/* Ad Set Variants Badge - REMOVED, now integrated into top badges */}
         

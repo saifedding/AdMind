@@ -59,6 +59,7 @@ export function transformAd(apiAd: ApiAd): Ad {
     
     // Extended Facebook ad fields
     page_id: apiAd.page_id,
+    is_favorite: apiAd.is_favorite,
     start_date: apiAd.start_date,
     end_date: apiAd.end_date,
     spend: apiAd.spend,
@@ -132,6 +133,7 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
     ad_set_created_at: apiAd.ad_set_created_at,
     ad_set_first_seen_date: apiAd.ad_set_first_seen_date,
     ad_set_last_seen_date: apiAd.ad_set_last_seen_date,
+    is_favorite: apiAd.is_favorite,
   };
 }
 

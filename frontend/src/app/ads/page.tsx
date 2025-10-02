@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { 
@@ -22,7 +23,8 @@ import {
   Zap,
   Eye,
   DollarSign,
-  MousePointer
+  MousePointer,
+  LayoutGrid
 } from 'lucide-react';
 import { AdFilters } from '@/features/dashboard/components/AdFilters';
 import { AdSearch } from '@/features/dashboard/components/AdSearch';
@@ -94,6 +96,7 @@ export default function AdIntelligencePage() {
   
   // New state for view and selection
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4 | 5>(3); // Default to 3 columns
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingAds, setDeletingAds] = useState<Set<number>>(new Set());
@@ -270,6 +273,15 @@ export default function AdIntelligencePage() {
       page_size: pageSize,
       page: 1 // Reset to first page when changing page size
     }));
+  };
+
+  const handleFavoriteToggle = (adSetId: number, isFavorite: boolean) => {
+    // Update the ad in the local state to reflect the new favorite status
+    setAds(prevAds => prevAds.map(ad => 
+      ad.ad_set_id === adSetId 
+        ? { ...ad, is_favorite: isFavorite }
+        : ad
+    ));
   };
 
   // Selection handlers
@@ -560,6 +572,24 @@ export default function AdIntelligencePage() {
               onViewChange={setViewMode}
               disabled={loading}
             />
+            {viewMode === 'grid' && (
+              <Select 
+                value={String(gridColumns)} 
+                onValueChange={(value) => setGridColumns(Number(value) as 2 | 3 | 4 | 5)}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Columns" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 Columns</SelectItem>
+                  <SelectItem value="3">3 Columns</SelectItem>
+                  <SelectItem value="4">4 Columns</SelectItem>
+                  <SelectItem value="5">5 Columns</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <AdSearch 
               onSearch={handleSearch} 
               disabled={loading}
@@ -607,7 +637,12 @@ export default function AdIntelligencePage() {
                 showSelection={true}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={`grid gap-6 ${
+                gridColumns === 2 ? 'grid-cols-1 lg:grid-cols-2' :
+                gridColumns === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+                gridColumns === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+                'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+              }`}>
                 {ads.map((ad) => (
                   <AdCard 
                     key={`ad-${ad.id ?? 'unknown'}`} 
@@ -615,6 +650,7 @@ export default function AdIntelligencePage() {
                     isSelected={ad.id !== undefined && selectedAds.has(ad.id)}
                     isDeleting={ad.id !== undefined && deletingAds.has(ad.id)}
                     onSelectionChange={handleAdSelection}
+                    onFavoriteToggle={handleFavoriteToggle}
                     showSelection={true}
                   />
                 ))}

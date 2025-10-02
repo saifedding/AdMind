@@ -78,6 +78,11 @@ class AdService:
                     ad_dto.ad_set_created_at = ad_set.created_at
                     ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
                     ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
+                    # Set favorite status from AdSet, not individual Ad
+                    has_favorite_attr = hasattr(ad_set, 'is_favorite')
+                    favorite_value = ad_set.is_favorite if has_favorite_attr else False
+                    logger.info(f"AdSet {ad_set.id}: hasattr={has_favorite_attr}, is_favorite={favorite_value}")
+                    ad_dto.is_favorite = favorite_value
                     ad_dtos.append(ad_dto)
                 else:
                     # If there's no best_ad, fetch the first ad in the set
@@ -89,6 +94,8 @@ class AdService:
                         ad_dto.ad_set_created_at = ad_set.created_at
                         ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
                         ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
+                        # Set favorite status from AdSet
+                        ad_dto.is_favorite = ad_set.is_favorite if hasattr(ad_set, 'is_favorite') else False
                         ad_dtos.append(ad_dto)
             
             # Calculate pagination metadata
@@ -175,6 +182,10 @@ class AdService:
                 query = query.join(AdSet.best_ad).filter(
                     Ad.meta['is_active'].as_string() == str(filters.is_active).lower()
                 )
+            
+            # Filter by favorite status (AdSet level)
+            if filters.is_favorite is not None:
+                query = query.filter(AdSet.is_favorite == filters.is_favorite)
             
             # Search in ad content
             if filters.search:
@@ -527,6 +538,70 @@ class AdService:
             self.db.rollback()
             raise
     
+    def toggle_favorite(self, ad_id: int) -> Optional[bool]:
+        """
+        Toggle the favorite status of an ad's AdSet.
+        
+        Args:
+            ad_id: ID of the ad (will toggle its AdSet's favorite status)
+            
+        Returns:
+            New favorite status (True/False) or None if ad not found
+        """
+        try:
+            ad = self.db.query(Ad).filter(Ad.id == ad_id).first()
+            
+            if not ad or not ad.ad_set_id:
+                logger.warning(f"Ad {ad_id} not found or not part of an ad set")
+                return None
+            
+            # Get the AdSet and toggle its favorite status
+            ad_set = self.db.query(AdSet).filter(AdSet.id == ad.ad_set_id).first()
+            if not ad_set:
+                logger.warning(f"AdSet {ad.ad_set_id} not found")
+                return None
+            
+            # Toggle the favorite status
+            ad_set.is_favorite = not ad_set.is_favorite
+            self.db.commit()
+            
+            logger.info(f"Toggled favorite status for AdSet {ad_set.id} to {ad_set.is_favorite}")
+            return ad_set.is_favorite
+            
+        except Exception as e:
+            logger.error(f"Error toggling favorite for ad {ad_id}: {str(e)}")
+            self.db.rollback()
+            raise
+    
+    def toggle_ad_set_favorite(self, ad_set_id: int) -> Optional[bool]:
+        """
+        Toggle the favorite status of an AdSet.
+        
+        Args:
+            ad_set_id: ID of the AdSet to toggle favorite status
+            
+        Returns:
+            New favorite status (True/False) or None if AdSet not found
+        """
+        try:
+            ad_set = self.db.query(AdSet).filter(AdSet.id == ad_set_id).first()
+            
+            if not ad_set:
+                logger.warning(f"AdSet {ad_set_id} not found")
+                return None
+            
+            # Toggle the favorite status
+            ad_set.is_favorite = not ad_set.is_favorite
+            self.db.commit()
+            
+            logger.info(f"Toggled favorite status for AdSet {ad_set_id} to {ad_set.is_favorite}")
+            return ad_set.is_favorite
+            
+        except Exception as e:
+            logger.error(f"Error toggling favorite for AdSet {ad_set_id}: {str(e)}")
+            self.db.rollback()
+            raise
+    
     def _apply_filters(self, query, filters: AdFilterParams):
         """
         Apply filters to query based on filter parameters.
@@ -543,6 +618,9 @@ class AdService:
         
         if filters.is_active is not None:
             query = query.filter(cast(Ad.meta['is_active'], SQLAString) == str(filters.is_active).lower())
+        
+        if filters.is_favorite is not None:
+            query = query.filter(Ad.is_favorite == filters.is_favorite)
 
         if filters.has_analysis is not None:
             if filters.has_analysis:
@@ -809,6 +887,9 @@ class AdService:
                 is_active=is_active,
                 duration_days=ad.duration_days,
                 
+                # User preferences
+                is_favorite=ad.is_favorite if hasattr(ad, 'is_favorite') else False,
+                
                 # Timestamps
                 created_at=ad.created_at,
                 updated_at=ad.updated_at,
@@ -890,6 +971,7 @@ class AdService:
             is_active=meta_is_active,
             start_date=meta_start_date,
             end_date=meta_end_date,
+            is_favorite=ad.is_favorite if hasattr(ad, 'is_favorite') else False,
             
             # Required fields with default values
             main_body_text=None,

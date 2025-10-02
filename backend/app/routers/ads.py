@@ -121,6 +121,7 @@ async def get_ads(
     date_from: Optional[datetime] = Query(None, description="Filter ads from this date"),
     date_to: Optional[datetime] = Query(None, description="Filter ads to this date"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    is_favorite: Optional[bool] = Query(None, description="Filter by favorite status"),
     search: Optional[str] = Query(None, description="Search in ad copy and titles"),
     sort_by: Optional[str] = Query("created_at", description="Sort by field"),
     sort_order: Optional[str] = Query("desc", description="Sort order (asc/desc)"),
@@ -150,6 +151,7 @@ async def get_ads(
             date_from=date_from,
             date_to=date_to,
             is_active=is_active,
+            is_favorite=is_favorite,
             search=search,
             sort_by=sort_by,
             sort_order=sort_order
@@ -186,6 +188,93 @@ async def get_ad(
     except Exception as e:
         logger.error(f"Error fetching ad {ad_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching ad: {str(e)}")
+
+class FavoriteResponse(BaseModel):
+    """Response model for favorite toggle"""
+    ad_id: int
+    is_favorite: bool
+    message: str
+
+class RefreshMediaUrlResponse(BaseModel):
+    """Response model for media URL refresh from Facebook"""
+    success: bool
+    ad_id: int
+    old_media_url: Optional[str]
+    new_media_url: Optional[str]
+    message: str
+    error: Optional[str] = None
+
+@router.post("/ads/{ad_id}/favorite", response_model=FavoriteResponse)
+async def toggle_favorite(
+    ad_id: int, 
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    """
+    Toggle the favorite status of a specific ad.
+    
+    Returns the new favorite status.
+    """
+    try:
+        new_status = ad_service.toggle_favorite(ad_id)
+        
+        if new_status is None:
+            raise HTTPException(status_code=404, detail="Ad not found")
+        
+        return FavoriteResponse(
+            ad_id=ad_id,
+            is_favorite=new_status,
+            message=f"Ad {'added to' if new_status else 'removed from'} favorites"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling favorite for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error toggling favorite: {str(e)}")
+
+@router.post("/ads/{ad_id}/refresh-media", response_model=RefreshMediaUrlResponse)
+async def refresh_media_from_facebook(
+    ad_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Automatically refresh the media URL for a specific ad by fetching fresh data from Facebook Ad Library.
+    
+    This is useful when media links expire. The system will automatically:
+    1. Search for the ad in Facebook Ad Library using its ad_archive_id
+    2. Extract the fresh media URL from the results
+    3. Update the ad's media URL in the database
+    
+    No manual URL input required - everything is automatic!
+    """
+    try:
+        from app.services.media_refresh_service import MediaRefreshService
+        
+        # Create the media refresh service
+        refresh_service = MediaRefreshService(db)
+        
+        # Refresh the media from Facebook
+        result = refresh_service.refresh_ad_media_from_facebook(ad_id)
+        
+        if not result.get('success'):
+            raise HTTPException(
+                status_code=400 if result.get('error') == 'Ad not found' else 500,
+                detail=result.get('error', 'Failed to refresh media URL')
+            )
+        
+        return RefreshMediaUrlResponse(
+            success=True,
+            ad_id=ad_id,
+            old_media_url=result.get('old_media_url'),
+            new_media_url=result.get('new_media_url'),
+            message="Media URL refreshed successfully from Facebook Ad Library"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refreshing media URL for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error refreshing media URL: {str(e)}")
 
 @router.get("/ads/stats/overview", response_model=AdStatsResponseDTO)
 async def get_ads_stats(
@@ -969,4 +1058,32 @@ async def get_ads_in_set(
         raise
     except Exception as e:
         logger.error(f"Error fetching ads in set {ad_set_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching ads in set: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error fetching ads in set: {str(e)}")
+
+@router.post("/ad-sets/{ad_set_id}/favorite", response_model=FavoriteResponse)
+async def toggle_ad_set_favorite(
+    ad_set_id: int,
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    """
+    Toggle the favorite status of an AdSet.
+    
+    Returns the new favorite status.
+    """
+    try:
+        new_status = ad_service.toggle_ad_set_favorite(ad_set_id)
+        
+        if new_status is None:
+            raise HTTPException(status_code=404, detail="AdSet not found")
+        
+        return FavoriteResponse(
+            ad_id=ad_set_id,
+            is_favorite=new_status,
+            message=f"AdSet {'added to' if new_status else 'removed from'} favorites"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling favorite for AdSet {ad_set_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error toggling favorite: {str(e)}")

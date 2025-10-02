@@ -19,6 +19,9 @@ class Ad(Base):
     # Duration field - calculated during scraping
     duration_days = Column(Integer, nullable=True, index=True)  # Number of days the ad has been running
     
+    # User preferences
+    is_favorite = Column(Boolean, default=False, nullable=False, index=True)  # Whether the ad is marked as favorite
+    
     # Raw data from initial scrape
     raw_data = Column(JSON, nullable=True)
     
