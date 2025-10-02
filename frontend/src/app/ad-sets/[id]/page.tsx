@@ -76,25 +76,36 @@ export default function AdSetDetailPage() {
       // Extract AdSet details from the first ad (they should all have the same adset metadata)
       if (transformedAds.length > 0 && page === 1) {
         const firstAd = transformedAds[0];
-        // Find the ad with the highest score to mark as best variant
-        let highestScoringAd = transformedAds[0];
+        
+        // Find the ad that has been running the longest (best variant)
+        // Ads that run longer typically perform better (Facebook keeps showing winners)
+        let longestRunningAd = transformedAds[0];
+        let maxDuration = 0;
         
         transformedAds.forEach(ad => {
-          if (ad.analysis?.overall_score && 
-              (!highestScoringAd.analysis?.overall_score || 
-               ad.analysis.overall_score > highestScoringAd.analysis.overall_score)) {
-            highestScoringAd = ad;
+          // Calculate duration in days
+          const startDate = ad.start_date ? new Date(ad.start_date) : null;
+          const endDate = ad.end_date ? new Date(ad.end_date) : new Date(); // Use current date if still active
+          
+          if (startDate) {
+            const duration = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Prefer active ads over inactive ones with same duration
+            if (duration > maxDuration || (duration === maxDuration && ad.is_active && !longestRunningAd.is_active)) {
+              maxDuration = duration;
+              longestRunningAd = ad;
+            }
           }
         });
         
-        setBestAdId(highestScoringAd.id || null);
+        setBestAdId(longestRunningAd.id || null);
         
         setAdSetDetails({
           id: adSetId,
           variant_count: response.pagination.total_items,
           first_seen_date: firstAd.ad_set_first_seen_date,
           last_seen_date: firstAd.ad_set_last_seen_date,
-          best_ad_id: highestScoringAd.id
+          best_ad_id: longestRunningAd.id
         });
       }
       

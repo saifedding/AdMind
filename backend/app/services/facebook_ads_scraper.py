@@ -3,6 +3,7 @@ import json
 import csv
 import time
 import uuid
+import os
 from urllib.parse import urlencode
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
@@ -78,7 +79,14 @@ class FacebookAdsScraperConfig:
         # Search parameters
         self.active_status = active_status
         self.ad_type = ad_type
-        self.countries = countries or ['AE']
+        
+        # Handle 'ALL' countries special value
+        if countries and 'ALL' in countries:
+            # When 'ALL' is specified, use all supported countries
+            self.countries = ['AE', 'US', 'GB', 'SA', 'EG', 'DE', 'FR', 'CA', 'AU']
+        else:
+            self.countries = countries or ['AE']
+        
         self.search_type = search_type
         self.media_type = media_type
         self.start_date = start_date
@@ -251,6 +259,7 @@ class FacebookAdsScraperService:
         try:
             all_json_responses = []
             page_count = 0
+            enhanced_data = {}  # Initialize enhanced_data to avoid reference errors
             
             stats = {
                 "total_processed": 0,
@@ -279,6 +288,16 @@ class FacebookAdsScraperService:
                 all_json_responses.append(response_data)
                 
                 try:
+                    # Check if response contains errors instead of data
+                    if 'errors' in response_data:
+                        error_details = response_data['errors'][0] if response_data['errors'] else {}
+                        error_msg = error_details.get('message', 'Unknown Facebook API error')
+                        error_code = error_details.get('code', 'N/A')
+                        logger.error(f"Facebook API Error on page {page_count}: {error_msg} (Code: {error_code})")
+                        logger.error(f"This might be due to invalid search parameters, rate limiting, or Facebook server issues.")
+                        stats['errors'] += 1
+                        break
+                    
                     search_results = response_data['data']['ad_library_main']['search_results_connection']
                     edges = search_results.get('edges', [])
                     page_info = search_results.get('page_info', {})
@@ -293,9 +312,12 @@ class FacebookAdsScraperService:
                     
                     extraction_stats = self.enhanced_extractor.save_enhanced_ads_to_database(enhanced_data)
                     
-                    for key, value in extraction_stats.items():
-                        if key in stats:
-                            stats[key] += value
+                    # Map the returned stats to our expected format
+                    stats['total_processed'] += extraction_stats.get('total_ads_processed', 0)
+                    stats['created'] += extraction_stats.get('new_ads_created', 0)
+                    stats['updated'] += extraction_stats.get('existing_ads_updated', 0)
+                    stats['errors'] += extraction_stats.get('errors', 0)
+                    stats['competitors_updated'] += extraction_stats.get('competitors_processed', 0)
                     
                     has_next_page = page_info.get('has_next_page', False)
                     end_cursor = page_info.get('end_cursor')
@@ -313,6 +335,7 @@ class FacebookAdsScraperService:
                 except (KeyError, TypeError) as e:
                     logger.error(f"Error parsing response data on page {page_count}: {e}")
                     logger.error(f"Response data that caused error: {response_data}")
+                    stats['errors'] += 1
                     break
             
             logger.info(f"Scraping complete. Final stats: {stats}")

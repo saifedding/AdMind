@@ -21,7 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
-  Layers
+  Layers,
+  Clock
 } from "lucide-react";
 
 const navigation = [
@@ -59,6 +60,12 @@ const navigation = [
     name: "Tasks",
     href: "/tasks",
     icon: Activity,
+    current: false
+  },
+  {
+    name: "Daily Scraping",
+    href: "/daily-scraping",
+    icon: Clock,
     current: false
   },
   {

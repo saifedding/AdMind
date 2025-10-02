@@ -14,7 +14,7 @@ load_dotenv()
 from app.core.config import settings
 
 # Import routers
-from app.routers import health, ads, competitors
+from app.routers import health, ads, competitors, daily_scraping
 from app.api import internal_router
 
 # Database imports
@@ -51,6 +51,7 @@ app.add_middleware(
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
 app.include_router(ads.router, prefix=settings.API_V1_PREFIX, tags=["ads"])
 app.include_router(competitors.router, prefix=f"{settings.API_V1_PREFIX}/competitors", tags=["competitors"])
+app.include_router(daily_scraping.router, prefix=f"{settings.API_V1_PREFIX}/scraping", tags=["daily-scraping"])
 app.include_router(internal_router, prefix=settings.API_V1_PREFIX, tags=["internal"])
 
 # Root endpoint

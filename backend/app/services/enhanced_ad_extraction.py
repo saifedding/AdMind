@@ -190,14 +190,41 @@ class EnhancedAdExtractionService:
             # The 'last_seen_date' should reflect the latest start date of a variant
             ad_set.last_seen_date = max_date 
 
-            # TODO: Find best ad based on analysis score when available. For now, use the newest ad.
-            # Handle None values properly in date comparison
-            def get_ad_date_for_comparison(ad):
-                if ad.meta and ad.meta.get("start_date"):
-                    return ad.meta.get("start_date")
-                return "0"  # Default for None dates to sort them first
+            # Select best ad based on longest running duration
+            # Ads that run longer typically perform better (Facebook keeps showing winners)
+            def get_ad_duration(ad):
+                """Calculate duration in days for an ad"""
+                if not ad.meta:
+                    return 0
+                
+                start_date_str = ad.meta.get("start_date")
+                end_date_str = ad.meta.get("end_date")
+                is_active = ad.meta.get("is_active", False)
+                
+                if not start_date_str:
+                    return 0
+                
+                try:
+                    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                    
+                    if end_date_str:
+                        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                    else:
+                        # If still active, use current date
+                        end_date = datetime.now()
+                    
+                    duration = (end_date - start_date).days
+                    
+                    # Prefer active ads over inactive ones with same duration
+                    # Add a bonus of 0.1 day for active ads to break ties
+                    if is_active:
+                        duration += 0.1
+                    
+                    return duration
+                except (ValueError, TypeError):
+                    return 0
             
-            best_ad = max(ads_in_set, key=get_ad_date_for_comparison, default=None)
+            best_ad = max(ads_in_set, key=get_ad_duration, default=None)
 
             if best_ad:
                 previous_best_ad_id = ad_set.best_ad_id

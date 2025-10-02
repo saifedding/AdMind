@@ -29,6 +29,26 @@ import {
 } from 'lucide-react';
 import { getScrapingStatus } from '@/lib/api';
 
+interface CompetitorResult {
+  competitor_id: number;
+  competitor_name: string;
+  page_id: string;
+  stats: {
+    total_processed: number;
+    created: number;
+    updated: number;
+    errors: number;
+    new_ads_count?: number;
+  };
+  processed_at: string;
+}
+
+interface TaskError {
+  competitor_id: number;
+  competitor_name: string;
+  error: string;
+}
+
 interface TaskResult {
   success: boolean;
   competitor_page_id: string;
@@ -43,6 +63,8 @@ interface TaskResult {
   };
   completion_time: string;
   task_id: string;
+  competitors_results?: CompetitorResult[];
+  errors?: TaskError[];
 }
 
 interface TaskStatus {
@@ -412,20 +434,37 @@ export default function TasksPage() {
                       </div>
                       
                       {/* Quick Results Summary */}
-                      {task.status.state === 'SUCCESS' && task.status.result && (
-                        <div className="flex gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <Download className="h-3 w-3 text-green-400" />
-                            <span className="text-green-400">{task.status.result.total_ads_scraped} ads</span>
+                      {task.status.state === 'SUCCESS' && task.status.result && task.status.result.database_stats && (
+                        <div className="space-y-2">
+                          <div className="flex gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <Download className="h-3 w-3 text-green-400" />
+                              <span className="text-green-400">{task.status.result.total_ads_scraped || 0} ads</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3 text-yellow-400" />
+                              <span className="text-yellow-400">{task.status.result.database_stats.updated || 0} updated</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3 text-blue-400" />
+                              <span className="text-blue-400">{task.status.result.database_stats.created || 0} created</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3 text-yellow-400" />
-                            <span className="text-yellow-400">{task.status.result.database_stats.updated} updated</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3 text-blue-400" />
-                            <span className="text-blue-400">{task.status.result.database_stats.created} created</span>
-                          </div>
+                          
+                          {/* Show competitors processed */}
+                          {task.status.result.competitors_results && task.status.result.competitors_results.length > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              Processed {task.status.result.competitors_results.length} competitor(s)
+                            </div>
+                          )}
+                          
+                          {/* Show error count if any */}
+                          {task.status.result.errors && task.status.result.errors.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <XCircle className="h-3 w-3 text-red-400" />
+                              <span className="text-red-400">{task.status.result.errors.length} error(s)</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -452,10 +491,11 @@ export default function TasksPage() {
             {selectedTask && (
               <div className="space-y-6">
                 <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="configuration">Configuration</TabsTrigger>
                     <TabsTrigger value="results">Results</TabsTrigger>
+                    <TabsTrigger value="competitors">Competitors</TabsTrigger>
                     <TabsTrigger value="raw">Raw Data</TabsTrigger>
                   </TabsList>
                   
@@ -554,7 +594,7 @@ export default function TasksPage() {
                   </TabsContent>
                   
                   <TabsContent value="results" className="space-y-4">
-                    {selectedTask.status.state === 'SUCCESS' && selectedTask.status.result ? (
+                    {selectedTask.status.state === 'SUCCESS' && selectedTask.status.result && selectedTask.status.result.database_stats ? (
                       <div className="space-y-4">
                         <Card className="bg-green-900/20 border-green-500/20">
                           <CardHeader>
@@ -567,25 +607,25 @@ export default function TasksPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               <div className="text-center p-4 bg-green-500/10 rounded-lg">
                                 <div className="text-2xl font-bold text-green-400">
-                                  {selectedTask.status.result.total_ads_scraped}
+                                  {selectedTask.status.result.total_ads_scraped || 0}
                                 </div>
                                 <div className="text-sm text-muted-foreground">Total Ads Scraped</div>
                               </div>
                               <div className="text-center p-4 bg-blue-500/10 rounded-lg">
                                 <div className="text-2xl font-bold text-blue-400">
-                                  {selectedTask.status.result.database_stats.created}
+                                  {selectedTask.status.result.database_stats.created || 0}
                                 </div>
                                 <div className="text-sm text-muted-foreground">New Ads Created</div>
                               </div>
                               <div className="text-center p-4 bg-yellow-500/10 rounded-lg">
                                 <div className="text-2xl font-bold text-yellow-400">
-                                  {selectedTask.status.result.database_stats.updated}
+                                  {selectedTask.status.result.database_stats.updated || 0}
                                 </div>
                                 <div className="text-sm text-muted-foreground">Ads Updated</div>
                               </div>
                               <div className="text-center p-4 bg-red-500/10 rounded-lg">
                                 <div className="text-2xl font-bold text-red-400">
-                                  {selectedTask.status.result.database_stats.errors}
+                                  {selectedTask.status.result.database_stats.errors || 0}
                                 </div>
                                 <div className="text-sm text-muted-foreground">Errors</div>
                               </div>
@@ -594,23 +634,23 @@ export default function TasksPage() {
                             <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Total Processed:</span>
-                                <span className="font-bold">{selectedTask.status.result.database_stats.total_processed}</span>
+                                <span className="font-bold">{selectedTask.status.result.database_stats.total_processed || 0}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Competitors Updated:</span>
-                                <span className="font-bold">{selectedTask.status.result.database_stats.competitors_updated}</span>
+                                <span className="font-bold">{selectedTask.status.result.database_stats.competitors_updated || 0}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Success Rate:</span>
                                 <span className="font-bold text-green-400">
-                                  {selectedTask.status.result.database_stats.total_processed > 0 
-                                    ? Math.round(((selectedTask.status.result.database_stats.total_processed - selectedTask.status.result.database_stats.errors) / selectedTask.status.result.database_stats.total_processed) * 100)
+                                  {(selectedTask.status.result.database_stats.total_processed || 0) > 0 
+                                    ? Math.round((((selectedTask.status.result.database_stats.total_processed || 0) - (selectedTask.status.result.database_stats.errors || 0)) / (selectedTask.status.result.database_stats.total_processed || 1)) * 100)
                                     : 0}%
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Completion Time:</span>
-                                <span className="font-bold">{formatDate(selectedTask.status.result.completion_time)}</span>
+                                <span className="font-bold">{selectedTask.status.result.completion_time ? formatDate(selectedTask.status.result.completion_time) : 'N/A'}</span>
                               </div>
                             </div>
                           </CardContent>
@@ -638,6 +678,108 @@ export default function TasksPage() {
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground">{selectedTask.status.status}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="competitors" className="space-y-4">
+                    {selectedTask.status.result?.competitors_results && selectedTask.status.result.competitors_results.length > 0 ? (
+                      <div className="space-y-4">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Target className="h-5 w-5 text-photon-400" />
+                              Per-Competitor Results
+                            </CardTitle>
+                            <CardDescription>
+                              Individual scraping results for each competitor
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {selectedTask.status.result.competitors_results.map((competitor, index) => (
+                                <div key={competitor.competitor_id} className="border border-border rounded-lg p-4 bg-card/50">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <h4 className="font-semibold text-sm">{competitor.competitor_name}</h4>
+                                      <p className="text-xs text-muted-foreground">Page ID: {competitor.page_id}</p>
+                                    </div>
+                                    <Badge variant="outline" className="text-xs">
+                                      #{index + 1}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground text-xs">Processed</span>
+                                      <span className="font-bold text-lg">{competitor.stats.total_processed || 0}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground text-xs">Created</span>
+                                      <span className="font-bold text-lg text-blue-400">{competitor.stats.created || 0}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground text-xs">Updated</span>
+                                      <span className="font-bold text-lg text-yellow-400">{competitor.stats.updated || 0}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground text-xs">Errors</span>
+                                      <span className={`font-bold text-lg ${competitor.stats.errors > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                        {competitor.stats.errors || 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {competitor.stats.new_ads_count !== undefined && (
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                      New ads found: <span className="text-green-400 font-semibold">{competitor.stats.new_ads_count}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {selectedTask.status.result.errors && selectedTask.status.result.errors.length > 0 && (
+                          <Card className="bg-red-900/20 border-red-500/20">
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2 text-red-400">
+                                <XCircle className="h-5 w-5" />
+                                Errors ({selectedTask.status.result.errors.length})
+                              </CardTitle>
+                              <CardDescription>
+                                Competitors that encountered errors during scraping
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                {selectedTask.status.result.errors.map((error, index) => (
+                                  <div key={error.competitor_id} className="border border-red-500/20 rounded-lg p-4 bg-red-900/10">
+                                    <div className="flex items-start gap-3">
+                                      <XCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                                      <div className="flex-1">
+                                        <h4 className="font-semibold text-sm text-red-300">{error.competitor_name}</h4>
+                                        <p className="text-xs text-muted-foreground mb-2">Competitor ID: {error.competitor_id}</p>
+                                        <p className="text-sm text-red-200 bg-red-950/50 p-2 rounded border border-red-500/20">
+                                          {error.error}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    ) : (
+                      <Card>
+                        <CardContent className="p-6 text-center">
+                          <Target className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground">No per-competitor results available</p>
+                          <p className="text-sm text-muted-foreground mt-1">This task may be for a single competitor or doesn't include detailed results.</p>
                         </CardContent>
                       </Card>
                     )}

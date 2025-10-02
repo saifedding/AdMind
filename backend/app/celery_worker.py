@@ -14,7 +14,8 @@ celery_app = Celery(
     include=[
         "app.tasks.basic_tasks", 
         "app.tasks.ai_analysis_tasks", 
-        "app.tasks.facebook_ads_scraper_task"
+        "app.tasks.facebook_ads_scraper_task",
+        "app.tasks.daily_ads_scraper"
     ]
 )
 
@@ -40,9 +41,20 @@ celery_app.conf.update(
 
 # Configure periodic tasks (Celery Beat) - using actual registered tasks
 celery_app.conf.beat_schedule = {
+    'daily-new-ads-scraping': {
+        'task': 'daily_ads_scraper.scrape_new_ads_daily',
+        'schedule': 86400.0,  # Run once daily (24 hours)
+        'kwargs': {
+            'countries': ['AE', 'US', 'UK'],
+            'max_pages_per_competitor': 3,
+            'delay_between_requests': 2,
+            'hours_lookback': 24,
+            'active_status': 'active'
+        }
+    },
     'scrape-facebook-ads': {
         'task': 'facebook_ads_scraper.scrape_ads',
-        'schedule': 3600.0,  # Run every hour
+        'schedule': 3600.0,  # Run every hour (legacy - might want to disable this)
     },
     'batch-ai-analysis': {
         'task': 'app.tasks.ai_analysis_tasks.batch_ai_analysis_task',

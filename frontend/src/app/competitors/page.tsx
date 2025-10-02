@@ -111,10 +111,10 @@ export default function CompetitorsPage() {
 
   const [showScrapeDialog, setShowScrapeDialog] = useState(false);
   const [scrapeConfig, setScrapeConfig] = useState<ScrapeConfig>({
-    countries: ['AE'],
+    countries: ['AE', 'US', 'GB'],  // Multiple countries for better results
     max_pages: 10,
     delay_between_requests: 2,
-    active_status: 'active',
+    active_status: 'all',  // Include all ads (active and inactive)
   });
   const [scrapingCompetitor, setScrapingCompetitor] = useState<Competitor | null>(null);
   const [scrapeLoading, setScrapeLoading] = useState(false);
