@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { adsApi } from '@/lib/api';
@@ -42,6 +42,7 @@ export function AdCard({
   const [showFullContent, setShowFullContent] = useState(false);
   const [isFavorite, setIsFavorite] = useState(ad.is_favorite || false);
   const [isFavoriting, setIsFavoriting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
   
   // Sync isFavorite state when ad prop changes (e.g., after page refresh)
@@ -165,6 +166,33 @@ export function AdCard({
     }
   };
 
+  const handleRefreshClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      // If part of ad set, refresh all ads in the set
+      if (ad.ad_set_id && ad.variant_count && ad.variant_count > 1) {
+        const result = await adsApi.refreshAdSetMedia(ad.ad_set_id);
+        console.log('Ad set refreshed:', result);
+        alert(`✓ Refreshed ${result.successful}/${result.total} ads in set!`);
+      } else {
+        // Single ad refresh
+        const result = await adsApi.refreshMediaFromFacebook(ad.id);
+        console.log('Ad refreshed:', result);
+        alert('✓ Media refreshed successfully!');
+      }
+      // Reload page to show updated media
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+      alert('✗ Failed to refresh media');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="group relative cursor-pointer" onClick={handleCardClick}>
       <Card className={cn(
@@ -213,6 +241,27 @@ export function AdCard({
             className={cn(
               "h-4 w-4 transition-all",
               isFavorite && "fill-current"
+            )}
+          />
+        </button>
+        
+        {/* Refresh Button */}
+        <button
+          onClick={handleRefreshClick}
+          disabled={isRefreshing}
+          className={cn(
+            "absolute z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+            "hover:scale-110 active:scale-95",
+            showSelection ? "top-0.5 right-16" : "top-2 right-11", // Position left of favorite button
+            "bg-blue-500/90 text-white hover:bg-blue-600/90",
+            isRefreshing && "opacity-50 cursor-not-allowed"
+          )}
+          title={ad.ad_set_id && ad.variant_count && ad.variant_count > 1 ? `Refresh all ${ad.variant_count} ads in set` : "Refresh ad media"}
+        >
+          <RefreshCw
+            className={cn(
+              "h-4 w-4 transition-all",
+              isRefreshing && "animate-spin"
             )}
           />
         </button>

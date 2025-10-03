@@ -276,6 +276,128 @@ async def refresh_media_from_facebook(
         logger.error(f"Error refreshing media URL for ad {ad_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error refreshing media URL: {str(e)}")
 
+class BatchRefreshResponse(BaseModel):
+    """Response model for batch media refresh"""
+    success: bool
+    total: int
+    successful: int
+    failed: int
+    message: str
+    details: List[Dict]
+
+@router.post("/ads/favorites/refresh-all", response_model=BatchRefreshResponse)
+async def refresh_all_favorites(
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh media URLs for ALL favorite ads automatically from Facebook Ad Library.
+    
+    This endpoint:
+    1. Fetches all ads marked as favorites
+    2. For each favorite, fetches fresh media URLs from Facebook
+    3. Updates the database with the new URLs
+    
+    Useful when you want to refresh all your favorite ads' media links at once!
+    """
+    try:
+        from app.services.media_refresh_service import MediaRefreshService
+        
+        # Get all favorite ads
+        favorite_ads = db.query(Ad).filter(Ad.is_favorite == True).all()
+        
+        if not favorite_ads:
+            return BatchRefreshResponse(
+                success=True,
+                total=0,
+                successful=0,
+                failed=0,
+                message="No favorite ads found",
+                details=[]
+            )
+        
+        favorite_ad_ids = [ad.id for ad in favorite_ads]
+        logger.info(f"Refreshing {len(favorite_ad_ids)} favorite ads")
+        
+        # Create the media refresh service
+        refresh_service = MediaRefreshService(db)
+        
+        # Refresh all favorites
+        result = refresh_service.refresh_multiple_ads(favorite_ad_ids)
+        
+        return BatchRefreshResponse(
+            success=True,
+            total=result['total'],
+            successful=result['successful'],
+            failed=result['failed'],
+            message=f"Refreshed {result['successful']}/{result['total']} favorite ads successfully",
+            details=result['details']
+        )
+        
+    except Exception as e:
+        logger.error(f"Error refreshing favorite ads: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error refreshing favorite ads: {str(e)}")
+
+@router.post("/ad-sets/{ad_set_id}/refresh-media", response_model=BatchRefreshResponse)
+async def refresh_ad_set_media(
+    ad_set_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh media URLs for ALL ads in a specific ad set from Facebook Ad Library.
+    
+    This endpoint:
+    1. Fetches all ads in the specified ad set
+    2. For each ad, fetches fresh media URLs from Facebook
+    3. Updates the database with the new URLs
+    
+    Useful when you want to refresh all variants of an ad!
+    """
+    try:
+        from app.services.media_refresh_service import MediaRefreshService
+        from app.models.ad_set import AdSet
+        
+        # Check if ad set exists
+        ad_set = db.query(AdSet).filter(AdSet.id == ad_set_id).first()
+        if not ad_set:
+            raise HTTPException(status_code=404, detail="Ad set not found")
+        
+        # Get all ads in this ad set
+        ads_in_set = db.query(Ad).filter(Ad.ad_set_id == ad_set_id).all()
+        
+        if not ads_in_set:
+            return BatchRefreshResponse(
+                success=True,
+                total=0,
+                successful=0,
+                failed=0,
+                message=f"No ads found in ad set {ad_set_id}",
+                details=[]
+            )
+        
+        ad_ids = [ad.id for ad in ads_in_set]
+        logger.info(f"Refreshing {len(ad_ids)} ads in ad set {ad_set_id}")
+        
+        # Create the media refresh service
+        refresh_service = MediaRefreshService(db)
+        
+        # Refresh all ads in the set
+        result = refresh_service.refresh_multiple_ads(ad_ids)
+        
+        return BatchRefreshResponse(
+            success=True,
+            total=result['total'],
+            successful=result['successful'],
+            failed=result['failed'],
+            message=f"Refreshed {result['successful']}/{result['total']} ads in ad set successfully",
+            details=result['details']
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refreshing ad set {ad_set_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error refreshing ad set: {str(e)}")
+
 @router.get("/ads/stats/overview", response_model=AdStatsResponseDTO)
 async def get_ads_stats(
     ad_service: "AdService" = Depends(get_ad_service_dependency)

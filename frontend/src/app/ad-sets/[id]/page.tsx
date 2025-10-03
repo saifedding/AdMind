@@ -10,7 +10,7 @@ import { AdCard } from '@/features/dashboard/components/AdCard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
-import { ArrowLeft, Layers, Star, Calendar, Clock, Info, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Layers, Star, Calendar, Clock, Info, AlertCircle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatAdSetDuration, cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -37,6 +37,7 @@ export default function AdSetDetailPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [bestAdId, setBestAdId] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (isNaN(adSetId)) {
@@ -136,6 +137,24 @@ export default function AdSetDetailPage() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const handleRefreshAdSet = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      const result = await adsApi.refreshAdSetMedia(adSetId);
+      console.log('Ad set refreshed:', result);
+      alert(`✓ Refreshed ${result.successful}/${result.total} ads in set!`);
+      // Reload page to show updated media
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to refresh ad set:', error);
+      alert('✗ Failed to refresh ad set');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const renderAdSetSummary = () => {
@@ -273,6 +292,15 @@ export default function AdSetDetailPage() {
               )}
             </h1>
           </div>
+          
+          <Button 
+            onClick={handleRefreshAdSet}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            {isRefreshing ? 'Refreshing...' : `Refresh All (${totalItems})`}
+          </Button>
         </div>
 
         {loading ? renderLoading() : error ? renderError() : (

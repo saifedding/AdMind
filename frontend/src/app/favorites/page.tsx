@@ -7,7 +7,6 @@ import { AdFilters } from '@/features/dashboard/components/AdFilters';
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MediaUrlUpdater } from '@/components/ui/media-url-updater';
 import { adsApi, AdFilterParams, type ApiAd } from '@/lib/api';
 import { transformAdsWithAnalysis } from '@/lib/transformers';
 import { Heart, RefreshCw, AlertCircle } from 'lucide-react';
@@ -176,31 +175,7 @@ export default function FavoritesPage() {
                     ad={ad}
                     onFavoriteToggle={handleFavoriteToggle}
                   />
-                  {/* Media URL Updater Button - Only show for favorited ad sets */}
-                  {ad.id && (
-                    <div className="absolute top-2 right-12 z-10">
-                      <MediaUrlUpdater
-                        adId={ad.id}
-                        currentMediaUrl={
-                          ad.creatives?.[0]?.media?.[0]?.url ||
-                          ad.media_url ||
-                          ad.main_image_urls?.[0] ||
-                          ad.main_video_urls?.[0]
-                        }
-                        onSuccess={fetchFavorites}
-                        triggerButton={
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="bg-white/90 hover:bg-white shadow-md"
-                            title="Update media link"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
-                    </div>
-                  )}
+                
                 </div>
               ))}
             </div>

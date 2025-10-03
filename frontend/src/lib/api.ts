@@ -328,6 +328,24 @@ class ApiClient {
     );
   }
 
+  async refreshAllFavorites(): Promise<{ success: boolean; total: number; successful: number; failed: number; message: string; details: any[] }> {
+    return this.request<{ success: boolean; total: number; successful: number; failed: number; message: string; details: any[] }>(
+      `/ads/favorites/refresh-all`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  async refreshAdSetMedia(adSetId: number): Promise<{ success: boolean; total: number; successful: number; failed: number; message: string; details: any[] }> {
+    return this.request<{ success: boolean; total: number; successful: number; failed: number; message: string; details: any[] }>(
+      `/ad-sets/${adSetId}/refresh-media`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
   async deleteAllAds(): Promise<{ message: string; count: number }> {
     return this.request<{ message: string; count: number }>(
       `/ads/all`,
@@ -385,6 +403,8 @@ export const adsApi = {
   toggleFavorite: (id: number) => apiClient.toggleFavorite(id),
   toggleAdSetFavorite: (adSetId: number) => apiClient.toggleAdSetFavorite(adSetId),
   refreshMediaFromFacebook: (adId: number) => apiClient.refreshMediaFromFacebook(adId),
+  refreshAllFavorites: () => apiClient.refreshAllFavorites(),
+  refreshAdSetMedia: (adSetId: number) => apiClient.refreshAdSetMedia(adSetId),
   getTopPerformingAds: (limit?: number) => apiClient.getTopPerformingAds(limit),
   searchAds: (query: string, limit?: number) => apiClient.searchAds(query, limit),
   getCompetitorAds: (competitorId: number, limit?: number) => apiClient.getCompetitorAds(competitorId, limit),
