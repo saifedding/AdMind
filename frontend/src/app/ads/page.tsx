@@ -96,7 +96,7 @@ export default function AdIntelligencePage() {
   
   // New state for view and selection
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [gridColumns, setGridColumns] = useState<2 | 3 | 4 | 5>(3); // Default to 3 columns
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4 | 5>(4); // Default to 4 columns
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingAds, setDeletingAds] = useState<Set<number>>(new Set());

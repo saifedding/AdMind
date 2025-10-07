@@ -83,6 +83,10 @@ backend/__pycache__
 backend/celerybeat-schedule
 backend/.pytest_cache/
 
+# Media Storage (saved ad images/videos)
+backend/media_storage/
+media_storage/
+
 # Database
 *.db
 *.sqlite3
