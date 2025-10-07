@@ -275,13 +275,22 @@ export default function AdIntelligencePage() {
     }));
   };
 
-  const handleFavoriteToggle = (adSetId: number, isFavorite: boolean) => {
-    // Update the ad in the local state to reflect the new favorite status
-    setAds(prevAds => prevAds.map(ad => 
-      ad.ad_set_id === adSetId 
-        ? { ...ad, is_favorite: isFavorite }
-        : ad
-    ));
+  const handleSaveToggle = (adIdOrSetId: number, isSaved: boolean) => {
+    // If filtering by favorites and ad is being unsaved, remove it from view
+    if (filters.is_favorite === true && !isSaved) {
+      setAds(prevAds => prevAds.filter(ad => 
+        ad.ad_set_id !== adIdOrSetId && ad.id !== adIdOrSetId
+      ));
+    } else {
+      // Otherwise just update the save status
+      setAds(prevAds => prevAds.map(ad => {
+        // Match by ad_set_id (for ad sets) or by ad id (for single ads)
+        if (ad.ad_set_id === adIdOrSetId || ad.id === adIdOrSetId) {
+          return { ...ad, is_favorite: isSaved };
+        }
+        return ad;
+      }));
+    }
   };
 
   // Selection handlers
@@ -650,7 +659,7 @@ export default function AdIntelligencePage() {
                     isSelected={ad.id !== undefined && selectedAds.has(ad.id)}
                     isDeleting={ad.id !== undefined && deletingAds.has(ad.id)}
                     onSelectionChange={handleAdSelection}
-                    onFavoriteToggle={handleFavoriteToggle}
+                    onSaveToggle={handleSaveToggle}
                     showSelection={true}
                   />
                 ))}

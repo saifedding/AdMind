@@ -12,7 +12,7 @@ import { transformAdsWithAnalysis } from '@/lib/transformers';
 import { Heart, RefreshCw, AlertCircle } from 'lucide-react';
 import type { AdWithAnalysis } from '@/types/ad';
 
-export default function FavoritesPage() {
+export default function SavedPage() {
   const [ads, setAds] = useState<AdWithAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,16 +22,16 @@ export default function FavoritesPage() {
   const [filters, setFilters] = useState<AdFilterParams>({
     page: 1,
     page_size: 24,
-    is_favorite: true, // Always filter by favorites
+    is_favorite: true, // Always filter by saved ads
     sort_by: 'created_at',
     sort_order: 'desc',
   });
 
   useEffect(() => {
-    fetchFavorites();
+    fetchSavedAds();
   }, [filters]);
 
-  const fetchFavorites = async () => {
+  const fetchSavedAds = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -45,22 +45,22 @@ export default function FavoritesPage() {
       setAds(transformedAds);
       
     } catch (err) {
-      console.error('Error fetching favorites:', err);
-      setError('Failed to fetch favorite ads. Please try again.');
+      console.error('Error fetching saved ads:', err);
+      setError('Failed to fetch saved ads. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRefresh = () => {
-    fetchFavorites();
+    fetchSavedAds();
   };
 
   const handleApplyFilters = (newFilters: AdFilterParams) => {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      is_favorite: true, // Keep favorite filter always on
+      is_favorite: true, // Keep saved filter always on
       page: 1
     }));
   };
@@ -91,10 +91,10 @@ export default function FavoritesPage() {
     }));
   };
 
-  const handleFavoriteToggle = (adSetId: number, isFavorite: boolean) => {
-    // If unfavorited, remove from list immediately
-    if (!isFavorite) {
-      setAds(prevAds => prevAds.filter(ad => ad.ad_set_id !== adSetId));
+  const handleSaveToggle = (adSetId: number, isSaved: boolean) => {
+    // If unsaved, remove from list immediately
+    if (!isSaved) {
+      setAds(prevAds => prevAds.filter(ad => ad.ad_set_id !== adSetId && ad.id !== adSetId));
       setTotalItems(prev => prev - 1);
     }
   };
@@ -109,9 +109,9 @@ export default function FavoritesPage() {
               <Heart className="h-6 w-6 text-red-500 fill-current" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Favorite Ad Sets</h1>
+              <h1 className="text-3xl font-bold">Saved Ad Sets</h1>
               <p className="text-muted-foreground">
-                {totalItems} {totalItems === 1 ? 'favorite' : 'favorites'}
+                {totalItems} {totalItems === 1 ? 'saved ad' : 'saved ads'}
               </p>
             </div>
           </div>
@@ -156,9 +156,9 @@ export default function FavoritesPage() {
           <Card className="border-dashed">
             <CardContent className="p-12 text-center">
               <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Favorites Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">No Saved Ads Yet</h3>
               <p className="text-muted-foreground mb-6">
-                Start adding ad sets to your favorites by clicking the heart icon on any ad card.
+                Start saving ad sets by clicking the save icon on any ad card. Saved ads will have their media downloaded permanently.
               </p>
               <Button onClick={() => window.location.href = '/ads'}>
                 Browse Ads
@@ -170,10 +170,10 @@ export default function FavoritesPage() {
             {/* Ad Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {ads.map((ad) => (
-                <div key={`fav-ad-${ad.id ?? 'unknown'}`} className="relative">
+                <div key={`saved-ad-${ad.id ?? 'unknown'}`} className="relative">
                   <AdCard
                     ad={ad}
-                    onFavoriteToggle={handleFavoriteToggle}
+                    onSaveToggle={handleSaveToggle}
                   />
                 
                 </div>

@@ -602,6 +602,73 @@ class AdService:
             self.db.rollback()
             raise
     
+    def save_ad_content(self, ad_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Save the complete ad content including images and videos permanently.
+        Downloads actual media files and stores them locally.
+        
+        Args:
+            ad_id: ID of the ad to save
+            
+        Returns:
+            Dictionary with saved content info or None if ad not found
+        """
+        try:
+            ad = self.db.query(Ad).filter(Ad.id == ad_id).first()
+            
+            if not ad:
+                logger.warning(f"Ad {ad_id} not found")
+                return None
+            
+            # Download and save media files locally
+            from app.services.media_storage_service import MediaStorageService
+            media_service = MediaStorageService(self.db)
+            
+            logger.info(f"Downloading media for ad {ad_id}...")
+            media_result = media_service.save_ad_media(ad_id)
+            
+            # Mark as saved by setting is_favorite to True
+            ad.is_favorite = True
+            
+            # Additionally, if part of an AdSet, mark the AdSet as favorite too
+            if ad.ad_set_id:
+                ad_set = self.db.query(AdSet).filter(AdSet.id == ad.ad_set_id).first()
+                if ad_set:
+                    ad_set.is_favorite = True
+            
+            self.db.commit()
+            
+            # Collect saved content info
+            saved_content = {
+                "ad_id": ad.id,
+                "is_saved": True,
+                "saved_at": datetime.now().isoformat(),
+                "content": {
+                    "main_title": ad.raw_data.get("main_title") if ad.raw_data else None,
+                    "main_body_text": ad.raw_data.get("main_body_text") if ad.raw_data else None,
+                    "main_caption": ad.raw_data.get("main_caption") if ad.raw_data else None,
+                    "image_urls": ad.raw_data.get("main_image_urls", []) if ad.raw_data else [],
+                    "video_urls": ad.raw_data.get("main_video_urls", []) if ad.raw_data else [],
+                    "creatives_count": len(ad.creatives) if ad.creatives and isinstance(ad.creatives, list) else 0,
+                    "images_downloaded": media_result['images_saved'],
+                    "videos_downloaded": media_result['videos_saved'],
+                    "local_image_paths": media_result['local_image_paths'],
+                    "local_video_paths": media_result['local_video_paths']
+                }
+            }
+            
+            logger.info(
+                f"Successfully saved ad {ad_id}: "
+                f"{media_result['images_saved']} images, "
+                f"{media_result['videos_saved']} videos downloaded"
+            )
+            return saved_content
+            
+        except Exception as e:
+            logger.error(f"Error saving ad content for ad {ad_id}: {str(e)}")
+            self.db.rollback()
+            raise
+    
     def _apply_filters(self, query, filters: AdFilterParams):
         """
         Apply filters to query based on filter parameters.

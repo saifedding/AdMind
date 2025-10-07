@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import uvicorn
 from pathlib import Path
@@ -46,6 +47,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for saved media
+media_storage_path = Path("backend/media_storage")
+media_storage_path.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(media_storage_path)), name="media")
 
 # Include routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])

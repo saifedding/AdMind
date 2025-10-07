@@ -195,6 +195,23 @@ class FavoriteResponse(BaseModel):
     is_favorite: bool
     message: str
 
+class SaveAdContentResponse(BaseModel):
+    """Response model for save ad content"""
+    success: bool
+    ad_id: int
+    is_saved: bool
+    saved_at: str
+    message: str
+    content: Dict
+
+class UnsaveAdContentResponse(BaseModel):
+    """Response model for unsave ad content"""
+    success: bool
+    ad_id: int
+    is_saved: bool
+    message: str
+    deleted: Dict
+
 class RefreshMediaUrlResponse(BaseModel):
     """Response model for media URL refresh from Facebook"""
     success: bool
@@ -231,6 +248,99 @@ async def toggle_favorite(
     except Exception as e:
         logger.error(f"Error toggling favorite for ad {ad_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error toggling favorite: {str(e)}")
+
+@router.post("/ads/{ad_id}/save", response_model=SaveAdContentResponse)
+async def save_ad_content(
+    ad_id: int, 
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    """
+    Save the complete ad content including images and videos permanently.
+    
+    This endpoint:
+    1. Marks the ad as saved (is_favorite = True)
+    2. Persists the current state of text, images, and videos
+    3. Returns information about what was saved
+    
+    Use this when the user wants to permanently save an ad for offline viewing.
+    """
+    try:
+        saved_content = ad_service.save_ad_content(ad_id)
+        
+        if saved_content is None:
+            raise HTTPException(status_code=404, detail="Ad not found")
+        
+        return SaveAdContentResponse(
+            success=True,
+            ad_id=saved_content["ad_id"],
+            is_saved=saved_content["is_saved"],
+            saved_at=saved_content["saved_at"],
+            message="Ad content saved successfully. All images and videos have been preserved.",
+            content=saved_content["content"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving ad content for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving ad content: {str(e)}")
+
+@router.post("/ads/{ad_id}/unsave", response_model=UnsaveAdContentResponse)
+async def unsave_ad_content(
+    ad_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Unsave ad content and delete saved media files from disk.
+    
+    This endpoint:
+    1. Marks the ad as unsaved (is_favorite = False)
+    2. Deletes downloaded images and videos from disk
+    3. Clears local_media references from database
+    4. Returns information about what was deleted
+    
+    Use this when the user wants to remove saved ad content.
+    """
+    try:
+        from app.services.media_storage_service import MediaStorageService
+        from app.models import Ad, AdSet
+        
+        # Get the ad
+        ad = db.query(Ad).filter(Ad.id == ad_id).first()
+        if not ad:
+            raise HTTPException(status_code=404, detail="Ad not found")
+        
+        # Delete media files from disk
+        media_service = MediaStorageService(db)
+        deletion_result = media_service.delete_ad_media(ad_id)
+        
+        # Mark as unsaved
+        ad.is_favorite = False
+        
+        # Also unsave the AdSet if part of one
+        if ad.ad_set_id:
+            ad_set = db.query(AdSet).filter(AdSet.id == ad.ad_set_id).first()
+            if ad_set:
+                ad_set.is_favorite = False
+        
+        db.commit()
+        
+        logger.info(f"Unsaved ad {ad_id} and deleted {deletion_result['images_deleted']} images, {deletion_result['videos_deleted']} videos")
+        
+        return UnsaveAdContentResponse(
+            success=True,
+            ad_id=ad_id,
+            is_saved=False,
+            message=f"Ad unsaved and {deletion_result['images_deleted'] + deletion_result['videos_deleted']} media file(s) deleted from disk.",
+            deleted=deletion_result
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unsaving ad content for ad {ad_id}: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error unsaving ad content: {str(e)}")
 
 @router.post("/ads/{ad_id}/refresh-media", response_model=RefreshMediaUrlResponse)
 async def refresh_media_from_facebook(

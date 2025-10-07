@@ -362,6 +362,24 @@ class ApiClient {
     );
   }
 
+  async saveAdContent(adId: number): Promise<{ success: boolean; ad_id: number; is_saved: boolean; saved_at: string; message: string; content: any }> {
+    return this.request<{ success: boolean; ad_id: number; is_saved: boolean; saved_at: string; message: string; content: any }>(
+      `/ads/${adId}/save`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  async unsaveAdContent(adId: number): Promise<{ success: boolean; ad_id: number; is_saved: boolean; message: string; deleted: any }> {
+    return this.request<{ success: boolean; ad_id: number; is_saved: boolean; message: string; deleted: any }>(
+      `/ads/${adId}/unsave`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
   async refreshMediaFromFacebook(adId: number): Promise<{ success: boolean; ad_id: number; old_media_url?: string; new_media_url?: string; message: string; error?: string }> {
     return this.request<{ success: boolean; ad_id: number; old_media_url?: string; new_media_url?: string; message: string; error?: string }>(
       `/ads/${adId}/refresh-media`,
@@ -502,6 +520,8 @@ export const adsApi = {
   deleteAllAds: () => apiClient.deleteAllAds(),
   toggleFavorite: (id: number) => apiClient.toggleFavorite(id),
   toggleAdSetFavorite: (adSetId: number) => apiClient.toggleAdSetFavorite(adSetId),
+  saveAdContent: (adId: number) => apiClient.saveAdContent(adId),
+  unsaveAdContent: (adId: number) => apiClient.unsaveAdContent(adId),
   refreshMediaFromFacebook: (adId: number) => apiClient.refreshMediaFromFacebook(adId),
   refreshAllFavorites: () => apiClient.refreshAllFavorites(),
   refreshAdSetMedia: (adSetId: number) => apiClient.refreshAdSetMedia(adSetId),

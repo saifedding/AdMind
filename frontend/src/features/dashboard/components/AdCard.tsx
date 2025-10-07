@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart, RefreshCw, FolderPlus, Plus, Check } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, RefreshCw, FolderPlus, Plus, Check, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { adsApi, type ApiFavoriteList } from '@/lib/api';
 
@@ -17,7 +17,7 @@ interface AdCardProps {
   showSelection?: boolean;
   hideSetBadge?: boolean; // Add this prop to hide the "Set of X" badge when viewing variants
   disableSetNavigation?: boolean; // Add this prop to disable navigation to ad set when already viewing set details
-  onFavoriteToggle?: (adId: number, isFavorite: boolean) => void; // Callback when favorite status changes
+  onSaveToggle?: (adId: number, isSaved: boolean) => void; // Callback when save status changes
 }
 
 // Helper function to get main ad content for display
@@ -34,13 +34,13 @@ export function AdCard({
   showSelection = false,
   hideSetBadge = false,
   disableSetNavigation = false,
-  onFavoriteToggle
+  onSaveToggle
 }: AdCardProps) {
   const router = useRouter();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showFullContent, setShowFullContent] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(ad.is_favorite || false);
-  const [isFavoriting, setIsFavoriting] = useState(false);
+  const [isSaved, setIsSaved] = useState(ad.is_favorite || false); // Reuse is_favorite field as "is_saved"
+  const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showListsDropdown, setShowListsDropdown] = useState(false);
   const [favoriteLists, setFavoriteLists] = useState<ApiFavoriteList[]>([]);
@@ -50,11 +50,10 @@ export function AdCard({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
   
-  // Sync isFavorite state when ad prop changes (e.g., after page refresh)
+  // Sync isSaved state when ad prop changes
   useEffect(() => {
-    console.log(`AdCard ${ad.id} - is_favorite from backend:`, ad.is_favorite, 'ad_set_id:', ad.ad_set_id);
-    setIsFavorite(ad.is_favorite || false);
-  }, [ad.is_favorite, ad.id, ad.ad_set_id]);
+    setIsSaved(ad.is_favorite || false);
+  }, [ad.is_favorite, ad.id]);
 
   // Load lists when dropdown opens
   useEffect(() => {
@@ -175,20 +174,73 @@ export function AdCard({
     setShowFullContent(!showFullContent);
   };
 
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
+  const handleSaveClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!ad.ad_set_id || isFavoriting) return;
+    if (isSaving) return;
     
-    setIsFavoriting(true);
+    setIsSaving(true);
     try {
-      // Toggle favorite at AdSet level
-      const response = await adsApi.toggleAdSetFavorite(ad.ad_set_id);
-      setIsFavorite(response.is_favorite);
-      onFavoriteToggle?.(ad.ad_set_id, response.is_favorite);
+      if (isSaved) {
+        // Unsave: Delete media files and mark as unsaved
+        const unsaveResponse = await adsApi.unsaveAdContent(ad.id);
+        setIsSaved(unsaveResponse.is_saved);
+        
+        if (onSaveToggle) {
+          if (ad.ad_set_id) {
+            onSaveToggle(ad.ad_set_id, unsaveResponse.is_saved);
+          } else {
+            onSaveToggle(ad.id, unsaveResponse.is_saved);
+          }
+        }
+        
+        const deleted = unsaveResponse.deleted;
+        const totalDeleted = (deleted.images_deleted || 0) + (deleted.videos_deleted || 0);
+        const spaceSaved = ((deleted.space_freed || 0) / (1024 * 1024)).toFixed(2); // Convert to MB
+        
+        alert(
+          `✓ Ad unsaved!\n\n` +
+          `Deleted from disk:\n` +
+          `- ${deleted.images_deleted || 0} image(s)\n` +
+          `- ${deleted.videos_deleted || 0} video(s)\n` +
+          `- ${spaceSaved} MB freed\n\n` +
+          `The ad is no longer marked as saved.`
+        );
+      } else {
+        // Save: Download media and mark as saved
+        const saveResponse = await adsApi.saveAdContent(ad.id);
+        setIsSaved(saveResponse.is_saved);
+        
+        // Notify parent component if callback provided
+        if (onSaveToggle) {
+          if (ad.ad_set_id) {
+            onSaveToggle(ad.ad_set_id, saveResponse.is_saved);
+          } else {
+            onSaveToggle(ad.id, saveResponse.is_saved);
+          }
+        }
+        
+        // Show success message
+        const contentInfo = saveResponse.content;
+        const imagesDownloaded = contentInfo.images_downloaded || 0;
+        const videosDownloaded = contentInfo.videos_downloaded || 0;
+        const creativesCount = contentInfo.creatives_count || 0;
+        
+        alert(
+          `✓ Ad saved permanently!\n\n` +
+          `Downloaded to server:\n` +
+          `- ${imagesDownloaded} image(s)\n` +
+          `- ${videosDownloaded} video(s)\n` +
+          `- ${creativesCount} creative(s)\n` +
+          `- All text content\n\n` +
+          `✅ You can now view this ad even when Facebook links expire!\n` +
+          `The media files are saved on your backend server.`
+        );
+      }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      console.error('Failed to save/unsave ad:', error);
+      alert('✗ Failed to save/unsave ad. Please try again.');
     } finally {
-      setIsFavoriting(false);
+      setIsSaving(false);
     }
   };
 
@@ -293,25 +345,25 @@ export function AdCard({
           </div>
         )}
         
-        {/* Favorite Heart Icon */}
+        {/* Save Button - Positioned at bottom-right */}
         <button
-          onClick={handleFavoriteClick}
-          disabled={isFavoriting}
+          onClick={handleSaveClick}
+          disabled={isSaving}
           className={cn(
-            "absolute z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+            "absolute z-10 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
             "hover:scale-110 active:scale-95",
-            showSelection ? "top-0.5 right-7" : "top-2 right-2", // Position left of checkbox when selection is active
-            isFavorite 
-              ? "bg-red-500/90 text-white hover:bg-red-600/90" 
+            showSelection ? "bottom-2 right-7" : "bottom-2 right-2",
+            isSaved 
+              ? "bg-green-500/90 text-white hover:bg-green-600/90" 
               : "bg-black/40 text-white hover:bg-black/60",
-            isFavoriting && "opacity-50 cursor-not-allowed"
+            isSaving && "opacity-50 cursor-not-allowed"
           )}
-          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          title={isSaved ? "Click to unsave (remove from saved ads)" : "Click to save (download media permanently to server)"}
         >
-          <Heart
+          <Save
             className={cn(
               "h-4 w-4 transition-all",
-              isFavorite && "fill-current"
+              isSaved && "fill-current"
             )}
           />
         </button>
@@ -321,13 +373,13 @@ export function AdCard({
           onClick={handleRefreshClick}
           disabled={isRefreshing}
           className={cn(
-            "absolute z-20 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+            "absolute z-10 p-2 rounded-full backdrop-blur-sm transition-all duration-200",
             "hover:scale-110 active:scale-95",
-            showSelection ? "top-0.5 right-16" : "top-2 right-11", // Position left of favorite button
+            showSelection ? "bottom-2 right-16" : "bottom-2 right-11",
             "bg-blue-500/90 text-white hover:bg-blue-600/90",
             isRefreshing && "opacity-50 cursor-not-allowed"
           )}
-          title={ad.ad_set_id && ad.variant_count && ad.variant_count > 1 ? `Refresh all ${ad.variant_count} ads in set` : "Refresh ad media"}
+          title={ad.ad_set_id && ad.variant_count && ad.variant_count > 1 ? `Refresh all ${ad.variant_count} ads in set` : "Refresh ad media from Facebook"}
         >
           <RefreshCw
             className={cn(
@@ -338,7 +390,7 @@ export function AdCard({
         </button>
         
         {/* Add to Lists Button with Dropdown */}
-        <div className="absolute z-20" style={{ top: showSelection ? '0.125rem' : '0.5rem', right: showSelection ? '6.25rem' : '5rem' }} ref={dropdownRef}>
+        <div className="absolute z-10" style={{ bottom: '0.5rem', right: showSelection ? '6.25rem' : '5rem' }} ref={dropdownRef}>
           <button
             onClick={handleAddToListClick}
             className={cn(

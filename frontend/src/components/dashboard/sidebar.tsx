@@ -47,8 +47,8 @@ const navigation = [
     current: false
   },
   {
-    name: "Favorites",
-    href: "/favorites",
+    name: "Saved",
+    href: "/saved",
     icon: Heart,
     current: false
   },

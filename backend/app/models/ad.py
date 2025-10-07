@@ -146,12 +146,15 @@ class Ad(Base):
                 if not raw.get("page_profile_picture_url") and snapshot.get("page_profile_picture_url"):
                     raw["page_profile_picture_url"] = snapshot["page_profile_picture_url"]
                 
-                # Extract videos
+                # Extract videos (only highest quality - HD preferred over SD)
                 videos = snapshot.get("videos", [])
                 if videos and not raw.get("main_video_urls"):
                     video_urls = []
                     for video in videos:
-                        url = video.get("video_sd_url") or video.get("video_hd_url")
+                        # Only get HD if available, otherwise SD - not both
+                        url = video.get("video_hd_url")
+                        if not url:
+                            url = video.get("video_sd_url")
                         if url:
                             video_urls.append(url)
                     if video_urls:
