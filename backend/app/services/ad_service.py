@@ -705,23 +705,13 @@ class AdService:
             main_body_text = None
             main_caption = None
             
-            # Process creatives if they exist
-            creatives_data = []
-            if ad.creatives:
-                # Handle the case when creatives is a string (JSON string)
-                if isinstance(ad.creatives, str):
-                    try:
-                        creatives_data = json.loads(ad.creatives)
-                    except json.JSONDecodeError:
-                        logger.error(f"Failed to parse creatives JSON for ad {ad.id}")
-                        creatives_data = []
-                else:
-                    # Creatives is already a list or dict
-                    creatives_data = ad.creatives
-                
-                # If creatives_data is a dict, convert to list for consistency
-                if isinstance(creatives_data, dict):
-                    creatives_data = [creatives_data]
+            # Use ad.to_dict() to get dynamically built creatives
+            ad_dict = ad.to_dict()
+            creatives_data = ad_dict.get('creatives', [])
+            
+            # If creatives_data is a dict, convert to list for consistency
+            if isinstance(creatives_data, dict):
+                creatives_data = [creatives_data]
                 
                 # Process each creative
                 if isinstance(creatives_data, list):
@@ -928,24 +918,12 @@ class AdService:
         if hasattr(ad, 'competitor') and ad.competitor is not None:
             competitor_dto = CompetitorResponseDTO.model_validate(ad.competitor)
 
-        creatives = []
-        if hasattr(ad, 'creatives') and ad.creatives is not None:
-            creatives = ad.creatives
-
-        first_creative = creatives[0] if creatives else {}
-        main_media = first_creative.get('media', [])[0] if first_creative.get('media') else {}
-
-        # Prepare meta data
-        meta_is_active = None
-        meta_start_date = None
-        meta_end_date = None
+        # Use ad.to_dict() to get all extracted data, including dynamically built creatives
+        ad_dict = ad.to_dict()
         
-        if hasattr(ad, 'meta') and ad.meta is not None:
-            meta = ad.meta
-            meta_is_active = meta.get('is_active')
-            meta_start_date = meta.get('start_date')
-            meta_end_date = meta.get('end_date')
-
+        # Get creatives from ad_dict (which includes dynamically built creatives from raw_data)
+        creatives = ad_dict.get('creatives', [])
+        
         # The AdDetailResponseDTO has more fields, so we map them explicitly
         return AdDetailResponseDTO(
             id=ad.id,
@@ -960,38 +938,38 @@ class AdService:
             created_at=ad.created_at,
             updated_at=ad.updated_at,
             raw_data=ad.raw_data,
-            
-            # Populated from nested data
-            ad_copy=first_creative.get('body'),
-            main_title=first_creative.get('headline'),
-            cta_text=first_creative.get('cta', {}).get('text'),
-            cta_type=first_creative.get('cta', {}).get('type'),
-            media_type=main_media.get('type'),
-            media_url=main_media.get('url'),
-            is_active=meta_is_active,
-            start_date=meta_start_date,
-            end_date=meta_end_date,
             is_favorite=ad.is_favorite if hasattr(ad, 'is_favorite') else False,
             
-            # Required fields with default values
-            main_body_text=None,
-            main_caption=None,
-            main_link_url=None,
-            main_link_description=None,
-            main_image_urls=[],
-            main_video_urls=[],
-            page_name=None,
-            page_id=None,
+            # Extract from ad_dict which properly handles all data sources
+            ad_copy=ad_dict.get('ad_copy'),
+            main_title=ad_dict.get('main_title'),
+            main_body_text=ad_dict.get('main_body_text'),
+            main_caption=ad_dict.get('main_caption'),
+            cta_text=ad_dict.get('cta_text'),
+            cta_type=ad_dict.get('cta_type'),
+            media_type=ad_dict.get('media_type'),
+            media_url=ad_dict.get('media_url'),
+            main_image_urls=ad_dict.get('main_image_urls', []),
+            main_video_urls=ad_dict.get('main_video_urls', []),
+            main_link_url=ad_dict.get('main_link_url'),
+            main_link_description=ad_dict.get('main_link_description'),
+            page_name=ad_dict.get('page_name'),
+            page_id=ad_dict.get('page_id'),
+            page_profile_picture_url=ad_dict.get('page_profile_picture_url'),
+            publisher_platform=ad_dict.get('publisher_platform'),
+            targeted_countries=ad_dict.get('targeted_countries'),
+            impressions_text=ad_dict.get('impressions_text'),
+            spend=ad_dict.get('spend'),
+            is_active=ad_dict.get('is_active'),
+            start_date=str(ad_dict.get('start_date')) if ad_dict.get('start_date') is not None else None,
+            end_date=str(ad_dict.get('end_date')) if ad_dict.get('end_date') is not None else None,
+            
+            # Fields not in ad_dict - use defaults
             page_like_count=None,
             page_categories=None,
             page_profile_uri=None,
-            page_profile_picture_url=None,
-            publisher_platform=None,
-            targeted_countries=None,
             display_format=None,
-            impressions_text=None,
             impressions_index=None,
-            spend=None,
             currency=None,
             extra_texts=None,
             extra_links=None,

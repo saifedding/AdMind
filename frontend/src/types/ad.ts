@@ -105,8 +105,8 @@ export interface Ad {
 }
 
 export interface AdWithAnalysis extends Ad {
-  competitor: Competitor;
-  analysis: AdAnalysis;
+  competitor?: Competitor;
+  analysis?: AdAnalysis;
   ad_set_id?: number;
   variant_count?: number;
   ad_set_created_at?: string;

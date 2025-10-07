@@ -4,7 +4,9 @@ import { AdWithAnalysis, Ad, Competitor, AdAnalysis } from '@/types/ad';
 /**
  * Transform API competitor data to component format
  */
-export function transformCompetitor(apiCompetitor: ApiCompetitor): Competitor {
+export function transformCompetitor(apiCompetitor: ApiCompetitor | undefined | null): Competitor | undefined {
+  if (!apiCompetitor) return undefined;
+  
   return {
     id: apiCompetitor.id,
     name: apiCompetitor.name,
@@ -76,7 +78,7 @@ export function transformAd(apiAd: ApiAd): Ad {
     
     // Relationships
     competitor_id: apiAd.competitor?.id,
-    competitor: transformCompetitor(apiAd.competitor),
+    competitor: apiAd.competitor ? transformCompetitor(apiAd.competitor) : undefined,
     analysis: apiAd.analysis ? transformAdAnalysis(apiAd.analysis) : undefined,
 
     // New fields from the backend are now directly mapped
@@ -98,7 +100,7 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
   const ad = transformAd(apiAd);
   
   // For AdWithAnalysis, we need to ensure competitor and analysis are present
-  const competitor = transformCompetitor(apiAd.competitor);
+  const competitor = apiAd.competitor ? transformCompetitor(apiAd.competitor) : undefined;
   const analysis = apiAd.analysis 
     ? transformAdAnalysis(apiAd.analysis)
     : {

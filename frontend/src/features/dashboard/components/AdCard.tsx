@@ -1,14 +1,13 @@
 'use client';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { AdWithAnalysis } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart, RefreshCw } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, Heart, RefreshCw, FolderPlus, Plus, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { adsApi } from '@/lib/api';
+import { adsApi, type ApiFavoriteList } from '@/lib/api';
 
 interface AdCardProps {
   ad: AdWithAnalysis;
@@ -43,6 +42,12 @@ export function AdCard({
   const [isFavorite, setIsFavorite] = useState(ad.is_favorite || false);
   const [isFavoriting, setIsFavoriting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showListsDropdown, setShowListsDropdown] = useState(false);
+  const [favoriteLists, setFavoriteLists] = useState<ApiFavoriteList[]>([]);
+  const [adListIds, setAdListIds] = useState<number[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+  const [addingToList, setAddingToList] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
   
   // Sync isFavorite state when ad prop changes (e.g., after page refresh)
@@ -50,6 +55,27 @@ export function AdCard({
     console.log(`AdCard ${ad.id} - is_favorite from backend:`, ad.is_favorite, 'ad_set_id:', ad.ad_set_id);
     setIsFavorite(ad.is_favorite || false);
   }, [ad.is_favorite, ad.id, ad.ad_set_id]);
+
+  // Load lists when dropdown opens
+  useEffect(() => {
+    if (showListsDropdown && favoriteLists.length === 0) {
+      loadFavoriteLists();
+    }
+  }, [showListsDropdown]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowListsDropdown(false);
+      }
+    };
+
+    if (showListsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showListsDropdown]);
   
   const hasMultipleCreatives = ad.creatives && ad.creatives.length > 1;
   const currentCreative = ad.creatives?.[currentCardIndex];
@@ -193,6 +219,51 @@ export function AdCard({
     }
   };
 
+  const loadFavoriteLists = async () => {
+    setLoadingLists(true);
+    try {
+      const [listsResponse, adListsResponse] = await Promise.all([
+        adsApi.getFavoriteLists(),
+        adsApi.getAdFavoriteLists(ad.id),
+      ]);
+      setFavoriteLists(listsResponse.lists);
+      setAdListIds(adListsResponse.list_ids);
+    } catch (error) {
+      console.error('Error loading lists:', error);
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  const handleAddToListClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowListsDropdown(!showListsDropdown);
+    if (!showListsDropdown && favoriteLists.length === 0) {
+      loadFavoriteLists();
+    }
+  };
+
+  const handleToggleList = async (e: React.MouseEvent, listId: number) => {
+    e.stopPropagation();
+    if (addingToList === listId) return;
+
+    setAddingToList(listId);
+    try {
+      const isInList = adListIds.includes(listId);
+      if (isInList) {
+        await adsApi.removeAdFromFavoriteList(listId, ad.id);
+        setAdListIds(prev => prev.filter(id => id !== listId));
+      } else {
+        await adsApi.addAdToFavoriteList(listId, ad.id);
+        setAdListIds(prev => [...prev, listId]);
+      }
+    } catch (error) {
+      console.error('Error toggling list:', error);
+    } finally {
+      setAddingToList(null);
+    }
+  };
+
   return (
     <div className="group relative cursor-pointer" onClick={handleCardClick}>
       <Card className={cn(
@@ -265,6 +336,63 @@ export function AdCard({
             )}
           />
         </button>
+        
+        {/* Add to Lists Button with Dropdown */}
+        <div className="absolute z-20" style={{ top: showSelection ? '0.125rem' : '0.5rem', right: showSelection ? '6.25rem' : '5rem' }} ref={dropdownRef}>
+          <button
+            onClick={handleAddToListClick}
+            className={cn(
+              "p-2 rounded-full backdrop-blur-sm transition-all duration-200",
+              "hover:scale-110 active:scale-95",
+              "bg-yellow-500/90 text-white hover:bg-yellow-600/90"
+            )}
+            title="Add to favorite lists"
+          >
+            <FolderPlus className="h-4 w-4" />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showListsDropdown && (
+            <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50">
+              {loadingLists ? (
+                <div className="p-4 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                </div>
+              ) : favoriteLists.length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  No lists yet. Create one in Favorite Lists page.
+                </div>
+              ) : (
+                <div className="py-2">
+                  {favoriteLists.map((list) => {
+                    const isInList = adListIds.includes(list.id);
+                    const isLoading = addingToList === list.id;
+                    return (
+                      <button
+                        key={list.id}
+                        onClick={(e) => handleToggleList(e, list.id)}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left disabled:opacity-50"
+                      >
+                        <div className={`w-3 h-3 rounded-full bg-${list.color || 'blue'}-500 flex-shrink-0`} />
+                        <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {list.name}
+                        </span>
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                        ) : isInList ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Ad Set Variants Badge - REMOVED, now integrated into top badges */}
         
@@ -589,4 +717,4 @@ export function AdCard({
   );
 }
 
-export default AdCard; 
+export default AdCard;

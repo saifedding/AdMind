@@ -148,6 +148,49 @@ export interface ApiAd {
   ad_set_last_seen_date?: string;
 }
 
+// Favorites Types
+export interface ApiFavoriteList {
+  id: number;
+  name: string;
+  description?: string;
+  user_id: number;
+  color?: string;
+  icon?: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+  item_count: number;
+}
+
+export interface ApiFavoriteItem {
+  id: number;
+  list_id: number;
+  ad_id: number;
+  notes?: string;
+  created_at: string;
+  ad?: ApiAd;
+}
+
+export interface ApiFavoriteListWithItems extends ApiFavoriteList {
+  items: ApiFavoriteItem[];
+}
+
+export interface CreateListRequest {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  is_default?: boolean;
+}
+
+export interface UpdateListRequest {
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  is_default?: boolean;
+}
+
 export interface PaginationMetadata {
   page: number;
   page_size: number;
@@ -388,6 +431,63 @@ class ApiClient {
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<PaginatedAdsResponse>(`/ad-sets${query}`);
   }
+
+  // Favorites API methods
+  async getFavoriteLists(): Promise<{ lists: ApiFavoriteList[]; total: number }> {
+    return this.request<{ lists: ApiFavoriteList[]; total: number }>('/favorites/lists');
+  }
+
+  async getFavoriteList(listId: number): Promise<ApiFavoriteListWithItems> {
+    return this.request<ApiFavoriteListWithItems>(`/favorites/lists/${listId}`);
+  }
+
+  async createFavoriteList(data: CreateListRequest): Promise<ApiFavoriteList> {
+    return this.request<ApiFavoriteList>('/favorites/lists', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFavoriteList(listId: number, data: UpdateListRequest): Promise<ApiFavoriteList> {
+    return this.request<ApiFavoriteList>(`/favorites/lists/${listId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFavoriteList(listId: number): Promise<void> {
+    return this.request<void>(`/favorites/lists/${listId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addAdToFavoriteList(listId: number, adId: number, notes?: string): Promise<ApiFavoriteItem> {
+    return this.request<ApiFavoriteItem>('/favorites/items', {
+      method: 'POST',
+      body: JSON.stringify({ list_id: listId, ad_id: adId, notes }),
+    });
+  }
+
+  async removeAdFromFavoriteList(listId: number, adId: number): Promise<void> {
+    return this.request<void>('/favorites/items', {
+      method: 'DELETE',
+      body: JSON.stringify({ list_id: listId, ad_id: adId }),
+    });
+  }
+
+  async getAdFavoriteLists(adId: number): Promise<{ list_ids: number[] }> {
+    return this.request<{ list_ids: number[] }>(`/favorites/ads/${adId}/lists`);
+  }
+
+  async getAllFavoritesWithAds(): Promise<{ lists: ApiFavoriteListWithItems[]; total_lists: number }> {
+    return this.request<{ lists: ApiFavoriteListWithItems[]; total_lists: number }>('/favorites/all');
+  }
+
+  async ensureDefaultFavoriteList(): Promise<ApiFavoriteList> {
+    return this.request<ApiFavoriteList>('/favorites/ensure-default', {
+      method: 'POST',
+    });
+  }
 }
 
 // Create and export API client instance
@@ -412,6 +512,18 @@ export const adsApi = {
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
   getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
+  
+  // Favorites API
+  getFavoriteLists: () => apiClient.getFavoriteLists(),
+  getFavoriteList: (listId: number) => apiClient.getFavoriteList(listId),
+  createFavoriteList: (data: CreateListRequest) => apiClient.createFavoriteList(data),
+  updateFavoriteList: (listId: number, data: UpdateListRequest) => apiClient.updateFavoriteList(listId, data),
+  deleteFavoriteList: (listId: number) => apiClient.deleteFavoriteList(listId),
+  addAdToFavoriteList: (listId: number, adId: number, notes?: string) => apiClient.addAdToFavoriteList(listId, adId, notes),
+  removeAdFromFavoriteList: (listId: number, adId: number) => apiClient.removeAdFromFavoriteList(listId, adId),
+  getAdFavoriteLists: (adId: number) => apiClient.getAdFavoriteLists(adId),
+  getAllFavoritesWithAds: () => apiClient.getAllFavoritesWithAds(),
+  ensureDefaultFavoriteList: () => apiClient.ensureDefaultFavoriteList(),
 };
 
 export default apiClient;

@@ -23,7 +23,8 @@ import {
   Activity,
   Layers,
   Clock,
-  Heart
+  Heart,
+  FolderHeart
 } from "lucide-react";
 
 const navigation = [
@@ -49,6 +50,12 @@ const navigation = [
     name: "Favorites",
     href: "/favorites",
     icon: Heart,
+    current: false
+  },
+  {
+    name: "Favorite Lists",
+    href: "/favorite-lists",
+    icon: FolderHeart,
     current: false
   },
   {

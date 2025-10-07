@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info } from 'lucide-react';
+import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { differenceInDays, format, parseISO } from 'date-fns';
 
@@ -63,6 +63,7 @@ export default function AdDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentCreativeIndex, setCurrentCreativeIndex] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchAd = async () => {
@@ -88,21 +89,67 @@ export default function AdDetailPage() {
     }
   }, [id]);
 
+  const handleRefresh = async () => {
+    if (isRefreshing || !ad) return;
+    
+    setIsRefreshing(true);
+    try {
+      // If part of ad set, refresh all ads in the set
+      if (ad.ad_set_id && ad.variant_count && ad.variant_count > 1) {
+        const result = await adsApi.refreshAdSetMedia(ad.ad_set_id);
+        console.log('Ad set refreshed:', result);
+        alert(`✓ Refreshed ${result.successful}/${result.total} ads in set!`);
+      } else {
+        // Single ad refresh
+        const result = await adsApi.refreshMediaFromFacebook(ad.id);
+        console.log('Ad refreshed:', result);
+        alert('✓ Media refreshed successfully!');
+      }
+      // Reload page to show updated media
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+      alert('✗ Failed to refresh media');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const currentCreative = ad?.creatives?.[currentCreativeIndex];
   const media = currentCreative?.media?.[0];
 
   const renderMedia = () => {
-    if (!media) return null;
+    // Try to get media from creatives first
+    if (media) {
+      return (
+        <div className="rounded-lg overflow-hidden border border-border/20 bg-card relative aspect-video max-h-[600px] w-full mx-auto">
+          {media.type === 'Video' ? (
+            <video key={media.url} src={media.url} controls className="w-full h-full object-contain" />
+          ) : (
+            <img src={media.url} alt={currentCreative?.title || 'Ad media'} className="w-full h-full object-contain" />
+          )}
+        </div>
+      );
+    }
 
-    return (
-      <div className="rounded-lg overflow-hidden border border-border/20 bg-card relative aspect-video max-h-[600px] w-full mx-auto">
-        {media.type === 'Video' ? (
-          <video key={media.url} src={media.url} controls className="w-full h-full object-contain" />
-        ) : (
-          <img src={media.url} alt={currentCreative?.title || 'Ad media'} className="w-full h-full object-contain" />
-        )}
-      </div>
-    );
+    // Fallback to main media fields if creatives are empty
+    if (ad?.media_type === 'video' && ad?.media_url) {
+      return (
+        <div className="rounded-lg overflow-hidden border border-border/20 bg-card relative aspect-video max-h-[600px] w-full mx-auto">
+          <video key={ad.media_url} src={ad.media_url} controls className="w-full h-full object-contain" />
+        </div>
+      );
+    }
+
+    if (ad?.media_type === 'image' && ad?.media_url) {
+      return (
+        <div className="rounded-lg overflow-hidden border border-border/20 bg-card relative aspect-video max-h-[600px] w-full mx-auto">
+          <img src={ad.media_url} alt={ad.main_title || 'Ad media'} className="w-full h-full object-contain" />
+        </div>
+      );
+    }
+
+    return null;
   };
   
   const renderCarouselControls = () => {
@@ -186,10 +233,21 @@ export default function AdDetailPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-4 md:p-8">
-        {/* Back Button */}
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />Back to Ads
-        </Button>
+        {/* Back Button and Actions */}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />Back to Ads
+          </Button>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            title={ad?.ad_set_id && ad?.variant_count && ad.variant_count > 1 ? `Refresh all ${ad.variant_count} ads in set` : "Refresh ad media"}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Media'}
+          </Button>
+        </div>
 
         {/* Header */}
         <div className="flex items-start gap-4">
@@ -258,9 +316,9 @@ export default function AdDetailPage() {
               <CardTitle>Ad Content</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {currentCreative?.title && <p><strong>Title:</strong> {currentCreative.title}</p>}
-              {currentCreative?.body && <p><strong>Body:</strong> <span className="whitespace-pre-wrap">{currentCreative.body}</span></p>}
-              {currentCreative?.cta?.text && <p><strong>CTA:</strong> {currentCreative.cta.text}</p>}
+              {(currentCreative?.title || ad.main_title) && <p><strong>Title:</strong> {currentCreative?.title || ad.main_title}</p>}
+              {(currentCreative?.body || ad.main_body_text) && <p><strong>Body:</strong> <span className="whitespace-pre-wrap">{currentCreative?.body || ad.main_body_text}</span></p>}
+              {(currentCreative?.cta?.text || ad.cta_text) && <p><strong>CTA:</strong> {currentCreative?.cta?.text || ad.cta_text}</p>}
             </CardContent>
             <CardFooter className="text-xs text-muted-foreground flex gap-4">
               <div className="flex items-center gap-1"><Eye className="h-3 w-3" />{ad.impressions_text || 'Unknown'}</div>
