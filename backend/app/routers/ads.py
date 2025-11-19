@@ -2978,9 +2978,31 @@ async def get_download_history(
                     AdAnalysis.ad_id == item.ad_id,
                     AdAnalysis.is_current == 1
                 ).first()
-                
+
+                # raw_ai_response may be stored as a dict or as a JSON string; handle both safely
                 if current_analysis and current_analysis.raw_ai_response:
-                    prompts = current_analysis.raw_ai_response.get('generation_prompts', [])
+                    raw = current_analysis.raw_ai_response
+                    # If stored as a JSON string, try to parse it
+                    if isinstance(raw, str):
+                        try:
+                            import json
+                            raw = json.loads(raw)
+                        except Exception:
+                            raw = {}
+
+                    prompts = []
+                    if isinstance(raw, dict):
+                        prompts = raw.get('generation_prompts', [])
+
+                    # generation_prompts itself might be JSON-encoded; normalize to list
+                    if isinstance(prompts, str):
+                        try:
+                            import json
+                            parsed = json.loads(prompts)
+                            prompts = parsed if isinstance(parsed, list) else []
+                        except Exception:
+                            prompts = []
+
                     prompt_count = len(prompts) if isinstance(prompts, list) else 0
                 
                 # Count Veo videos

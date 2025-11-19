@@ -31,90 +31,109 @@ import {
   Video
 } from "lucide-react";
 
-const navigation = [
+const navigationGroups = [
   {
-    name: "Dashboard",
-    href: "/",
-    icon: Home,
-    current: true
+    items: [
+      {
+        name: "Dashboard",
+        href: "/",
+        icon: Home,
+        current: true
+      }
+    ]
   },
   {
-    name: "Ad Intelligence",
-    href: "/ads",
-    icon: Brain,
-    current: false
+    label: "Ad Management",
+    items: [
+      {
+        name: "Ad Intelligence",
+        href: "/ads",
+        icon: Brain,
+        current: false
+      },
+      {
+        name: "Ad Sets",
+        href: "/ad-sets",
+        icon: Layers,
+        current: false
+      },
+      {
+        name: "Saved",
+        href: "/saved",
+        icon: Heart,
+        current: false
+      },
+      {
+        name: "Favorite Lists",
+        href: "/favorite-lists",
+        icon: FolderHeart,
+        current: false
+      }
+    ]
   },
   {
-    name: "Ad Sets",
-    href: "/ad-sets",
-    icon: Layers,
-    current: false
+    label: "Explore",
+    items: [
+      {
+        name: "Analytics",
+        href: "/analytics",
+        icon: BarChart3,
+        current: false
+      },
+      {
+        name: "Competitors",
+        href: "/competitors",
+        icon: Target,
+        current: false
+      },
+      {
+        name: "Trends",
+        href: "/trends",
+        icon: TrendingUp,
+        current: false
+      },
+      {
+        name: "Search",
+        href: "/search",
+        icon: Search,
+        current: false
+      },
+      {
+        name: "Download Ads",
+        href: "/download-ads",
+        icon: Download,
+        current: false
+      },
+      {
+        name: "Veo Generator",
+        href: "/veo",
+        icon: Video,
+        current: false
+      }
+    ]
   },
   {
-    name: "Saved",
-    href: "/saved",
-    icon: Heart,
-    current: false
-  },
-  {
-    name: "Favorite Lists",
-    href: "/favorite-lists",
-    icon: FolderHeart,
-    current: false
-  },
-  {
-    name: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-    current: false
-  },
-  {
-    name: "Competitors",
-    href: "/competitors",
-    icon: Target,
-    current: false
-  },
-  {
-    name: "Tasks",
-    href: "/tasks",
-    icon: Activity,
-    current: false
-  },
-  {
-    name: "Daily Scraping",
-    href: "/daily-scraping",
-    icon: Clock,
-    current: false
-  },
-  {
-    name: "Trends",
-    href: "/trends",
-    icon: TrendingUp,
-    current: false
-  },
-  {
-    name: "Search",
-    href: "/search",
-    icon: Search,
-    current: false
-  },
-  {
-    name: "Download Ads",
-    href: "/download-ads",
-    icon: Download,
-    current: false
-  },
-  {
-    name: "Veo Generator",
-    href: "/veo",
-    icon: Video,
-    current: false
-  },
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-    current: false
+    label: "System",
+    items: [
+      {
+        name: "Tasks",
+        href: "/tasks",
+        icon: Activity,
+        current: false
+      },
+      {
+        name: "Daily Scraping",
+        href: "/daily-scraping",
+        icon: Clock,
+        current: false
+      },
+      {
+        name: "Settings",
+        href: "/settings",
+        icon: Settings,
+        current: false
+      }
+    ]
   }
 ];
 
@@ -129,6 +148,47 @@ function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProp
   const [veoCredits, setVeoCredits] = useState<number | null>(null);
   const [veoTier, setVeoTier] = useState<string | null>(null);
   const [veoRefreshing, setVeoRefreshing] = useState<boolean>(false);
+
+  const [openGroups, setOpenGroups] = useState<Record<number, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("sidebarOpenGroups");
+        if (stored) {
+          const parsed = JSON.parse(stored) as Record<number, boolean>;
+          return parsed;
+        }
+      } catch {
+        // ignore parse errors and fall back to defaults
+      }
+    }
+
+    const initial: Record<number, boolean> = {};
+    navigationGroups.forEach((group, index) => {
+      // Default: all groups open except System
+      if (group.label === "System") {
+        initial[index] = false;
+      } else {
+        initial[index] = true;
+      }
+    });
+    return initial;
+  });
+
+  const toggleGroup = (index: number) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("sidebarOpenGroups", JSON.stringify(openGroups));
+    } catch {
+      // ignore storage errors
+    }
+  }, [openGroups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,42 +243,78 @@ function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProp
 
       {/* Navigation */}
       <nav className={cn(
-        "flex-1 space-y-1 py-6 transition-all duration-300",
+        "flex-1 py-6 transition-all duration-300 overflow-y-auto",
         isCollapsed ? "px-2" : "px-4"
       )}>
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
+        {navigationGroups.map((group, groupIndex) => {
+          const isGroupOpen = openGroups[groupIndex] ?? true;
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onItemClick}
-              prefetch={true}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg text-sm font-medium transition-all hover:bg-accent/50 relative",
-                isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2",
-                isActive
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title={isCollapsed ? item.name : undefined}
+            <div
+              key={groupIndex}
+              className={cn(groupIndex > 0 && "mt-6")}
             >
-              <item.icon className={cn(
-                "h-5 w-5 transition-colors flex-shrink-0",
-                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-              )} />
-              {!isCollapsed && (
-                <>
-                  <span className="transition-opacity duration-300">{item.name}</span>
-                  {isActive && (
-                    <div className="ml-auto h-2 w-2 rounded-full bg-primary" />
-                  )}
-                </>
+              {group.label && !isCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(groupIndex)}
+                  className="px-3 mb-2 flex w-full items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                >
+                  <span>{group.label}</span>
+                  <ChevronRight
+                    className={cn(
+                      "h-3 w-3 transition-transform",
+                      isGroupOpen && "rotate-90"
+                    )}
+                  />
+                </button>
               )}
-              {isCollapsed && isActive && (
-                <div className="absolute right-1 h-2 w-2 rounded-full bg-primary" />
+              {group.label && isCollapsed && (
+                <div className="h-px bg-border mx-2 mb-2" />
               )}
-            </Link>
+              {(!group.label || isGroupOpen) && (
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={onItemClick}
+                        prefetch={true}
+                        className={cn(
+                          "group flex items-center gap-3 rounded-lg text-sm font-medium transition-all hover:bg-accent/50 relative",
+                          isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2",
+                          isActive
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title={isCollapsed ? item.name : undefined}
+                      >
+                        <item.icon
+                          className={cn(
+                            "h-5 w-5 transition-colors flex-shrink-0",
+                            isActive
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-foreground"
+                          )}
+                        />
+                        {!isCollapsed && (
+                          <>
+                            <span className="transition-opacity duration-300">{item.name}</span>
+                            {isActive && (
+                              <div className="ml-auto h-2 w-2 rounded-full bg-primary" />
+                            )}
+                          </>
+                        )}
+                        {isCollapsed && isActive && (
+                          <div className="absolute right-1 h-2 w-2 rounded-full bg-primary" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
