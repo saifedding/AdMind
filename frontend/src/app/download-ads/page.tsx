@@ -1648,8 +1648,8 @@ export default function DownloadAdsPage() {
 
             {selectedAnalysisUrl && analysisByUrl[selectedAnalysisUrl] && (
               <div className="border rounded-md p-4 bg-neutral-900/40 border-neutral-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex flex-wrap gap-2 items-center">
                     <h2 className="text-lg font-semibold">Video Analysis</h2>
                     <div className="flex items-center gap-2 text-xs">
                       <button className={`px-3 py-1.5 rounded-md border ${activeTab === 'analysis' ? 'border-blue-500 text-blue-300' : 'border-neutral-700 text-neutral-300'}`} onClick={() => setActiveTab('analysis')}>Analysis</button>
@@ -1673,6 +1673,58 @@ export default function DownloadAdsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* Token usage and cost summary for current analysis */}
+                    {selectedAnalysisUrl && analysisByUrl[selectedAnalysisUrl] && (
+                      (() => {
+                        const current = analysisByUrl[selectedAnalysisUrl];
+                        const usage = current.token_usage;
+                        const cost = current.cost;
+                        if (!usage && !cost) return null;
+
+                        const totalTokens = usage?.total_tokens ?? (usage && (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0));
+                        const nonCached = usage?.non_cached_prompt_tokens ?? usage?.prompt_tokens;
+                        const cached = usage?.cached_prompt_tokens;
+                        const completion = usage?.completion_tokens;
+                        const totalCost = typeof cost?.total === 'number' ? cost.total : undefined;
+
+                        return (
+                          <div className="hidden md:flex flex-col text-[10px] text-neutral-400 mr-2 max-w-[260px]">
+                            <div className="truncate">
+                              {typeof totalTokens === 'number' && (
+                                <span>
+                                  {totalTokens.toLocaleString()} tokens
+                                  {typeof nonCached === 'number' || typeof cached === 'number' || typeof completion === 'number' ? (
+                                    <>
+                                      {' '}(
+                                      {typeof nonCached === 'number' && <span>{nonCached.toLocaleString()} nc</span>}
+                                      {typeof cached === 'number' && (
+                                        <span>
+                                          {typeof nonCached === 'number' && ', '}
+                                          {cached.toLocaleString()} c
+                                        </span>
+                                      )}
+                                      {typeof completion === 'number' && (
+                                        <span>
+                                          {(typeof nonCached === 'number' || typeof cached === 'number') && ', '}
+                                          {completion.toLocaleString()} out
+                                        </span>
+                                      )}
+                                      )
+                                    </>
+                                  ) : null}
+                                </span>
+                              )}
+                            </div>
+                            {typeof totalCost === 'number' && (
+                              <div className="truncate">
+                                Est. cost: ${totalCost.toFixed(6)} {cost?.currency || 'USD'}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()
+                    )}
+
                     <div className="hidden sm:block text-[11px] text-neutral-400 truncate max-w-[260px]">{selectedAnalysisUrl}</div>
                     {analysisHistory && analysisHistory.total_count > 1 && (
                       <button
@@ -1964,16 +2016,42 @@ export default function DownloadAdsPage() {
                                 {msg.role === 'user' ? 'You' : 'Gemini'}
                               </span>
                               <div className="flex items-center gap-2">
-                                {msg.tokens && msg.role === 'model' && (
-                                  <span className="text-[10px] text-green-400 font-mono">
-                                    {msg.tokens.totalTokenCount || 0} tokens
-                                    {msg.tokens.cachedContentTokenCount > 0 && (
-                                      <span className="text-emerald-400 ml-1">
-                                        ({msg.tokens.cachedContentTokenCount} cached)
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
+                                {msg.tokens && msg.role === 'model' && (() => {
+                                  const t: any = msg.tokens || {};
+                                  const promptTokens = typeof t.promptTokenCount === 'number' ? t.promptTokenCount : 0;
+                                  const cachedTokens = typeof t.cachedContentTokenCount === 'number' ? t.cachedContentTokenCount : 0;
+                                  const completionTokens = typeof t.candidatesTokenCount === 'number' ? t.candidatesTokenCount : 0;
+                                  const totalTokens = typeof t.totalTokenCount === 'number'
+                                    ? t.totalTokenCount
+                                    : promptTokens + completionTokens;
+
+                                  // Gemini 2.0 Flash Standard paid-tier pricing per 1M tokens
+                                  const promptPerMillion = 0.10;
+                                  const cachedPerMillion = 0.025;
+                                  const completionPerMillion = 0.40;
+
+                                  const nonCachedPrompt = Math.max(promptTokens - cachedTokens, 0);
+                                  const promptCost = (nonCachedPrompt / 1_000_000) * promptPerMillion;
+                                  const cachedCost = (cachedTokens / 1_000_000) * cachedPerMillion;
+                                  const completionCost = (completionTokens / 1_000_000) * completionPerMillion;
+                                  const totalCost = promptCost + cachedCost + completionCost;
+
+                                  return (
+                                    <span className="text-[10px] text-green-400 font-mono">
+                                      {totalTokens.toLocaleString()} tokens
+                                      {cachedTokens > 0 && (
+                                        <span className="text-emerald-400 ml-1">
+                                          ({cachedTokens.toLocaleString()} cached)
+                                        </span>
+                                      )}
+                                      {totalCost > 0 && (
+                                        <span className="ml-2 text-[10px] text-blue-300">
+                                          ${totalCost.toFixed(6)} USD
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })()}
                                 <span className="text-[10px] text-neutral-500">
                                   {new Date(msg.at).toLocaleTimeString()}
                                 </span>

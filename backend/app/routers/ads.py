@@ -876,6 +876,8 @@ class AnalyzeVideoResponse(BaseModel):
     message: str
     generated_at: Optional[str] = None
     source: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    cost: Optional[Dict[str, Any]] = None
 
 class AnalysisHistoryItem(BaseModel):
     """Single analysis history item"""
@@ -1016,7 +1018,9 @@ async def get_ad_analysis_by_version(
             raw=raw_response,
             message=f"Analysis version {version_number} retrieved from database" + (" (archived)" if analysis.is_current == 0 else " (current)"),
             generated_at=analysis.created_at.isoformat() if analysis.created_at else None,
-            source="database"
+            source="database",
+            token_usage=raw_response.get("token_usage"),
+            cost=raw_response.get("cost"),
         )
         
     except HTTPException:
@@ -1088,7 +1092,9 @@ async def get_ad_analysis(
             raw=raw_response,
             message="Analysis retrieved from database",
             generated_at=analysis.created_at.isoformat() if analysis.created_at else None,
-            source="database"
+            source="database",
+            token_usage=raw_response.get("token_usage"),
+            cost=raw_response.get("cost"),
         )
         
     except HTTPException:
@@ -1301,7 +1307,9 @@ async def regenerate_ad_analysis(
             raw=new_analysis,
             message="Analysis regenerated from cache",
             generated_at=generated_at_val,
-            source="gemini-regenerated"
+            source="gemini-regenerated",
+            token_usage=new_analysis.get('token_usage'),
+            cost=new_analysis.get('cost'),
         )
     except HTTPException:
         raise
@@ -1553,7 +1561,9 @@ async def analyze_video_from_library(
                 raw=cached_obj.get('raw') if 'transcript' not in cached_obj else None,
                 message="Loaded from cache",
                 generated_at=db_generated_at,
-                source="cache-db" if db_generated_at is not None else "cache-redis"
+                source="cache-db" if db_generated_at is not None else "cache-redis",
+                token_usage=cached_obj.get('token_usage'),
+                cost=cached_obj.get('cost'),
             )
 
         # Gemini-first: call GoogleAIService with URL-only (service handles Instagram uploads)
@@ -1628,7 +1638,9 @@ async def analyze_video_from_library(
                 raw=analysis if isinstance(analysis, dict) and 'transcript' not in analysis else None,
                 message="Analysis completed",
                 generated_at=generated_at_val,
-                source="gemini"
+                source="gemini",
+                token_usage=analysis.get('token_usage') if isinstance(analysis, dict) else None,
+                cost=analysis.get('cost') if isinstance(analysis, dict) else None,
             )
         except Exception as e:
             logger.warning(f"Gemini URL analysis failed, will download and use Gemini upload path: {e}")
@@ -2114,7 +2126,9 @@ async def trigger_ad_analysis(
                     raw=analysis.get('raw') if 'transcript' not in analysis else None,
                     message="Analysis with custom instruction completed",
                     generated_at=generated_at_val,
-                    source="custom-instruction"
+                    source="custom-instruction",
+                    token_usage=analysis.get('token_usage'),
+                    cost=analysis.get('cost'),
                 )
             except Exception as e:
                 if tmp_path and os.path.exists(tmp_path):

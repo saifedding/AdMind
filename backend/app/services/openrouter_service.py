@@ -176,12 +176,12 @@ class OpenRouterService:
         # Models sometimes return JSON-like text with invalid escapes/control chars.
         # Try multiple strategies before falling back to raw text.
         try:
-            return json.loads(content)
+            parsed = json.loads(content)
         except json.JSONDecodeError as e1:
             logger.error(f"Failed to parse OpenRouter JSON response (strict): {e1}")
             # Try lenient parsing allowing control characters
             try:
-                return json.loads(content, strict=False)
+                parsed = json.loads(content, strict=False)
             except Exception as e2:
                 logger.error(f"Lenient parse failed: {e2}")
                 # Sanitize common issues: stray control chars and unescaped backslashes
@@ -191,13 +191,52 @@ class OpenRouterService:
                     # Heuristic: ensure backslashes are escaped when followed by a non-escape char
                     # Avoid double-escaping valid sequences like \n, \t, \", \\.
                     sanitized = re.sub(r"\\(?![\\\/bfnrt\"u])", r"\\\\", sanitized)
-                    return json.loads(sanitized, strict=False)
+                    parsed = json.loads(sanitized, strict=False)
                 except Exception as e3:
                     logger.error(f"Sanitized parse failed: {e3}")
-                    return {"raw": content}
-        
-        # unreachable
-        return {"raw": content}
+                    parsed = {"raw": content}
+
+        # Attach token usage and zero cost information if available
+        try:
+            usage = data.get("usage") or {}
+            token_usage = None
+            if isinstance(usage, dict):
+                prompt_tokens = usage.get("prompt_tokens")
+                completion_tokens = usage.get("completion_tokens")
+                total_tokens = usage.get("total_tokens")
+
+                if isinstance(prompt_tokens, int) or isinstance(completion_tokens, int) or isinstance(total_tokens, int):
+                    if not isinstance(prompt_tokens, int) or prompt_tokens < 0:
+                        prompt_tokens = 0
+                    if not isinstance(completion_tokens, int) or completion_tokens < 0:
+                        completion_tokens = 0
+                    if not isinstance(total_tokens, int) or total_tokens < 0:
+                        total_tokens = prompt_tokens + completion_tokens
+
+                    token_usage = {
+                        "provider": "openrouter",
+                        "model": model,
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                        "total_tokens": total_tokens,
+                    }
+
+            if isinstance(parsed, dict) and token_usage:
+                parsed.setdefault("token_usage", token_usage)
+                # OpenRouter free models: cost is always zero
+                parsed.setdefault("cost", {
+                    "currency": "USD",
+                    "total": 0.0,
+                    "details": {
+                        "prompt_cost": 0.0,
+                        "completion_cost": 0.0,
+                    },
+                })
+        except Exception:
+            # Never break analysis due to usage/cost enrichment
+            pass
+
+        return parsed
     
     def _call_text_model(self, model: str, prompt: str) -> Dict[str, Any]:
         """Call OpenRouter API for text generation"""

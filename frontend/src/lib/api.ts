@@ -875,6 +875,22 @@ export type AnalyzeBeat = {
   why_it_works?: string;
 };
 
+export type TokenUsage = {
+  provider?: string;
+  model?: string;
+  prompt_tokens?: number;
+  cached_prompt_tokens?: number;
+  non_cached_prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+};
+
+export type CostInfo = {
+  currency: string;
+  total: number;
+  details?: Record<string, number>;
+};
+
 export type AnalyzeVideoResponse = {
   success: boolean;
   used_video_url: string;
@@ -891,6 +907,8 @@ export type AnalyzeVideoResponse = {
   message: string;
   generated_at?: string;
   source?: string;
+  token_usage?: TokenUsage;
+  cost?: CostInfo;
 };
 
 // Follow-up analysis chat

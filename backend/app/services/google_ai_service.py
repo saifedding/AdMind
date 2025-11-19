@@ -671,6 +671,13 @@ class GoogleAIService:
                     # Success!
                     if resp.status_code < 400:
                         data = resp.json()
+                        try:
+                            # Debug logging to inspect usage metadata shape from Gemini REST API
+                            usage_debug = data.get("usageMetadata") or data.get("usage_metadata")
+                            logger.info(f"Gemini usageMetadata debug: {usage_debug!r}")
+                            logger.info(f"Gemini top-level keys: {list(data.keys())}")
+                        except Exception:
+                            pass
                         if retry > 0 or key_attempt > 0:
                             logger.info(f"✓ Success with API key #{self.current_key_index + 1} after {retry + 1} attempt(s)")
                         break
@@ -951,6 +958,105 @@ class GoogleAIService:
                 mv = data.get("modelVersion") or data.get("model")
                 if mv:
                     parsed["model_version"] = mv
+                # Attach token usage and cost information if available
+                try:
+                    usage = data.get("usageMetadata") or data.get("usage_metadata") or {}
+                    if isinstance(usage, dict):
+                        prompt_tokens = usage.get("promptTokenCount")
+                        if prompt_tokens is None:
+                            prompt_tokens = usage.get("prompt_token_count")
+                        cached_tokens = usage.get("cachedContentTokenCount")
+                        if cached_tokens is None:
+                            cached_tokens = usage.get("cached_content_token_count")
+                        completion_tokens = usage.get("candidatesTokenCount")
+                        if completion_tokens is None:
+                            completion_tokens = usage.get("candidates_token_count")
+
+                        if isinstance(prompt_tokens, int) and prompt_tokens >= 0:
+                            if not isinstance(cached_tokens, int) or cached_tokens < 0:
+                                cached_tokens = 0
+                            if not isinstance(completion_tokens, int) or completion_tokens < 0:
+                                completion_tokens = 0
+
+                            non_cached_prompt = max(prompt_tokens - cached_tokens, 0)
+                            total_tokens = prompt_tokens + completion_tokens
+
+                            provider = "gemini"
+                            model_name = mv or ""
+
+                            # Default prices per 1M tokens (USD) for standard, paid tier.
+                            # Converted later to per-1K for computation.
+                            pricing_per_million = {
+                                # 2.5 Flash family
+                                "gemini-2.5-flash": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                "gemini-2.5-flash-001": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                "gemini-2.5-flash-preview-09-2025": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                "models/gemini-2.5-flash": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                "models/gemini-2.5-flash-001": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                "models/gemini-2.5-flash-preview-09-2025": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
+                                # 2.0 Flash family
+                                "gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                                "gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                                "models/gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                                "models/gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                            }
+
+                            # Try direct match, then normalize away any leading 'models/' prefix for robustness
+                            pricing = pricing_per_million.get(model_name)
+                            if pricing is None and model_name:
+                                normalized = model_name.replace("models/", "")
+                                pricing = pricing_per_million.get(normalized)
+                            if pricing is None and model_name:
+                                for key, val in pricing_per_million.items():
+                                    if model_name.startswith(key) or key.startswith(model_name):
+                                        pricing = val
+                                        break
+
+                            if pricing:
+                                # Convert to per-1K
+                                prompt_per_1k = pricing.get("prompt", 0.0) / 1000.0
+                                cached_per_1k = pricing.get("cached_prompt", pricing.get("prompt", 0.0)) / 1000.0
+                                completion_per_1k = pricing.get("completion", 0.0) / 1000.0
+
+                                prompt_cost = (non_cached_prompt / 1000.0) * prompt_per_1k
+                                cached_cost = (cached_tokens / 1000.0) * cached_per_1k
+                                completion_cost = (completion_tokens / 1000.0) * completion_per_1k
+                                total_cost = prompt_cost + cached_cost + completion_cost
+
+                                parsed["token_usage"] = {
+                                    "provider": provider,
+                                    "model": model_name,
+                                    "prompt_tokens": prompt_tokens,
+                                    "cached_prompt_tokens": cached_tokens,
+                                    "non_cached_prompt_tokens": non_cached_prompt,
+                                    "completion_tokens": completion_tokens,
+                                    "total_tokens": total_tokens,
+                                }
+
+                                parsed["cost"] = {
+                                    "currency": "USD",
+                                    "total": round(total_cost, 8),
+                                    "details": {
+                                        "prompt_cost": round(prompt_cost + cached_cost, 8),
+                                        "non_cached_prompt_cost": round(prompt_cost, 8),
+                                        "cached_prompt_cost": round(cached_cost, 8),
+                                        "completion_cost": round(completion_cost, 8),
+                                    },
+                                }
+                            else:
+                                # Even if we don't know pricing, still return raw usage numbers
+                                parsed["token_usage"] = {
+                                    "provider": provider,
+                                    "model": model_name,
+                                    "prompt_tokens": prompt_tokens,
+                                    "cached_prompt_tokens": cached_tokens,
+                                    "non_cached_prompt_tokens": non_cached_prompt,
+                                    "completion_tokens": completion_tokens,
+                                    "total_tokens": total_tokens,
+                                }
+                except Exception:
+                    # Never fail analysis just because cost or usage computation failed
+                    pass
             except Exception:
                 pass
 
