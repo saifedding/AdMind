@@ -1041,7 +1041,19 @@ class GoogleAIService:
                             prompts_array.append(full_prompt)
                     parsed["generation_prompts"] = prompts_array
                 
-                # Case 2: Array of strings that need regrouping
+                # Case 2: Array of dicts with 'prompt' key (e.g. [{'prompt': '...'}, ...])
+                elif isinstance(gps, list) and gps and all(isinstance(item, dict) for item in gps):
+                    logger.info("Converting generation_prompts from array of dicts to array of strings")
+                    prompts_array = []
+                    for item in gps:
+                        if isinstance(item, dict) and 'prompt' in item:
+                            prompts_array.append(item['prompt'])
+                        elif isinstance(item, dict):
+                            # Fallback: stringify the whole dict if no 'prompt' key
+                            prompts_array.append(str(item))
+                    parsed["generation_prompts"] = prompts_array
+                
+                # Case 3: Array of strings that need regrouping
                 elif isinstance(gps, list) and gps and all(isinstance(s, str) for s in gps):
                     header = "# VEO 3 CREATIVE BRIEF"
                     # Only regroup if at least one header exists

@@ -987,6 +987,32 @@ async def get_ad_analysis_by_version(
         # Construct response from saved analysis
         raw_response = analysis.raw_ai_response or {}
         
+        # Fallback: extract generation_prompts from gemini_chat_history if null
+        generation_prompts = raw_response.get("generation_prompts")
+        if not generation_prompts and raw_response.get("gemini_chat_history"):
+            try:
+                import json
+                chat_history = raw_response.get("gemini_chat_history", [])
+                for msg in chat_history:
+                    if msg.get("role") == "model" and msg.get("parts"):
+                        for part in msg["parts"]:
+                            if "text" in part:
+                                # Try to parse the text as JSON
+                                text = part["text"]
+                                parsed = json.loads(text)
+                                if isinstance(parsed, dict) and "generation_prompts" in parsed:
+                                    gps = parsed["generation_prompts"]
+                                    # Handle array of dicts format
+                                    if isinstance(gps, list) and gps and all(isinstance(item, dict) for item in gps):
+                                        generation_prompts = [item.get("prompt", str(item)) for item in gps]
+                                    elif isinstance(gps, list):
+                                        generation_prompts = gps
+                                    break
+                        if generation_prompts:
+                            break
+            except Exception as e:
+                logger.warning(f"Failed to extract generation_prompts from chat history: {e}")
+        
         # Try to get video URL from multiple sources
         video_url = analysis.used_video_url
         if not video_url:
@@ -1012,7 +1038,7 @@ async def get_ad_analysis_by_version(
             text_on_video=raw_response.get("text_on_video"),
             voice_over=raw_response.get("voice_over"),
             storyboard=raw_response.get("storyboard"),
-            generation_prompts=raw_response.get("generation_prompts"),
+            generation_prompts=generation_prompts,
             strengths=raw_response.get("strengths"),
             recommendations=raw_response.get("recommendations"),
             raw=raw_response,
@@ -1059,6 +1085,32 @@ async def get_ad_analysis(
         # Construct response from saved analysis
         raw_response = analysis.raw_ai_response or {}
         
+        # Fallback: extract generation_prompts from gemini_chat_history if null
+        generation_prompts = raw_response.get("generation_prompts")
+        if not generation_prompts and raw_response.get("gemini_chat_history"):
+            try:
+                import json
+                chat_history = raw_response.get("gemini_chat_history", [])
+                for msg in chat_history:
+                    if msg.get("role") == "model" and msg.get("parts"):
+                        for part in msg["parts"]:
+                            if "text" in part:
+                                # Try to parse the text as JSON
+                                text = part["text"]
+                                parsed = json.loads(text)
+                                if isinstance(parsed, dict) and "generation_prompts" in parsed:
+                                    gps = parsed["generation_prompts"]
+                                    # Handle array of dicts format
+                                    if isinstance(gps, list) and gps and all(isinstance(item, dict) for item in gps):
+                                        generation_prompts = [item.get("prompt", str(item)) for item in gps]
+                                    elif isinstance(gps, list):
+                                        generation_prompts = gps
+                                    break
+                        if generation_prompts:
+                            break
+            except Exception as e:
+                logger.warning(f"Failed to extract generation_prompts from chat history: {e}")
+        
         # Try to get video URL from multiple sources
         video_url = analysis.used_video_url
         if not video_url:
@@ -1086,7 +1138,7 @@ async def get_ad_analysis(
             text_on_video=raw_response.get("text_on_video"),
             voice_over=raw_response.get("voice_over"),
             storyboard=raw_response.get("storyboard"),
-            generation_prompts=raw_response.get("generation_prompts"),
+            generation_prompts=generation_prompts,
             strengths=raw_response.get("strengths"),
             recommendations=raw_response.get("recommendations"),
             raw=raw_response,
@@ -1558,7 +1610,7 @@ async def analyze_video_from_library(
                 generation_prompts=cached_obj.get('generation_prompts'),
                 strengths=cached_obj.get('strengths'),
                 recommendations=cached_obj.get('recommendations'),
-                raw=cached_obj.get('raw') if 'transcript' not in cached_obj else None,
+                raw=cached_obj.get('raw'),
                 message="Loaded from cache",
                 generated_at=db_generated_at,
                 source="cache-db" if db_generated_at is not None else "cache-redis",
@@ -1635,7 +1687,7 @@ async def analyze_video_from_library(
                 generation_prompts=analysis.get('generation_prompts') if isinstance(analysis, dict) else None,
                 strengths=analysis.get('strengths') if isinstance(analysis, dict) else None,
                 recommendations=analysis.get('recommendations') if isinstance(analysis, dict) else None,
-                raw=analysis if isinstance(analysis, dict) and 'transcript' not in analysis else None,
+                raw=analysis if isinstance(analysis, dict) else None,
                 message="Analysis completed",
                 generated_at=generated_at_val,
                 source="gemini",
@@ -1819,10 +1871,12 @@ async def analyze_video_from_library(
                 generation_prompts=analysis.get('generation_prompts') if isinstance(analysis, dict) else None,
                 strengths=analysis.get('strengths') if isinstance(analysis, dict) else None,
                 recommendations=analysis.get('recommendations') if isinstance(analysis, dict) else None,
-                raw=analysis if isinstance(analysis, dict) and 'transcript' not in analysis else None,
+                raw=analysis if isinstance(analysis, dict) else None,
                 message="Analysis completed",
                 generated_at=generated_at_val,
-                source="gemini"
+                source="gemini",
+                token_usage=analysis.get('token_usage') if isinstance(analysis, dict) else None,
+                cost=analysis.get('cost') if isinstance(analysis, dict) else None,
             )
         finally:
             try:
@@ -2028,7 +2082,7 @@ async def trigger_ad_analysis(
                     generation_prompts=parsed_analysis.get('generation_prompts', []),
                     strengths=parsed_analysis.get('strengths'),
                     recommendations=parsed_analysis.get('recommendations'),
-                    raw=analysis.get('raw') if isinstance(analysis, dict) and 'transcript' not in analysis else None,
+                    raw=analysis.get('raw') if isinstance(analysis, dict) else None,
                     message="OpenRouter analysis (custom) completed",
                     generated_at=generated_at_val,
                     source="openrouter"
@@ -2123,7 +2177,7 @@ async def trigger_ad_analysis(
                     generation_prompts=analysis.get('generation_prompts', []),
                     strengths=analysis.get('strengths'),
                     recommendations=analysis.get('recommendations'),
-                    raw=analysis.get('raw') if 'transcript' not in analysis else None,
+                    raw=analysis if isinstance(analysis, dict) else None,
                     message="Analysis with custom instruction completed",
                     generated_at=generated_at_val,
                     source="custom-instruction",

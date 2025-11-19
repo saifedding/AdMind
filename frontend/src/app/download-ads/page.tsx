@@ -1496,6 +1496,22 @@ export default function DownloadAdsPage() {
                           type="button"
                           className="px-3 py-1.5 border rounded-md text-xs border-neutral-700 hover:bg-neutral-800"
                           onClick={async () => {
+                            // Reset current analysis/chat/merge state so we don't show stale data
+                            setAnalysisByUrl({});
+                            setEditedPromptsByUrl({});
+                            setSelectedAnalysisUrl(null);
+                            setChatMessages([]);
+                            setChatQuestion("");
+                            setChatError(null);
+                            setSelectedClipsForMerge({});
+                            setMergedVideoUrl(null);
+                            setMergedVideoSystemPath(null);
+                            setLastMergeSignature(null);
+                            setVeoVideoByPromptKey({});
+                            setVeoGenerationsByPromptKey({});
+                            setArchivedGenerationsByPromptKey({});
+                            setActualGenerationTime({});
+
                             // Transform history item to DownloadFromLibraryResponse format
                             const transformedResult: DownloadFromLibraryResponse = {
                               success: true,
