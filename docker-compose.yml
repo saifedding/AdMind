@@ -42,6 +42,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=${DEBUG:-true}
+      - DEBUG_INSTAGRAM=${DEBUG_INSTAGRAM:-false}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     ports:
       - "8000:8000"

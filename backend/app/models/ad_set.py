@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, func, Index
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Boolean, func, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -20,7 +20,7 @@ class AdSet(Base):
     last_seen_date = Column(DateTime(timezone=True), nullable=True, index=True)
     
     # Reference to the best/representative ad in the set
-    best_ad_id = Column(Integer, ForeignKey("ads.id"), nullable=True, index=True)
+    best_ad_id = Column(BigInteger, ForeignKey("ads.id"), nullable=True, index=True)
     
     # User preferences
     is_favorite = Column(Boolean, default=False, nullable=False, index=True)

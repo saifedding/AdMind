@@ -53,33 +53,40 @@ class MediaRefreshService:
             'video_urls': [],
             'image_urls': [],
             'link_urls': [],
-            'profile_urls': []
+            'profile_urls': [],
+            'video_hd_urls': [],
+            'video_sd_urls': []
         }
-        
+
         try:
             snapshot = ad_data.get('snapshot', {})
-            
+
             # Extract page profile URLs (but NOT profile picture - that's the company logo)
             if snapshot.get('page_profile_uri'):
                 urls['profile_urls'].append(snapshot['page_profile_uri'])
             # DO NOT extract page_profile_picture_url - it's just the company logo, not ad creative
-            
-            # Extract from cards - PREFER HIGH QUALITY ONLY (actual ad creatives)
+
+            # Extract from cards - GET BOTH HD AND SD separately
             cards = snapshot.get('cards', [])
             for card in cards:
-                # Video URLs - prefer HD over SD
+                # Video URLs - collect both HD and SD separately
                 if card.get('video_hd_url'):
+                    urls['video_hd_urls'].append(card['video_hd_url'])
                     urls['video_urls'].append(card['video_hd_url'])
-                elif card.get('video_sd_url'):
+                if card.get('video_sd_url'):
+                    urls['video_sd_urls'].append(card['video_sd_url'])
+                    # Always add SD to main list (user might want both)
                     urls['video_urls'].append(card['video_sd_url'])
                 # Only add watermarked if no regular version exists
-                elif card.get('watermarked_video_hd_url'):
-                    urls['video_urls'].append(card['watermarked_video_hd_url'])
-                elif card.get('watermarked_video_sd_url'):
-                    urls['video_urls'].append(card['watermarked_video_sd_url'])
+                if not card.get('video_hd_url') and not card.get('video_sd_url'):
+                    if card.get('watermarked_video_hd_url'):
+                        urls['video_hd_urls'].append(card['watermarked_video_hd_url'])
+                        urls['video_urls'].append(card['watermarked_video_hd_url'])
+                    elif card.get('watermarked_video_sd_url'):
+                        urls['video_sd_urls'].append(card['watermarked_video_sd_url'])
+                        urls['video_urls'].append(card['watermarked_video_sd_url'])
                 
-                if card.get('video_preview_image_url'):
-                    urls['image_urls'].append(card['video_preview_image_url'])
+                # Do not add preview thumbnails as image creatives
                 
                 # Image URLs - prefer ORIGINAL over resized
                 if card.get('original_image_url'):
@@ -97,13 +104,14 @@ class MediaRefreshService:
             # Extract extra images - PREFER HIGH QUALITY
             extra_images = snapshot.get('extra_images', [])
             for img in extra_images:
-                # Prefer original over resized
-                if img.get('original_image_url'):
-                    urls['image_urls'].append(img['original_image_url'])
-                elif img.get('resized_image_url'):
-                    urls['image_urls'].append(img['resized_image_url'])
-                elif img.get('watermarked_resized_image_url'):
-                    urls['image_urls'].append(img['watermarked_resized_image_url'])
+                if False:
+                    # Prefer original over resized
+                    if img.get('original_image_url'):
+                        urls['image_urls'].append(img['original_image_url'])
+                    elif img.get('resized_image_url'):
+                        urls['image_urls'].append(img['resized_image_url'])
+                    elif img.get('watermarked_resized_image_url'):
+                        urls['image_urls'].append(img['watermarked_resized_image_url'])
             
             # Extract extra links
             extra_links = snapshot.get('extra_links', [])
@@ -114,10 +122,79 @@ class MediaRefreshService:
             # Remove duplicates
             for key in urls:
                 urls[key] = list(set(urls[key]))
-        
+
+            # Heuristic fallback: recursively collect any deep URLs that look like media
+            # This helps when Facebook changes field names but keeps URL shapes
+            def _collect(obj, parent_key=''):
+                try:
+                    if isinstance(obj, dict):
+                        for k, v in obj.items():
+                            _collect(v, k)
+                    elif isinstance(obj, list):
+                        for item in obj:
+                            _collect(item, parent_key)
+                    elif isinstance(obj, str):
+                        val = obj.strip()
+                        if val.startswith('http'):
+                            low = val.lower()
+                            # Classify videos by common patterns
+                            if ('.mp4' in low) or ('videoplayback' in low) or ('.m3u8' in low) or low.endswith('.mov') or low.endswith('.webm'):
+                                # Try to determine if it's HD or SD based on URL pattern or parent key
+                                is_hd = False
+                                is_sd = False
+
+                                # Check parent key first
+                                parent_low = parent_key.lower()
+                                if 'hd' in parent_low:
+                                    is_hd = True
+                                elif 'sd' in parent_low:
+                                    is_sd = True
+                                else:
+                                    # Check URL content for quality indicators
+                                    # Look for encoded quality info in efg parameter
+                                    # Check HD first (priority)
+                                    if ('720' in low or '1080' in low or '2160' in low or '4k' in low or 
+                                        'dash_h264' in low or 'dash_h265' in low or 
+                                        '_720p' in low or '_1080p' in low):
+                                        is_hd = True
+                                    # Then check SD (only if not HD)
+                                    elif ('360' in low or '480' in low or 
+                                          'sve_sd' in low or '_sd' in low):
+                                        is_sd = True
+
+                                # Add to appropriate lists
+                                if is_hd and val not in urls['video_hd_urls']:
+                                    urls['video_hd_urls'].append(val)
+                                    if val not in urls['video_urls']:
+                                        urls['video_urls'].append(val)
+                                elif is_sd and val not in urls['video_sd_urls']:
+                                    urls['video_sd_urls'].append(val)
+                                    if val not in urls['video_urls']:
+                                        urls['video_urls'].append(val)
+                                elif val not in urls['video_urls']:
+                                    # Unknown quality, just add to video_urls
+                                    urls['video_urls'].append(val)
+                            # Classify images by common extensions, excluding previews/thumbnails
+                            elif any(low.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                                if ('preview' in low) or ('thumbnail' in low) or ('thumb' in low) or ('profile_picture' in low) or ('safe_image' in low):
+                                    pass
+                                else:
+                                    urls['image_urls'].append(val)
+                except Exception:
+                    pass
+
+            _collect(ad_data)
+
+            # De-duplicate again after heuristic collection
+            for key in urls:
+                urls[key] = list(set(urls[key]))
+
+            # Log what we found for debugging
+            logger.info(f"Extracted URLs - HD: {len(urls['video_hd_urls'])}, SD: {len(urls['video_sd_urls'])}, Images: {len(urls['image_urls'])}")
+
         except Exception as e:
             logger.error(f"Error extracting URLs from ad data: {e}")
-        
+
         return urls
     
     def fetch_ad_from_facebook(self, ad_archive_id: str, page_id: Optional[str] = None) -> Optional[Dict]:
@@ -130,108 +207,153 @@ class MediaRefreshService:
         Returns:
             Ad data dict or None
         """
-        # Method 1: Try direct deeplink search (most reliable for specific ads)
-        logger.info(f"Method 1: Trying deeplink search for ad {ad_archive_id}...")
-        ad_data = self._fetch_ad_by_deeplink(ad_archive_id)
-        if ad_data:
-            return ad_data
-        
-        # Method 2: Try keyword search with ALL status
-        logger.info(f"Method 2: Trying keyword search with ALL status for ad {ad_archive_id}...")
+        # Method 1: Try keyword search with ALL status (fastest and most reliable)
+        logger.info(f"Method 1: Trying keyword search with ALL status for ad {ad_archive_id}...")
         ad_data = self._fetch_ad_by_keyword(ad_archive_id, active_status="ALL")
         if ad_data:
             return ad_data
         
-        # Method 3: Try with page ID if available
+        # Method 2: Try keyword search with INACTIVE status specifically
+        logger.info(f"Method 2: Trying keyword search with INACTIVE status for ad {ad_archive_id}...")
+        ad_data = self._fetch_ad_by_keyword(ad_archive_id, active_status="INACTIVE")
+        if ad_data:
+            return ad_data
+        
+        # Method 3: Try direct deeplink search with pagination (slower but thorough)
+        logger.info(f"Method 3: Trying deeplink search for ad {ad_archive_id}...")
+        ad_data = self._fetch_ad_by_deeplink(ad_archive_id)
+        if ad_data:
+            return ad_data
+        
+        # Method 4: Try with page ID if available
         if page_id:
-            logger.info(f"Method 3: Trying page search for ad {ad_archive_id} on page {page_id}...")
+            logger.info(f"Method 4: Trying page search for ad {ad_archive_id} on page {page_id}...")
             ad_data = self._fetch_ad_by_page(ad_archive_id, page_id)
             if ad_data:
                 return ad_data
         
+        # Method 5: Try direct URL scraping as last resort
+        logger.info(f"Method 5: Trying direct URL scraping for ad {ad_archive_id}...")
+        ad_data = self._fetch_ad_by_direct_url(ad_archive_id)
+        if ad_data:
+            return ad_data
+        
         logger.warning(f"All methods failed to find ad data for {ad_archive_id}")
         return None
     
-    def _fetch_ad_by_deeplink(self, ad_archive_id: str) -> Optional[Dict]:
-        """Fetch ad using direct deeplink method (most reliable)"""
+    def _fetch_ad_by_deeplink(self, ad_archive_id: str, max_pages: int = 5) -> Optional[Dict]:
+        """Fetch ad using direct deeplink method with pagination"""
         try:
             import uuid
             import urllib.parse
+            import time
             
             session_id = str(uuid.uuid4())
             collation_token = str(uuid.uuid4())
+            cursor = None
             
-            # Use deeplinkAdID for direct ad lookup
-            variables = {
-                "activeStatus": "ALL",
-                "adType": "ALL",
-                "bylines": [],
-                "collationToken": collation_token,
-                "contentLanguages": [],
-                "countries": [],
-                "cursor": None,
-                "deeplinkAdID": ad_archive_id,  # Direct ad ID lookup
-                "excludedIDs": [],
-                "first": 30,
-                "hasDeeplinkAdID": True,  # Enable deeplink mode
-                "isTargetedCountry": False,
-                "location": None,
-                "mediaType": "ALL",
-                "multiCountryFilterMode": None,
-                "pageIDs": [],
-                "potentialReachInput": [],
-                "publisherPlatforms": [],
-                "queryString": "",
-                "regions": [],
-                "searchType": "KEYWORD_UNORDERED",
-                "sessionID": session_id,
-                "sortData": None,
-                "source": None,
-                "startDate": None,
-                "v": "608791",
-                "viewAllPageID": "0"
-            }
+            # Try up to max_pages to find the ad
+            for page_num in range(1, max_pages + 1):
+                logger.info(f"Deeplink search page {page_num}/{max_pages}...")
+                
+                # Use deeplinkAdID for direct ad lookup - search ALL statuses including inactive
+                variables = {
+                    "activeStatus": "ALL",  # Critical: includes both active AND inactive ads
+                    "adType": "ALL",
+                    "bylines": [],
+                    "collationToken": collation_token,
+                    "contentLanguages": [],
+                    "countries": [],  # Empty to search all countries
+                    "cursor": cursor,  # Pagination cursor
+                    "deeplinkAdID": ad_archive_id,  # Direct ad ID lookup
+                    "excludedIDs": [],
+                    "first": 30,  # Get 30 results per page
+                    "hasDeeplinkAdID": True,  # Enable deeplink mode
+                    "isTargetedCountry": False,
+                    "location": None,
+                    "mediaType": "ALL",
+                    "multiCountryFilterMode": None,
+                    "pageIDs": [],
+                    "potentialReachInput": [],
+                    "publisherPlatforms": [],
+                    "queryString": "",
+                    "regions": [],
+                    "searchType": "KEYWORD_UNORDERED",
+                    "sessionID": session_id,
+                    "sortData": None,
+                    "source": None,
+                    "startDate": None,
+                    "v": "608791",
+                    "viewAllPageID": "0"
+                }
+                
+                variables_json = json.dumps(variables, separators=(',', ':'))
+                
+                payload = (
+                    f"av=0&__aaid=0&__user=0&__a=1&__req=a&__hs=20275.HYP%3Acomet_plat_default_pkg.2.1...0&dpr=3&"
+                    f"__ccg=GOOD&__rev=1024475506&__s=oeivzd%3Aa1ohcs%3A7a3kxu&__hsi=7524059447383386224&"
+                    f"__dyn=7xeUmwlECdwn8K2Wmh0no6u5U4e1Fx-ewSAwHwNw9G2S2q0_EtxG4o0B-qbwgE1EEb87C1xwEwgo9oO0n24oaEd86a3a1YwBgao6C0Mo6i588Etw8WfK1LwPxe2GewbCXwJwmEtwse5o4q0HU1IEGdw46wbLwrU6C2-0VE6O1Fw59G2O1TwmU3ywo8&"
+                    f"__csr=htOh24lsOWjORb9uQAheC8KVpaGuHGF8GBx2UKp2qzVUiCBxm6GwTBwBwFBx216G15whrx6482TKEuzU8E6aUdU2qwgo8E7jwsE1BU2axy0RUkxC8w4dwTw10K0aswOU02yHyE07_h00iVE04IK06ofwbG00ymQ032q03TN1i0bQw35E0Gq09pw6Yg0OG&"
+                    f"__comet_req=94&lsd={self.lsd_token}&jazoest={self.jazoest}&__spin_r=1024475506&__spin_b=trunk&__spin_t=1751831604&"
+                    f"__jssesw=1&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=AdLibrarySearchPaginationQuery&"
+                    f"variables={urllib.parse.quote(variables_json)}&server_timestamps=true&doc_id=24394279933540792"
+                )
+                
+                headers = self.session.headers.copy()
+                headers['Cookie'] = self.cookie_string
+                headers['x-fb-lsd'] = self.lsd_token
+                headers['x-fb-friendly-name'] = 'AdLibrarySearchPaginationQuery'
+                headers['referer'] = f'https://www.facebook.com/ads/library/?id={ad_archive_id}'
+                
+                response = self.session.post(
+                    'https://www.facebook.com/api/graphql/',
+                    headers=headers,
+                    data=payload
+                )
+                
+                if response.status_code != 200:
+                    logger.debug(f"Deeplink search page {page_num} returned HTTP {response.status_code}")
+                    break
+                
+                logger.info(f"Deeplink search page {page_num} returned {len(response.text)} bytes, parsing...")
+                
+                # Try to parse and find the ad
+                result = self._parse_facebook_response(response.text, ad_archive_id)
+                if result:
+                    logger.info(f"Found ad on page {page_num}!")
+                    return result
+                
+                # Check if there are more pages
+                try:
+                    data = json.loads(response.text)
+                    page_info = data.get('data', {}).get('ad_library_main', {}).get('search_results_connection', {}).get('page_info', {})
+                    has_next_page = page_info.get('has_next_page', False)
+                    next_cursor = page_info.get('end_cursor')
+                    
+                    if not has_next_page or not next_cursor:
+                        logger.info(f"No more pages available after page {page_num}")
+                        break
+                    
+                    cursor = next_cursor
+                    logger.info(f"Moving to next page with cursor: {cursor[:20]}...")
+                    
+                    # Small delay between requests
+                    if page_num < max_pages:
+                        time.sleep(0.5)
+                        
+                except Exception as e:
+                    logger.debug(f"Error checking pagination: {e}")
+                    break
             
-            variables_json = json.dumps(variables, separators=(',', ':'))
-            
-            payload = (
-                f"av=0&__aaid=0&__user=0&__a=1&__req=a&__hs=20275.HYP%3Acomet_plat_default_pkg.2.1...0&dpr=3&"
-                f"__ccg=GOOD&__rev=1024475506&__s=oeivzd%3Aa1ohcs%3A7a3kxu&__hsi=7524059447383386224&"
-                f"__dyn=7xeUmwlECdwn8K2Wmh0no6u5U4e1Fx-ewSAwHwNw9G2S2q0_EtxG4o0B-qbwgE1EEb87C1xwEwgo9oO0n24oaEd86a3a1YwBgao6C0Mo6i588Etw8WfK1LwPxe2GewbCXwJwmEtwse5o4q0HU1IEGdw46wbLwrU6C2-0VE6O1Fw59G2O1TwmU3ywo8&"
-                f"__csr=htOh24lsOWjORb9uQAheC8KVpaGuHGF8GBx2UKp2qzVUiCBxm6GwTBwBwFBx216G15whrx6482TKEuzU8E6aUdU2qwgo8E7jwsE1BU2axy0RUkxC8w4dwTw10K0aswOU02yHyE07_h00iVE04IK06ofwbG00ymQ032q03TN1i0bQw35E0Gq09pw6Yg0OG&"
-                f"__comet_req=94&lsd={self.lsd_token}&jazoest={self.jazoest}&__spin_r=1024475506&__spin_b=trunk&__spin_t=1751831604&"
-                f"__jssesw=1&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=AdLibrarySearchPaginationQuery&"
-                f"variables={urllib.parse.quote(variables_json)}&server_timestamps=true&doc_id=24394279933540792"
-            )
-            
-            headers = self.session.headers.copy()
-            headers['Cookie'] = self.cookie_string
-            headers['x-fb-lsd'] = self.lsd_token
-            headers['x-fb-friendly-name'] = 'AdLibrarySearchPaginationQuery'
-            headers['referer'] = f'https://www.facebook.com/ads/library/?id={ad_archive_id}'
-            
-            response = self.session.post(
-                'https://www.facebook.com/api/graphql/',
-                headers=headers,
-                data=payload
-            )
-            
-            if response.status_code != 200:
-                logger.debug(f"Deeplink search returned HTTP {response.status_code}")
-                return None
-            
-            logger.info(f"Deeplink search returned {len(response.text)} bytes, parsing...")
-            result = self._parse_facebook_response(response.text, ad_archive_id)
-            if not result:
-                logger.info(f"Deeplink search: No matching ad found in response")
-            return result
+            logger.info(f"Deeplink search: No matching ad found after {page_num} page(s)")
+            return None
             
         except Exception as e:
             logger.debug(f"Deeplink search error: {e}")
             return None
     
     def _fetch_ad_by_keyword(self, ad_archive_id: str, active_status: str = "ALL") -> Optional[Dict]:
-        """Fetch ad using keyword search"""
+        """Fetch ad using keyword search - searches by ad ID as keyword"""
         try:
             import uuid
             import urllib.parse
@@ -239,13 +361,14 @@ class MediaRefreshService:
             session_id = str(uuid.uuid4())
             collation_token = str(uuid.uuid4())
             
+            # Search using the ad ID as a keyword - this matches how the scraper works
             variables = {
-                "activeStatus": active_status,
+                "activeStatus": active_status,  # Can be "ALL", "ACTIVE", or "INACTIVE"
                 "adType": "ALL",
                 "bylines": [],
                 "collationToken": collation_token,
                 "contentLanguages": [],
-                "countries": [],
+                "countries": [],  # Empty to search all countries
                 "cursor": None,
                 "deeplinkAdID": None,
                 "excludedIDs": [],
@@ -258,7 +381,7 @@ class MediaRefreshService:
                 "pageIDs": [],
                 "potentialReachInput": [],
                 "publisherPlatforms": [],
-                "queryString": ad_archive_id,
+                "queryString": ad_archive_id,  # Search by ad ID as keyword
                 "regions": [],
                 "searchType": "KEYWORD_UNORDERED",
                 "sessionID": session_id,
@@ -572,6 +695,66 @@ class MediaRefreshService:
             logger.error(f"Error refreshing ad {ad_id}: {e}")
             self.db.rollback()
             return {'success': False, 'error': str(e)}
+    
+    def _fetch_ad_by_direct_url(self, ad_archive_id: str) -> Optional[Dict]:
+        """Fetch ad by directly accessing the ad library URL and parsing the page"""
+        try:
+            import re
+            
+            # Try to fetch the ad library page directly
+            url = f'https://www.facebook.com/ads/library/?id={ad_archive_id}'
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Cookie': self.cookie_string
+            }
+            
+            response = self.session.get(url, headers=headers)
+            
+            if response.status_code != 200:
+                logger.debug(f"Direct URL fetch returned HTTP {response.status_code}")
+                return None
+            
+            logger.info(f"Direct URL scraping: Got page response ({len(response.text)} bytes)")
+            
+            # Try to extract page_id from the URL or page content
+            # Look for patterns like "view_all_page_id" or page_id in the HTML
+            page_id_match = re.search(r'"page_id"\s*:\s*"(\d+)"', response.text)
+            if not page_id_match:
+                page_id_match = re.search(r'view_all_page_id[=:](\d+)', response.text)
+            
+            if page_id_match:
+                page_id = page_id_match.group(1)
+                logger.info(f"Extracted page_id {page_id} from direct URL, trying page search...")
+                # Try the page search method with this page_id
+                return self._fetch_ad_by_page(ad_archive_id, page_id)
+            
+            # Try to find the ad data in embedded JSON
+            # Facebook embeds data in script tags with specific patterns
+            # Look for the ad library data structure
+            json_pattern = r'{"data":\{"ad_library_main".*?"ad_archive_id"\s*:\s*"' + re.escape(ad_archive_id) + r'".*?\}\}'
+            json_matches = re.finditer(json_pattern, response.text, re.DOTALL)
+            
+            for match in json_matches:
+                try:
+                    potential_json = match.group(0)
+                    data = json.loads(potential_json)
+                    logger.info(f"Found ad data in embedded JSON")
+                    # Try to extract from the data structure
+                    result = self._extract_ad_from_data(data, ad_archive_id)
+                    if result:
+                        return result
+                except Exception as e:
+                    logger.debug(f"Error parsing embedded JSON: {e}")
+                    continue
+            
+            logger.info(f"Direct URL scraping: Could not extract ad data from page")
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Direct URL scraping error: {e}")
+            return None
     
     def refresh_multiple_ads(self, ad_ids: List[int]) -> Dict:
         """Refresh media URLs for multiple ads"""

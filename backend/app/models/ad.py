@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean, func, Float, ARRAY
+from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, ForeignKey, JSON, Boolean, func, Float, ARRAY
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -7,7 +7,7 @@ class Ad(Base):
     __tablename__ = "ads"
 
     # Core identification fields
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     competitor_id = Column(Integer, ForeignKey("competitors.id"), nullable=False, index=True)
     ad_archive_id = Column(String, unique=True, nullable=False, index=True)
     

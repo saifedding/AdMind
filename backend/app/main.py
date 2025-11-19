@@ -15,7 +15,7 @@ load_dotenv()
 from app.core.config import settings
 
 # Import routers
-from app.routers import health, ads, competitors, daily_scraping, favorites
+from app.routers import health, ads, competitors, daily_scraping, favorites, settings as settings_router
 from app.api import internal_router
 
 # Database imports
@@ -51,13 +51,19 @@ app.add_middleware(
 # Mount static files for saved media
 media_storage_path = Path("backend/media_storage")
 media_storage_path.mkdir(parents=True, exist_ok=True)
-app.mount("/media", StaticFiles(directory=str(media_storage_path)), name="media")
+app.mount("/media_storage", StaticFiles(directory=str(media_storage_path)), name="media_storage")
+
+# Mount merged videos directory
+merged_videos_path = Path("media")
+merged_videos_path.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(merged_videos_path)), name="media")
 
 # Include routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
 app.include_router(ads.router, prefix=settings.API_V1_PREFIX, tags=["ads"])
 app.include_router(competitors.router, prefix=f"{settings.API_V1_PREFIX}/competitors", tags=["competitors"])
 app.include_router(daily_scraping.router, prefix=f"{settings.API_V1_PREFIX}/scraping", tags=["daily-scraping"])
+app.include_router(settings_router.router, prefix=f"{settings.API_V1_PREFIX}/settings", tags=["settings"])
 app.include_router(internal_router, prefix=settings.API_V1_PREFIX, tags=["internal"])
 app.include_router(favorites.router, tags=["favorites"])
 

@@ -15,7 +15,8 @@ celery_app = Celery(
         "app.tasks.basic_tasks", 
         "app.tasks.ai_analysis_tasks", 
         "app.tasks.facebook_ads_scraper_task",
-        "app.tasks.daily_ads_scraper"
+        "app.tasks.daily_ads_scraper",
+        "app.tasks.veo_generation_tasks"
     ]
 )
 

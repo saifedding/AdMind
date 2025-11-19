@@ -189,4 +189,174 @@ def batch_ai_analysis_task(ad_id_list: list) -> Dict[str, Any]:
         "results": results,
         "failures": failed_ads,
         "timestamp": datetime.utcnow().isoformat()
-    } 
+    }
+
+@shared_task(bind=True)
+def analyze_ad_video_task(self, ad_id: int, video_url: str, custom_instruction: str = None, instagram_url: str = None) -> Dict[str, Any]:
+    """
+    Task to download and analyze an ad video using Google AI.
+    
+    Args:
+        ad_id: ID of the ad to analyze
+        video_url: URL of the video to analyze
+        custom_instruction: Optional custom instruction for the AI
+        instagram_url: Optional Instagram URL if different from video_url
+        
+    Returns:
+        Dict with analysis results
+    """
+    task_id = self.request.id
+    logger.info(f"Starting video analysis task {task_id} for ad {ad_id}")
+    
+    import tempfile
+    import os
+    import requests as httpx
+    import subprocess
+    import time
+    import json as _json
+    from app.services.google_ai_service import GoogleAIService
+    from app.models.dto.ad_dto import AnalyzeVideoResponse
+    
+    try:
+        # First: try OpenRouter primary directly with the original video_url (no download)
+        if custom_instruction:
+            try:
+                ai = GoogleAIService()
+                logger.info("Trying OpenRouter primary without download (custom instruction)...")
+                analysis = ai.generate_transcript_and_analysis(
+                    video_url=video_url,
+                    custom_instruction=custom_instruction,
+                )
+
+                generated_at_val = datetime.utcnow().isoformat()
+                parsed_analysis = analysis
+                try:
+                    if isinstance(analysis, dict) and isinstance(analysis.get('raw'), str):
+                        parsed_analysis = _json.loads(analysis['raw'])
+                except Exception:
+                    parsed_analysis = analysis
+                    
+                return {
+                    "success": True,
+                    "used_video_url": video_url,
+                    "transcript": parsed_analysis.get('transcript'),
+                    "beats": parsed_analysis.get('beats', []),
+                    "summary": parsed_analysis.get('summary'),
+                    "text_on_video": parsed_analysis.get('text_on_video'),
+                    "voice_over": parsed_analysis.get('voice_over'),
+                    "storyboard": parsed_analysis.get('storyboard'),
+                    "generation_prompts": parsed_analysis.get('generation_prompts', []),
+                    "strengths": parsed_analysis.get('strengths'),
+                    "recommendations": parsed_analysis.get('recommendations'),
+                    "raw": analysis.get('raw') if isinstance(analysis, dict) and 'transcript' not in analysis else None,
+                    "message": "OpenRouter analysis (custom) completed",
+                    "generated_at": generated_at_val,
+                    "source": "openrouter"
+                }
+            except Exception as e:
+                logger.warning(f"OpenRouter primary (custom) failed, will download and use Gemini fallback: {e}")
+
+        # Download video to temp file
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+                tmp_path = tmp.name
+            
+            # Check if it's an Instagram URL - use yt-dlp to get video with audio
+            is_instagram = 'instagram.com' in video_url or 'cdninstagram.com' in video_url or 'fbcdn.net' in video_url
+            logger.info(f"Is Instagram URL: {is_instagram}")
+            if is_instagram:
+                logger.info(f"Detected Instagram URL, using yt-dlp to download with audio")
+                
+                # Use yt-dlp to download with audio merged in Gemini-compatible format
+                start_download = time.time()
+                # For Instagram, we need to explicitly merge video+audio since they're separate streams
+                cmd = [
+                    'yt-dlp',
+                    '-f', 'bestvideo+bestaudio/best',  # Merge best video + best audio
+                    '--merge-output-format', 'mp4',  # Output as MP4
+                    '--no-cache-dir',  # Don't use cache
+                    '--force-overwrites',  # Force fresh download
+                    '-o', tmp_path,
+                    '--no-playlist',
+                    '--verbose',  # Verbose output to see what's happening
+                    video_url if 'instagram.com/p/' in video_url else (instagram_url or video_url)
+                ]
+                logger.info(f"Starting yt-dlp download...")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+                download_time = time.time() - start_download
+                
+                if result.returncode != 0:
+                    logger.error(f"yt-dlp failed: {result.stderr}")
+                    # Fallback to direct download if yt-dlp fails
+                    logger.info("yt-dlp failed, falling back to direct download")
+                    response = httpx.get(video_url, stream=True, timeout=60)
+                    response.raise_for_status()
+                    with open(tmp_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                else:
+                    logger.info(f"yt-dlp download successful in {download_time:.2f}s")
+            else:
+                # Direct download for non-Instagram URLs
+                logger.info(f"Downloading video from {video_url}")
+                response = httpx.get(video_url, stream=True, timeout=60)
+                response.raise_for_status()
+                with open(tmp_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            
+            # Initialize AI service
+            ai = GoogleAIService()
+            
+            # Generate analysis
+            logger.info("Generating analysis with Gemini...")
+            analysis = ai.generate_transcript_and_analysis(
+                video_path=tmp_path,
+                custom_instruction=custom_instruction
+            )
+            
+            # Clean up temp file
+            try:
+                os.unlink(tmp_path)
+            except Exception as e:
+                logger.warning(f"Failed to delete temp file {tmp_path}: {e}")
+                
+            return {
+                "success": True,
+                "used_video_url": video_url,
+                "transcript": analysis.get('transcript'),
+                "beats": analysis.get('beats', []),
+                "summary": analysis.get('summary'),
+                "text_on_video": analysis.get('text_on_video'),
+                "voice_over": analysis.get('voice_over'),
+                "storyboard": analysis.get('storyboard'),
+                "generation_prompts": analysis.get('generation_prompts', []),
+                "strengths": analysis.get('strengths'),
+                "recommendations": analysis.get('recommendations'),
+                "raw": analysis.get('raw'),
+                "message": "Analysis completed successfully",
+                "generated_at": datetime.utcnow().isoformat(),
+                "source": "gemini"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing video: {str(e)}")
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except:
+                    pass
+            raise e
+            
+    except Exception as exc:
+        logger.error(f"Video analysis task failed: {str(exc)}")
+        self.update_state(
+            state='FAILURE',
+            meta={
+                'error': str(exc),
+                'ad_id': ad_id,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
+        raise exc

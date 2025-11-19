@@ -504,7 +504,7 @@ class AdService:
     
     def bulk_delete_ads(self, ad_ids: List[int]) -> int:
         """
-        Delete multiple ads by IDs.
+        Delete multiple ads by IDs along with all related data.
         
         Args:
             ad_ids: List of ad IDs to delete
@@ -513,24 +513,43 @@ class AdService:
             Number of ads successfully deleted
         """
         try:
+            from app.models.veo_generation import VeoGeneration
+            from app.models.merged_video import MergedVideo
+            
             # Unset best_ad_id in AdSets where it's one of the ads being deleted
             self.db.query(AdSet).filter(
                 AdSet.best_ad_id.in_(ad_ids)
             ).update({"best_ad_id": None}, synchronize_session=False)
 
-            # First, delete all analyses associated with the ads
+            # Delete all related data in correct order (child tables first)
+            
+            # 1. Delete Veo generations
+            veo_deleted = self.db.query(VeoGeneration).filter(
+                VeoGeneration.ad_id.in_(ad_ids)
+            ).delete(synchronize_session=False)
+            
+            # 2. Delete merged videos
+            merged_deleted = self.db.query(MergedVideo).filter(
+                MergedVideo.ad_id.in_(ad_ids)
+            ).delete(synchronize_session=False)
+            
+            # 3. Delete analyses
             analyses_deleted = self.db.query(AdAnalysis).filter(
                 AdAnalysis.ad_id.in_(ad_ids)
             ).delete(synchronize_session=False)
             
-            # Then delete the ads
+            # 4. Finally delete the ads
             ads_deleted = self.db.query(Ad).filter(
                 Ad.id.in_(ad_ids)
             ).delete(synchronize_session=False)
             
             self.db.commit()
             
-            logger.info(f"Successfully deleted {ads_deleted} ads and {analyses_deleted} analyses")
+            logger.info(
+                f"Successfully deleted {ads_deleted} ads with "
+                f"{analyses_deleted} analyses, {veo_deleted} Veo videos, "
+                f"and {merged_deleted} merged videos"
+            )
             return ads_deleted
             
         except Exception as e:
@@ -783,9 +802,16 @@ class AdService:
                 # Process each creative
                 if isinstance(creatives_data, list):
                     for creative in creatives_data:
+                        # Skip if creative is None or not a dict
+                        if not creative or not isinstance(creative, dict):
+                            continue
+                            
                         # Extract media information
-                        if creative.get('media'):
-                            for media in creative.get('media'):
+                        media_list = creative.get('media')
+                        if media_list and isinstance(media_list, list):
+                            for media in media_list:
+                                if not media or not isinstance(media, dict):
+                                    continue
                                 if media.get('type') == 'Video':
                                     main_video_urls.append(media.get('url'))
                                     if not media_type:
@@ -802,8 +828,9 @@ class AdService:
                             main_title = creative.get('headline')
                         if creative.get('body') and not main_body_text:
                             main_body_text = creative.get('body')
-                        if creative.get('link', {}).get('caption') and not main_caption:
-                            main_caption = creative.get('link', {}).get('caption')
+                        link = creative.get('link')
+                        if link and isinstance(link, dict) and link.get('caption') and not main_caption:
+                            main_caption = link.get('caption')
             
             # Combine text fields for ad_copy
             all_text = [main_title, main_body_text, main_caption]
@@ -849,10 +876,15 @@ class AdService:
             
             if isinstance(creatives_data, list):
                 for creative in creatives_data:
-                    if creative.get('cta', {}).get('text') and not cta_text:
-                        cta_text = creative.get('cta', {}).get('text')
-                    if creative.get('cta', {}).get('type') and not cta_type:
-                        cta_type = creative.get('cta', {}).get('type')
+                    # Skip if creative is None or not a dict
+                    if not creative or not isinstance(creative, dict):
+                        continue
+                    cta = creative.get('cta')
+                    if cta and isinstance(cta, dict):
+                        if cta.get('text') and not cta_text:
+                            cta_text = cta.get('text')
+                        if cta.get('type') and not cta_type:
+                            cta_type = cta.get('type')
             
             # Parse targeting data
             targeting_data = {}

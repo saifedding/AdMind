@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
+import { adsApi } from "@/lib/api";
 import { 
   BarChart3, 
   Home, 
@@ -16,6 +18,7 @@ import {
   Menu,
   Zap,
   Search,
+  Download,
   Brain,
   X,
   ChevronLeft,
@@ -24,7 +27,8 @@ import {
   Layers,
   Clock,
   Heart,
-  FolderHeart
+  FolderHeart,
+  Video
 } from "lucide-react";
 
 const navigation = [
@@ -95,6 +99,18 @@ const navigation = [
     current: false
   },
   {
+    name: "Download Ads",
+    href: "/download-ads",
+    icon: Download,
+    current: false
+  },
+  {
+    name: "Veo Generator",
+    href: "/veo",
+    icon: Video,
+    current: false
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
@@ -109,6 +125,41 @@ interface SidebarContentProps {
 
 function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProps) {
   const pathname = usePathname();
+
+  const [veoCredits, setVeoCredits] = useState<number | null>(null);
+  const [veoTier, setVeoTier] = useState<string | null>(null);
+  const [veoRefreshing, setVeoRefreshing] = useState<boolean>(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCredits = async () => {
+      try {
+        const data = await adsApi.getVeoCredits();
+        if (cancelled) return;
+        setVeoCredits(typeof data.credits === "number" ? data.credits : null);
+        setVeoTier(data.userPaygateTier || null);
+      } catch {
+        // Silently ignore errors; sidebar should not break if credits are unavailable.
+      }
+    };
+    loadCredits();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleRefreshCredits = async () => {
+    try {
+      setVeoRefreshing(true);
+      const data = await adsApi.getVeoCredits();
+      setVeoCredits(typeof data.credits === "number" ? data.credits : null);
+      setVeoTier(data.userPaygateTier || null);
+    } catch {
+      // ignore refresh errors; user can retry
+    } finally {
+      setVeoRefreshing(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -185,7 +236,27 @@ function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProp
           {!isCollapsed && (
             <div className="flex-1 transition-opacity duration-300">
               <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-muted-foreground">Premium User</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Premium User
+                  {veoCredits !== null && (
+                    <>
+                      {" "}
+                      · Veo credits: {veoCredits}
+                    </>
+                  )}
+                </p>
+                {veoCredits !== null && (
+                  <button
+                    type="button"
+                    className="text-[10px] text-neutral-500 hover:text-neutral-200 underline-offset-2 hover:underline disabled:opacity-60"
+                    onClick={handleRefreshCredits}
+                    disabled={veoRefreshing}
+                  >
+                    {veoRefreshing ? "Refreshing…" : "Refresh"}
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

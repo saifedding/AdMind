@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Text, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -45,7 +45,7 @@ class FavoriteItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     list_id = Column(Integer, ForeignKey('favorite_lists.id', ondelete='CASCADE'), nullable=False, index=True)
-    ad_id = Column(Integer, ForeignKey('ads.id', ondelete='CASCADE'), nullable=False, index=True)
+    ad_id = Column(BigInteger, ForeignKey('ads.id', ondelete='CASCADE'), nullable=False, index=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

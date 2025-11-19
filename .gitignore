@@ -104,3 +104,7 @@ eggs/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+# All media content (videos, images, generated files)
+backend/media/
+backend/backend/media/
+media/

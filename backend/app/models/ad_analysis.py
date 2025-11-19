@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON, func
+from sqlalchemy import Column, Integer, BigInteger, String, Text, Float, DateTime, ForeignKey, JSON, func
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -7,7 +7,10 @@ class AdAnalysis(Base):
     __tablename__ = "ad_analyses"
 
     id = Column(Integer, primary_key=True, index=True)
-    ad_id = Column(Integer, ForeignKey("ads.id"), unique=True, nullable=False)
+    ad_id = Column(BigInteger, ForeignKey("ads.id"), nullable=False, index=True)
+    is_current = Column(Integer, default=1, nullable=False, index=True)  # 1 = current, 0 = archived
+    version_number = Column(Integer, default=1, nullable=False)  # Incremental version number
+    used_video_url = Column(String, nullable=True)  # The video URL that was analyzed
     summary = Column(Text, nullable=True)
     hook_score = Column(Float, nullable=True)  # Score for how engaging the hook is
     overall_score = Column(Float, nullable=True)  # Overall ad effectiveness score

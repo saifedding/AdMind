@@ -15,6 +15,7 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         curl \
+        pkg-config \
         # Dependencies for PyAV (video processing)
         ffmpeg \
         libavformat-dev \

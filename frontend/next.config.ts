@@ -19,6 +19,23 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    // FFmpeg.wasm configuration for Web Workers
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+
+    // Ignore FFmpeg on server-side
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@ffmpeg/ffmpeg', '@ffmpeg/util'];
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;

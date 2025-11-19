@@ -23,6 +23,62 @@ export interface ApiAdAnalysis {
   updated_at: string;
 }
 
+export interface AnalysisHistoryItem {
+  id: number;
+  version_number: number;
+  is_current: boolean;
+  created_at: string;
+  summary?: string;
+}
+
+export interface AnalysisHistoryResponse {
+  ad_id: number;
+  total_count: number;
+  current_version?: number;
+  analyses: AnalysisHistoryItem[];
+}
+
+export interface DownloadHistoryItem {
+  id: number;
+  ad_id?: number;
+  ad_archive_id: string;
+  title?: string;
+  video_hd_count: number;
+  video_sd_count: number;
+  image_count: number;
+  video_hd_urls?: string[];
+  video_sd_urls?: string[];
+  video_urls?: string[];
+  image_urls?: string[];
+  media?: any[];
+  save_path?: string;
+  created_at: string;
+  // Related data counts
+  analysis_count?: number;
+  prompt_count?: number;
+  veo_video_count?: number;
+  merge_count?: number;
+}
+
+export interface DownloadHistoryResponse {
+  total: number;
+  page: number;
+  page_size: number;
+  items: DownloadHistoryItem[];
+}
+
+export interface CreateDownloadHistoryRequest {
+  ad_id?: number;
+  ad_archive_id: string;
+  title?: string;
+  video_hd_urls?: string[];
+  video_sd_urls?: string[];
+  video_urls?: string[];
+  image_urls?: string[];
+  media?: any[];
+  save_path?: string;
+}
+
 export interface ApiCreativeMedia {
   type: string;
   video_sd?: string;
@@ -133,13 +189,13 @@ export interface ApiAd {
   created_at: string;
   updated_at: string;
   analysis?: ApiAdAnalysis;
-  
+
   // New fields based on AdCreate model
   meta?: ApiAdMeta;
   targeting?: ApiAdTargeting;
   lead_form?: ApiLeadForm;
   creatives?: ApiCreative[];
-  
+
   // New fields for Ad Sets
   ad_set_id?: number;
   variant_count?: number;
@@ -248,7 +304,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -259,7 +315,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new ApiError(
@@ -274,7 +330,7 @@ class ApiClient {
       if (error instanceof ApiError) {
         throw error;
       }
-      
+
       // Handle network errors
       throw new ApiError(
         0,
@@ -287,7 +343,7 @@ class ApiClient {
   // Ads API methods
   async getAds(filters?: AdFilterParams): Promise<PaginatedAdsResponse> {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -299,12 +355,12 @@ class ApiClient {
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<PaginatedAdsResponse>(`/ads${query}`);
   }
-  
+
   async getAdsInSet(adSetId: number, page: number = 1, pageSize: number = 20): Promise<PaginatedAdsResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('page_size', pageSize.toString());
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<PaginatedAdsResponse>(`/ad-sets/${adSetId}${query}`);
   }
@@ -352,7 +408,7 @@ class ApiClient {
       }
     );
   }
-  
+
   async toggleAdSetFavorite(adSetId: number): Promise<{ ad_id: number; is_favorite: boolean; message: string }> {
     return this.request<{ ad_id: number; is_favorite: boolean; message: string }>(
       `/ad-sets/${adSetId}/favorite`,
@@ -422,12 +478,73 @@ class ApiClient {
     );
   }
 
+  async deleteAdAnalysis(adId: number): Promise<{ success: boolean; ad_id: number; message: string }> {
+    return this.request<{ success: boolean; ad_id: number; message: string }>(`/ads/${adId}/analysis`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAdAnalysis(adId: number): Promise<AnalyzeVideoResponse> {
+    return this.request<AnalyzeVideoResponse>(`/ads/${adId}/analysis`);
+  }
+
+  async getAdAnalysisHistory(adId: number): Promise<AnalysisHistoryResponse> {
+    return this.request<AnalysisHistoryResponse>(`/ads/${adId}/analysis/history`);
+  }
+
+  async getAdAnalysisByVersion(adId: number, version: number): Promise<AnalyzeVideoResponse> {
+    return this.request<AnalyzeVideoResponse>(`/ads/${adId}/analysis/version/${version}`);
+  }
+
+  async followupAdAnalysis(adId: number, data: FollowupQuestionRequest): Promise<FollowupAnswerResponse> {
+    return this.request<FollowupAnswerResponse>(`/ads/${adId}/analysis/followup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async regenerateAdAnalysis(adId: number, data: RegenerateAnalysisRequest): Promise<AnalyzeVideoResponse> {
+    return this.request<AnalyzeVideoResponse>(`/ads/${adId}/analysis/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async clearAdCache(adId: number, versionNumber?: number): Promise<{ success: boolean; cache_deleted: boolean; chat_history_cleared: boolean; message: string }> {
+    const url = versionNumber
+      ? `/ads/${adId}/cache?version_number=${versionNumber}`
+      : `/ads/${adId}/cache`;
+    return this.request<{ success: boolean; cache_deleted: boolean; chat_history_cleared: boolean; message: string }>(url, {
+      method: 'DELETE',
+    });
+  }
+
+  async createDownloadHistory(data: CreateDownloadHistoryRequest): Promise<DownloadHistoryItem> {
+    return this.request<DownloadHistoryItem>('/download-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDownloadHistory(page: number = 1, pageSize: number = 20): Promise<DownloadHistoryResponse> {
+    return this.request<DownloadHistoryResponse>(`/download-history?page=${page}&page_size=${pageSize}`);
+  }
+
+  async deleteDownloadHistory(historyId: number): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/download-history/${historyId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getCompetitors(skip: number = 0, limit: number = 100, isActive?: boolean): Promise<ApiCompetitor[]> {
     const params = new URLSearchParams({
       skip: skip.toString(),
       limit: limit.toString(),
     });
-    
+
     if (isActive !== undefined) {
       params.append('is_active', isActive.toString());
     }
@@ -445,7 +562,7 @@ class ApiClient {
     params.append('page_size', pageSize.toString());
     params.append('sort_by', sortBy);
     params.append('sort_order', sortOrder);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<PaginatedAdsResponse>(`/ad-sets${query}`);
   }
@@ -506,6 +623,141 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  async downloadFromAdLibrary(data: DownloadFromLibraryRequest): Promise<DownloadFromLibraryResponse> {
+    return this.request<DownloadFromLibraryResponse>(
+      `/ads/library/download`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Analyze video via Google Gemini
+  async analyzeVideoFromLibrary(data: AnalyzeVideoRequest): Promise<AnalyzeVideoResponse> {
+    return this.request<AnalyzeVideoResponse>(
+      `/ads/library/analyze-video`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Generate Veo video from prompt using backend Veo integration (DEPRECATED - use async version)
+  async generateVeoVideo(data: {
+    prompt: string;
+    aspect_ratio?: string;
+    video_model_key?: string;
+    seed?: number;
+    timeout_sec?: number;
+    poll_interval_sec?: number;
+  }): Promise<VeoGenerateResponse> {
+    return this.request<VeoGenerateResponse>(
+      `/settings/ai/veo/generate-video`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Generate Veo video asynchronously - returns task_id immediately
+  async generateVeoVideoAsync(data: {
+    prompt: string;
+    aspect_ratio?: string;
+    video_model_key?: string;
+    seed?: number;
+    ad_id?: number;
+    timeout_sec?: number;
+    poll_interval_sec?: number;
+  }): Promise<VeoGenerateAsyncResponse> {
+    return this.request<VeoGenerateAsyncResponse>(
+      `/settings/ai/veo/generate-video-async`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Poll for video generation task status
+  async getVeoTaskStatus(task_id: string): Promise<VeoTaskStatusResponse> {
+    return this.request<VeoTaskStatusResponse>(
+      `/settings/ai/veo/tasks/${task_id}/status`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  // Fetch Veo credits (remaining tokens) and user paygate tier
+  async getVeoCredits(): Promise<VeoCredits> {
+    return this.request<VeoCredits>(
+      `/settings/ai/veo/credits`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  // Fetch available Veo video models
+  async getVeoModels(): Promise<VeoModelsResponse> {
+    return this.request<VeoModelsResponse>(
+      `/settings/ai/veo/models`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  // Save a Veo generation with its prompt and settings
+  async saveVeoGeneration(data: VeoGenerationCreate): Promise<VeoGenerationResponse> {
+    return this.request<VeoGenerationResponse>(
+      `/settings/ai/veo/generations`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Get Veo generations, optionally filtered by ad_id
+  async getVeoGenerations(ad_id?: number, include_archived: boolean = false): Promise<VeoGenerationResponse[]> {
+    const params = new URLSearchParams();
+    if (ad_id) params.append('ad_id', ad_id.toString());
+    if (include_archived) params.append('include_archived', 'true');
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return this.request<VeoGenerationResponse[]>(
+      `/settings/ai/veo/generations${queryString}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
+
+  // Merge multiple Veo video clips into one full video
+  async mergeVeoVideos(data: MergeVideosRequest): Promise<MergeVideosResponse> {
+    return this.request<MergeVideosResponse>(
+      `/settings/ai/veo/merge-videos`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Get merged video history
+  async getMergedVideos(ad_id?: number): Promise<MergedVideoResponse[]> {
+    const params = ad_id ? `?ad_id=${ad_id}` : '';
+    return this.request<MergedVideoResponse[]>(
+      `/settings/ai/veo/merged-videos${params}`,
+      {
+        method: 'GET',
+      }
+    );
+  }
 }
 
 // Create and export API client instance
@@ -518,6 +770,16 @@ export const adsApi = {
   deleteAd: (id: number) => apiClient.deleteAd(id),
   bulkDeleteAds: (ids: number[]) => apiClient.bulkDeleteAds(ids),
   deleteAllAds: () => apiClient.deleteAllAds(),
+  deleteAdAnalysis: (adId: number) => apiClient.deleteAdAnalysis(adId),
+  getAdAnalysis: (adId: number) => apiClient.getAdAnalysis(adId),
+  getAdAnalysisHistory: (adId: number) => apiClient.getAdAnalysisHistory(adId),
+  getAdAnalysisByVersion: (adId: number, version: number) => apiClient.getAdAnalysisByVersion(adId, version),
+  followupAdAnalysis: (adId: number, data: FollowupQuestionRequest) => apiClient.followupAdAnalysis(adId, data),
+  regenerateAdAnalysis: (adId: number, data: RegenerateAnalysisRequest) => apiClient.regenerateAdAnalysis(adId, data),
+  clearAdCache: (adId: number, versionNumber?: number) => apiClient.clearAdCache(adId, versionNumber),
+  createDownloadHistory: (data: CreateDownloadHistoryRequest) => apiClient.createDownloadHistory(data),
+  getDownloadHistory: (page?: number, pageSize?: number) => apiClient.getDownloadHistory(page, pageSize),
+  deleteDownloadHistory: (historyId: number) => apiClient.deleteDownloadHistory(historyId),
   toggleFavorite: (id: number) => apiClient.toggleFavorite(id),
   toggleAdSetFavorite: (adSetId: number) => apiClient.toggleAdSetFavorite(adSetId),
   saveAdContent: (adId: number) => apiClient.saveAdContent(adId),
@@ -532,7 +794,7 @@ export const adsApi = {
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
   getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
-  
+
   // Favorites API
   getFavoriteLists: () => apiClient.getFavoriteLists(),
   getFavoriteList: (listId: number) => apiClient.getFavoriteList(listId),
@@ -544,9 +806,236 @@ export const adsApi = {
   getAdFavoriteLists: (adId: number) => apiClient.getAdFavoriteLists(adId),
   getAllFavoritesWithAds: () => apiClient.getAllFavoritesWithAds(),
   ensureDefaultFavoriteList: () => apiClient.ensureDefaultFavoriteList(),
+  downloadFromAdLibrary: (data: DownloadFromLibraryRequest) => apiClient.downloadFromAdLibrary(data),
+  analyzeVideoFromLibrary: (data: AnalyzeVideoRequest) => apiClient.analyzeVideoFromLibrary(data),
+  generateVeoVideo: (data: { prompt: string; aspect_ratio?: string; video_model_key?: string; seed?: number; timeout_sec?: number; poll_interval_sec?: number }) => apiClient.generateVeoVideo(data),
+  generateVeoVideoAsync: (data: { prompt: string; aspect_ratio?: string; video_model_key?: string; seed?: number; ad_id?: number; timeout_sec?: number; poll_interval_sec?: number }) => apiClient.generateVeoVideoAsync(data),
+  getVeoTaskStatus: (task_id: string) => apiClient.getVeoTaskStatus(task_id),
+  getVeoCredits: () => apiClient.getVeoCredits(),
+  getVeoModels: () => apiClient.getVeoModels(),
+  saveVeoGeneration: (data: VeoGenerationCreate) => apiClient.saveVeoGeneration(data),
+  getVeoGenerations: (ad_id?: number, include_archived?: boolean) => apiClient.getVeoGenerations(ad_id, include_archived),
+  mergeVeoVideos: (data: MergeVideosRequest) => apiClient.mergeVeoVideos(data),
+  getMergedVideos: (ad_id?: number) => apiClient.getMergedVideos(ad_id),
 };
 
 export default apiClient;
+
+// Types for Download from Library
+export type DownloadFromLibraryRequest = {
+  ad_library_url?: string;
+  ad_archive_id?: string;
+  media_type?: 'video' | 'image' | 'all';
+  download?: boolean;
+};
+
+export type DownloadedFileInfo = {
+  url: string;
+  local_path?: string;
+  public_url?: string;
+  file_size?: number;
+};
+
+export type MediaItem = {
+  type: 'video' | 'image';
+  url: string;
+  quality?: string;
+};
+
+export type DownloadFromLibraryResponse = {
+  success: boolean;
+  ad_archive_id: string;
+  page_id?: string;
+  ad_id?: number;
+  video_urls: string[];
+  image_urls: string[];
+  video_hd_urls: string[];
+  video_sd_urls: string[];
+  downloaded: DownloadedFileInfo[];
+  media: MediaItem[];
+  save_path?: string;
+  message: string;
+};
+
+// Types for Analyze Video
+export type AnalyzeVideoRequest = {
+  ad_library_url?: string;
+  ad_archive_id?: string;
+  video_url?: string;
+  prefer_hd?: boolean;
+  cache?: boolean;
+  ad_id?: number;
+  persist?: boolean;
+};
+
+export type AnalyzeBeat = {
+  start?: string;
+  end?: string;
+  summary: string;
+  why_it_works?: string;
+};
+
+export type AnalyzeVideoResponse = {
+  success: boolean;
+  used_video_url: string;
+  transcript?: string;
+  beats?: AnalyzeBeat[];
+  summary?: string;
+  text_on_video?: string;
+  voice_over?: string;
+  storyboard?: string[];
+  generation_prompts?: string[];
+  strengths?: string[];
+  recommendations?: string[];
+  raw?: any;
+  message: string;
+  generated_at?: string;
+  source?: string;
+};
+
+// Follow-up analysis chat
+export type FollowupQuestionRequest = {
+  question: string;
+  version_number?: number;
+};
+
+export type FollowupAnswerResponse = {
+  success: boolean;
+  answer: string;
+  raw?: any;
+  generated_at?: string;
+  source?: string;
+};
+
+// Regenerate analysis with custom instruction
+export type RegenerateAnalysisRequest = {
+  instruction: string;
+  version_number?: number;
+};
+
+export type VeoGenerateResponse = {
+  success: boolean;
+  result?: any;
+  error?: string;
+  video_url?: string | null;
+};
+
+export type VeoGenerateAsyncResponse = {
+  success: boolean;
+  task_id: string;
+  message: string;
+  estimated_time_seconds?: number;
+};
+
+export type VeoTaskStatusResponse = {
+  task_id: string;
+  state: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE';
+  status?: string;
+  progress?: number;
+  result?: {
+    task_id: string;
+    success: boolean;
+    video_url: string;
+    generation_id?: number;
+    generation_time: number;
+    result: any;
+    prompt: string;
+    model_key: string;
+    aspect_ratio: string;
+    seed: number;
+    timestamp: string;
+  };
+  error?: string;
+};
+
+export type VeoCredits = {
+  credits: number;
+  userPaygateTier: string;
+};
+
+export type VeoModel = {
+  key: string;
+  supportedAspectRatios: string[];
+  accessType: string;
+  capabilities: string[];
+  videoLengthSeconds: number;
+  videoGenerationTimeSeconds?: number;
+  displayName: string;
+  creditCost?: number;
+  framesPerSecond: number;
+  paygateTier: string;
+  modelAccessInfo: Record<string, any>;
+  modelMetadata: Record<string, any>;
+  modelStatus?: string;
+};
+
+export type VeoModelsResponse = {
+  result: {
+    data: {
+      json: {
+        result: {
+          videoModels: VeoModel[];
+        };
+        status: number;
+        statusText: string;
+      };
+    };
+  };
+};
+
+export type VeoGenerationCreate = {
+  ad_id?: number;
+  prompt: string;
+  video_url: string;
+  model_key: string;
+  aspect_ratio: string;
+  seed?: number;
+  generation_metadata?: Record<string, any>;
+};
+
+export type VeoGenerationResponse = {
+  id: number;
+  ad_id?: number;
+  prompt: string;
+  prompt_hash?: string;
+  version_number: number;
+  is_current: number;
+  video_url: string;
+  model_key: string;
+  aspect_ratio: string;
+  seed?: number;
+  generation_metadata?: Record<string, any>;
+  created_at: string;
+};
+
+export type MergeVideosRequest = {
+  video_urls: string[];
+  ad_id?: number;
+  output_filename?: string;
+  trim_times?: Array<{ startTime: number; endTime: number }>;
+};
+
+export type MergeVideosResponse = {
+  success: boolean;
+  merge_id?: number;
+  output_path?: string;
+  public_url?: string;
+  system_path?: string; // Added for development preview
+  file_size?: number;
+  video_count?: number;
+  error?: string;
+  message: string;
+};
+
+export type MergedVideoResponse = {
+  id: number;
+  ad_id?: number;
+  video_url: string;
+  file_size?: number;
+  clip_count: number;
+  source_clips: string[];
+  created_at: string;
+};
 
 // ========================================
 // Competitor API Functions
@@ -623,7 +1112,7 @@ export async function getCompetitors(params: {
   sort_order?: string;
 }): Promise<PaginatedCompetitors> {
   const query = new URLSearchParams();
-  
+
   if (params.page) query.append('page', params.page.toString());
   if (params.page_size) query.append('page_size', params.page_size.toString());
   if (params.is_active !== undefined) query.append('is_active', params.is_active.toString());
@@ -801,7 +1290,7 @@ export async function getCompetitorAds(competitorId: number, params: {
   has_analysis?: boolean;
 }) {
   const query = new URLSearchParams();
-  
+
   if (params.page) query.append('page', params.page.toString());
   if (params.page_size) query.append('page_size', params.page_size.toString());
   if (params.is_active !== undefined) query.append('is_active', params.is_active.toString());

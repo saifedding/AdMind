@@ -4,8 +4,8 @@ from datetime import datetime
 import logging
 from typing import Optional, Tuple, List, Dict, Any
 
-from app.models import Competitor, Ad
-from app.models.dto import AdCreate, AdIngestionResponse
+from ..models import Competitor, Ad
+from ..models.dto import AdCreate, AdIngestionResponse
 
 logger = logging.getLogger(__name__)
 
