@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 import requests
 from typing import Dict, Any, Optional
 from app.database import SessionLocal
-from app.models import AppSetting
+from app.models import AppSetting, ApiUsage
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +141,60 @@ class GoogleAIService:
         except Exception as e:
             logger.warning(f"Failed to get cache_ttl setting: {e}")
         return 86400  # Default to 24 hours in seconds
+    
+    def _log_usage(self, model_name: str, usage_metadata: Dict[str, Any], request_type: str = "analysis", ad_id: Optional[int] = None):
+        """Log API usage to database for tracking and billing."""
+        try:
+            db = SessionLocal()
+            try:
+                # Extract token counts
+                prompt_tokens = usage_metadata.get("prompt_token_count", 0) or usage_metadata.get("promptTokenCount", 0) or 0
+                cached_tokens = usage_metadata.get("cached_content_token_count", 0) or usage_metadata.get("cachedContentTokenCount", 0) or 0
+                completion_tokens = usage_metadata.get("candidates_token_count", 0) or usage_metadata.get("candidatesTokenCount", 0) or 0
+                total_tokens = prompt_tokens + cached_tokens + completion_tokens
+                
+                # Calculate cost based on model
+                # Gemini pricing per 1M tokens (USD)
+                pricing_map = {
+                    "gemini-2.5-flash-lite": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                    "gemini-2.5-flash-lite-preview-09-2025": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                    "gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                    "gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                    "gemini-2.0-flash-lite": {"prompt": 0.075, "cached_prompt": 0.075, "completion": 0.30},
+                }
+                
+                # Normalize model name
+                normalized_model = model_name.replace("models/", "")
+                pricing = pricing_map.get(normalized_model, {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40})
+                
+                prompt_cost = (prompt_tokens / 1_000_000) * pricing["prompt"]
+                cached_cost = (cached_tokens / 1_000_000) * pricing["cached_prompt"]
+                completion_cost = (completion_tokens / 1_000_000) * pricing["completion"]
+                estimated_cost = prompt_cost + cached_cost + completion_cost
+                
+                # Create usage record
+                usage_record = ApiUsage(
+                    model_name=normalized_model,
+                    provider="gemini",
+                    api_key_index=self.current_key_index,
+                    prompt_tokens=prompt_tokens,
+                    cached_tokens=cached_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    estimated_cost_usd=estimated_cost,
+                    request_type=request_type,
+                    ad_id=ad_id,
+                    raw_metadata=json.dumps(usage_metadata)
+                )
+                
+                db.add(usage_record)
+                db.commit()
+                logger.info(f"Logged usage: {total_tokens} tokens, ${estimated_cost:.6f} for {normalized_model}")
+                
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to log API usage: {e}")
 
     def upload_file(self, file_path: str, display_name: Optional[str] = None) -> Dict[str, Any]:
         """Uploads a local file to Gemini Files API using resumable upload protocol.
@@ -714,18 +768,26 @@ class GoogleAIService:
                     "generation_config": {"temperature": 0.2, "response_mime_type": "application/json", "max_output_tokens": 16384}
                 }
             else:
-                # No cache - include system instruction in contents
-                parts = [{"text": system_instruction}]
+                # No explicit cache - optimize for IMPLICIT CACHING
+                # Key principle: Put consistent content FIRST, variable content LAST
+                # This maximizes cache hits with Gemini 2.5's automatic 75% discount
+                parts = []
+                
                 if url_only_gemini:
+                    # For URL-based analysis, put system instruction first, then URL
+                    parts.append({"text": system_instruction})
                     parts.append({"text": (
                         "Analyze ONLY the video at THIS EXACT URL; do not search or analyze any other media on the page.\n"
                         + "URL: " + video_url + "\n"
                         + "Return ONLY JSON matching this schema:\n" + json.dumps(response_schema)
                     )})
                 else:
+                    # For file uploads: VIDEO FIRST (consistent), SYSTEM INSTRUCTION SECOND (consistent), SCHEMA LAST (variable)
+                    # This order maximizes implicit cache hits when analyzing the same video multiple times
                     file_part = {"file_data": {"file_uri": current_file_uri, **({"mime_type": mime_type} if mime_type else {})}}
-                    parts.append(file_part)
-                    parts.append({"text": "Output JSON only matching this JSON Schema:\n" + json.dumps(response_schema)})
+                    parts.append(file_part)  # 1. Video file (consistent prefix for implicit caching)
+                    parts.append({"text": system_instruction})  # 2. System instruction (consistent)
+                    parts.append({"text": "Output JSON only matching this JSON Schema:\n" + json.dumps(response_schema)})  # 3. Schema (variable)
 
                 payload = {
                     "contents": [
@@ -749,8 +811,16 @@ class GoogleAIService:
                             usage_debug = data.get("usageMetadata") or data.get("usage_metadata")
                             logger.info(f"Gemini usageMetadata debug: {usage_debug!r}")
                             logger.info(f"Gemini top-level keys: {list(data.keys())}")
-                        except Exception:
-                            pass
+                            
+                            # Log usage to database for tracking
+                            if usage_debug:
+                                self._log_usage(
+                                    model_name=model_name,
+                                    usage_metadata=usage_debug,
+                                    request_type="analysis"
+                                )
+                        except Exception as e:
+                            logger.warning(f"Failed to log usage: {e}")
                         if retry > 0 or key_attempt > 0:
                             logger.info(f"✓ Success with API key #{self.current_key_index + 1} after {retry + 1} attempt(s)")
                         break
@@ -1255,7 +1325,8 @@ class GoogleAIService:
         else:
             if not file_uri:
                 raise ValueError("file_uri is required for follow-up chat when no cache_name is available")
-            # No cache - build conversational payload with video file + chat history
+            # No explicit cache - build conversational payload optimized for IMPLICIT CACHING
+            # By keeping the same file_uri at the start, Gemini 2.5 automatically gives 75% discount
             contents = []
             if isinstance(history, list):
                 for msg in history:
@@ -1263,9 +1334,10 @@ class GoogleAIService:
                         contents.append(msg)
 
             # Add new user question with file reference
+            # Order: FILE FIRST (consistent for implicit caching), QUESTION LAST (variable)
             parts = [
-                {"file_data": {"file_uri": file_uri}},
-                {"text": question}
+                {"file_data": {"file_uri": file_uri}},  # Consistent prefix for implicit cache hit
+                {"text": question}  # Variable content at the end
             ]
             contents.append({"role": "user", "parts": parts})
 
@@ -1277,6 +1349,19 @@ class GoogleAIService:
         resp = requests.post(url, params=self._auth_params(), json=payload, timeout=600)
         resp.raise_for_status()
         data = resp.json()
+        
+        # Log usage for follow-up questions
+        try:
+            usage_metadata = data.get("usageMetadata") or data.get("usage_metadata")
+            if usage_metadata:
+                model_name = url.split("/models/")[1].split(":")[0] if "/models/" in url else "unknown"
+                self._log_usage(
+                    model_name=model_name,
+                    usage_metadata=usage_metadata,
+                    request_type="followup"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to log follow-up usage: {e}")
 
         out_parts = data.get("candidates", [])[0].get("content", {}).get("parts", []) if data.get("candidates") else []
         answer_text = None

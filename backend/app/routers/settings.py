@@ -9,8 +9,9 @@ from datetime import datetime
 import requests
 
 from app.database import get_db
-from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis
+from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage
 from app.services.google_ai_service import get_default_system_instruction, GoogleAIService
+from sqlalchemy import func
 
 
 router = APIRouter()
@@ -57,6 +58,46 @@ class CacheEnabledSetting(BaseModel):
 
 class CacheTTLSetting(BaseModel):
     ttl_hours: int  # Time to live in hours (default: 24)
+
+
+class KeyUsageStats(BaseModel):
+    """Usage statistics for a single API key."""
+    key_index: int
+    key_preview: str
+    total_requests: int
+    total_prompt_tokens: int
+    total_cached_tokens: int
+    total_completion_tokens: int
+    total_tokens: int
+    estimated_cost_usd: float
+    last_used: Optional[str] = None
+
+
+class AllKeysUsageResponse(BaseModel):
+    """Usage statistics for all API keys."""
+    keys_stats: List[KeyUsageStats]
+    total_requests: int
+    total_cost_usd: float
+
+
+class ModelUsageStats(BaseModel):
+    """Usage statistics for a single model."""
+    model_name: str
+    provider: str
+    total_requests: int
+    total_prompt_tokens: int
+    total_cached_tokens: int
+    total_completion_tokens: int
+    total_tokens: int
+    estimated_cost_usd: float
+    last_used: Optional[str] = None
+
+
+class AllModelsUsageResponse(BaseModel):
+    """Usage statistics grouped by model."""
+    models_stats: List[ModelUsageStats]
+    total_requests: int
+    total_cost_usd: float
 
 
 class VeoToken(BaseModel):
@@ -1366,6 +1407,176 @@ async def update_cache_ttl(payload: CacheTTLSetting, db: Session = Depends(get_d
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update cache TTL: {e}")
     return CacheTTLSetting(ttl_hours=payload.ttl_hours)
+
+
+@router.get("/ai/usage-by-model", response_model=AllModelsUsageResponse)
+async def get_usage_by_model(db: Session = Depends(get_db)) -> AllModelsUsageResponse:
+    """Get real-time usage statistics grouped by model from ApiUsage table.
+    
+    This provides accurate, up-to-date usage tracking that's logged after every API call.
+    """
+    try:
+        # Query aggregated usage by model
+        results = db.query(
+            ApiUsage.model_name,
+            ApiUsage.provider,
+            func.count(ApiUsage.id).label("total_requests"),
+            func.sum(ApiUsage.prompt_tokens).label("total_prompt_tokens"),
+            func.sum(ApiUsage.cached_tokens).label("total_cached_tokens"),
+            func.sum(ApiUsage.completion_tokens).label("total_completion_tokens"),
+            func.sum(ApiUsage.total_tokens).label("total_tokens"),
+            func.sum(ApiUsage.estimated_cost_usd).label("estimated_cost_usd"),
+            func.max(ApiUsage.created_at).label("last_used")
+        ).group_by(
+            ApiUsage.model_name,
+            ApiUsage.provider
+        ).all()
+        
+        models_stats = []
+        total_requests_all = 0
+        total_cost_all = 0.0
+        
+        for row in results:
+            models_stats.append(ModelUsageStats(
+                model_name=row.model_name,
+                provider=row.provider,
+                total_requests=row.total_requests or 0,
+                total_prompt_tokens=row.total_prompt_tokens or 0,
+                total_cached_tokens=row.total_cached_tokens or 0,
+                total_completion_tokens=row.total_completion_tokens or 0,
+                total_tokens=row.total_tokens or 0,
+                estimated_cost_usd=round(row.estimated_cost_usd or 0.0, 6),
+                last_used=row.last_used.isoformat() if row.last_used else None
+            ))
+            total_requests_all += row.total_requests or 0
+            total_cost_all += row.estimated_cost_usd or 0.0
+        
+        # Sort by cost descending
+        models_stats.sort(key=lambda x: x.estimated_cost_usd, reverse=True)
+        
+        return AllModelsUsageResponse(
+            models_stats=models_stats,
+            total_requests=total_requests_all,
+            total_cost_usd=round(total_cost_all, 6)
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get usage by model: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get usage stats: {e}")
+
+
+@router.get("/ai/gemini-usage", response_model=AllKeysUsageResponse)
+async def get_gemini_usage(db: Session = Depends(get_db)) -> AllKeysUsageResponse:
+    """Get usage statistics and estimated billing for each Gemini API key.
+    
+    Analyzes historical usage from AdAnalysis records to calculate:
+    - Total requests per key
+    - Token usage (prompt, cached, completion)
+    - Estimated costs based on current pricing
+    """
+    try:
+        # Get API keys
+        gemini_keys = _get_gemini_api_keys_list(db)
+        if not gemini_keys:
+            return AllKeysUsageResponse(keys_stats=[], total_requests=0, total_cost_usd=0.0)
+        
+        # Gemini pricing per 1M tokens (USD)
+        # Source: https://ai.google.dev/gemini-api/docs/pricing
+        pricing = {
+            "gemini-2.5-flash-lite": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+            "gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+            "gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+        }
+        default_pricing = {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40}
+        
+        keys_stats = []
+        total_requests_all = 0
+        total_cost_all = 0.0
+        
+        for key_idx in range(len(gemini_keys)):
+            # Query all analyses that used this key
+            analyses = db.query(AdAnalysis).filter(
+                AdAnalysis.raw_ai_response != None
+            ).all()
+            
+            total_requests = 0
+            total_prompt_tokens = 0
+            total_cached_tokens = 0
+            total_completion_tokens = 0
+            last_used_dt = None
+            
+            for analysis in analyses:
+                try:
+                    raw = analysis.raw_ai_response
+                    if isinstance(raw, str):
+                        data = json.loads(raw)
+                    elif isinstance(raw, dict):
+                        data = raw
+                    else:
+                        continue
+                    
+                    # Check if this analysis used this key
+                    used_key_idx = data.get("gemini_api_key_index")
+                    if used_key_idx != key_idx:
+                        continue
+                    
+                    total_requests += 1
+                    
+                    # Extract token usage
+                    usage = data.get("usage_metadata", {})
+                    prompt_tokens = usage.get("prompt_token_count", 0) or usage.get("promptTokenCount", 0)
+                    cached_tokens = usage.get("cached_content_token_count", 0) or usage.get("cachedContentTokenCount", 0)
+                    completion_tokens = usage.get("candidates_token_count", 0) or usage.get("candidatesTokenCount", 0)
+                    
+                    total_prompt_tokens += prompt_tokens
+                    total_cached_tokens += cached_tokens
+                    total_completion_tokens += completion_tokens
+                    
+                    # Track last used
+                    if analysis.created_at:
+                        if last_used_dt is None or analysis.created_at > last_used_dt:
+                            last_used_dt = analysis.created_at
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to parse analysis {analysis.id}: {e}")
+                    continue
+            
+            # Calculate estimated cost
+            # Use default pricing for simplicity (could be enhanced to detect model from raw_ai_response)
+            prompt_cost = (total_prompt_tokens / 1_000_000) * default_pricing["prompt"]
+            cached_cost = (total_cached_tokens / 1_000_000) * default_pricing["cached_prompt"]
+            completion_cost = (total_completion_tokens / 1_000_000) * default_pricing["completion"]
+            estimated_cost = prompt_cost + cached_cost + completion_cost
+            
+            total_tokens = total_prompt_tokens + total_cached_tokens + total_completion_tokens
+            
+            # Mask key for security
+            key_preview = gemini_keys[key_idx][:8] + "..." + gemini_keys[key_idx][-4:] if len(gemini_keys[key_idx]) > 12 else "***"
+            
+            keys_stats.append(KeyUsageStats(
+                key_index=key_idx,
+                key_preview=key_preview,
+                total_requests=total_requests,
+                total_prompt_tokens=total_prompt_tokens,
+                total_cached_tokens=total_cached_tokens,
+                total_completion_tokens=total_completion_tokens,
+                total_tokens=total_tokens,
+                estimated_cost_usd=round(estimated_cost, 4),
+                last_used=last_used_dt.isoformat() if last_used_dt else None
+            ))
+            
+            total_requests_all += total_requests
+            total_cost_all += estimated_cost
+        
+        return AllKeysUsageResponse(
+            keys_stats=keys_stats,
+            total_requests=total_requests_all,
+            total_cost_usd=round(total_cost_all, 4)
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get Gemini usage stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get usage stats: {e}")
 
 
 # ========================================

@@ -73,6 +73,42 @@ interface CacheTTLSetting {
   ttl_hours: number;
 }
 
+interface KeyUsageStats {
+  key_index: number;
+  key_preview: string;
+  total_requests: number;
+  total_prompt_tokens: number;
+  total_cached_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  last_used?: string;
+}
+
+interface AllKeysUsageResponse {
+  keys_stats: KeyUsageStats[];
+  total_requests: number;
+  total_cost_usd: number;
+}
+
+interface ModelUsageStats {
+  model_name: string;
+  provider: string;
+  total_requests: number;
+  total_prompt_tokens: number;
+  total_cached_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  last_used?: string;
+}
+
+interface AllModelsUsageResponse {
+  models_stats: ModelUsageStats[];
+  total_requests: number;
+  total_cost_usd: number;
+}
+
 export default function SettingsPage() {
   const [value, setValue] = useState<string>("");
   const [source, setSource] = useState<string>("");
@@ -135,6 +171,14 @@ export default function SettingsPage() {
   const [cacheTTLSaving, setCacheTTLSaving] = useState<boolean>(false);
   const [cacheTTLError, setCacheTTLError] = useState<string | null>(null);
   const [cacheTTLSaved, setCacheTTLSaved] = useState<boolean>(false);
+
+  const [usageData, setUsageData] = useState<AllKeysUsageResponse | null>(null);
+  const [usageLoading, setUsageLoading] = useState<boolean>(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
+
+  const [modelUsageData, setModelUsageData] = useState<AllModelsUsageResponse | null>(null);
+  const [modelUsageLoading, setModelUsageLoading] = useState<boolean>(false);
+  const [modelUsageError, setModelUsageError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -636,6 +680,42 @@ export default function SettingsPage() {
     }
   };
 
+  const loadUsageData = async () => {
+    try {
+      setUsageLoading(true);
+      setUsageError(null);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/gemini-usage`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: AllKeysUsageResponse = await res.json();
+      setUsageData(data);
+    } catch (e: any) {
+      setUsageError(e?.message || "Failed to load usage data");
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
+  const loadModelUsageData = async () => {
+    try {
+      setModelUsageLoading(true);
+      setModelUsageError(null);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/usage-by-model`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: AllModelsUsageResponse = await res.json();
+      setModelUsageData(data);
+    } catch (e: any) {
+      setModelUsageError(e?.message || "Failed to load model usage data");
+    } finally {
+      setModelUsageLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
@@ -849,6 +929,221 @@ export default function SettingsPage() {
               {geminiKeysSaved && (
                 <span className="text-xs text-emerald-400">Saved</span>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>📊 API Usage & Billing</CardTitle>
+            <CardDescription>
+              View token usage and estimated costs for each Gemini API key based on historical analyses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {usageError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {usageError}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={loadUsageData}
+                disabled={usageLoading}
+                className="px-4 py-1.5 text-sm"
+                variant="outline"
+              >
+                {usageLoading ? "Loading..." : "🔄 Refresh Usage Stats"}
+              </Button>
+            </div>
+
+            {usageData && (
+              <div className="space-y-3 pt-2 border-t border-neutral-800">
+                <div className="flex items-center justify-between bg-neutral-900 border border-emerald-800/40 rounded-md p-3">
+                  <div>
+                    <div className="text-sm font-medium text-emerald-400">Total Usage</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      {usageData.total_requests} requests across all keys
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-emerald-400">
+                      ${usageData.total_cost_usd.toFixed(4)}
+                    </div>
+                    <div className="text-xs text-neutral-500">Estimated Cost</div>
+                  </div>
+                </div>
+
+                {usageData.keys_stats.map((keyStat) => (
+                  <div key={keyStat.key_index} className="bg-neutral-900 border border-neutral-800 rounded-md p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-mono text-neutral-400">
+                        Key #{keyStat.key_index + 1}: {keyStat.key_preview}
+                      </div>
+                      <div className="text-sm font-bold text-emerald-400">
+                        ${keyStat.estimated_cost_usd.toFixed(4)}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Requests</div>
+                        <div className="font-medium text-neutral-200">{keyStat.total_requests.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Total Tokens</div>
+                        <div className="font-medium text-neutral-200">{keyStat.total_tokens.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Prompt Tokens</div>
+                        <div className="font-medium text-blue-400">{keyStat.total_prompt_tokens.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Cached Tokens</div>
+                        <div className="font-medium text-purple-400">{keyStat.total_cached_tokens.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Completion Tokens</div>
+                        <div className="font-medium text-green-400">{keyStat.total_completion_tokens.toLocaleString()}</div>
+                      </div>
+                      {keyStat.last_used && (
+                        <div className="bg-neutral-800/50 rounded p-2">
+                          <div className="text-neutral-500">Last Used</div>
+                          <div className="font-medium text-neutral-200">
+                            {new Date(keyStat.last_used).toLocaleDateString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {keyStat.total_cached_tokens > 0 && (
+                      <div className="mt-2 text-xs text-purple-400">
+                        💡 Saved ~${((keyStat.total_cached_tokens / 1_000_000) * 0.075).toFixed(4)} with caching (90% discount)
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {usageData.keys_stats.length === 0 && (
+                  <div className="text-xs text-neutral-500 italic">
+                    No usage data found. Start analyzing videos to see statistics.
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
+              💡 <strong>Note:</strong> Costs are estimated based on current Gemini pricing ($0.10/1M prompt tokens, $0.025/1M cached tokens, $0.40/1M completion tokens).
+              Actual billing may vary. Check Google Cloud Console for official billing.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>📈 Usage by Model (Real-Time)</CardTitle>
+            <CardDescription>
+              Real-time usage tracking per model. Updated automatically after each API call.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {modelUsageError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {modelUsageError}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={loadModelUsageData}
+                disabled={modelUsageLoading}
+                className="px-4 py-1.5 text-sm"
+                variant="outline"
+              >
+                {modelUsageLoading ? "Loading..." : "🔄 Refresh Model Stats"}
+              </Button>
+            </div>
+
+            {modelUsageData && (
+              <div className="space-y-3 pt-2 border-t border-neutral-800">
+                <div className="flex items-center justify-between bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-800/40 rounded-md p-3">
+                  <div>
+                    <div className="text-sm font-medium text-blue-400">Total API Usage</div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      {modelUsageData.total_requests.toLocaleString()} requests across all models
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-400">
+                      ${modelUsageData.total_cost_usd.toFixed(6)}
+                    </div>
+                    <div className="text-xs text-neutral-500">Total Cost</div>
+                  </div>
+                </div>
+
+                {modelUsageData.models_stats.map((modelStat) => (
+                  <div key={`${modelStat.provider}-${modelStat.model_name}`} className="bg-neutral-900 border border-neutral-800 rounded-md p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="text-sm font-semibold text-neutral-200">{modelStat.model_name}</div>
+                        <div className="text-xs text-neutral-500">{modelStat.provider}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-blue-400">
+                          ${modelStat.estimated_cost_usd.toFixed(6)}
+                        </div>
+                        <div className="text-xs text-neutral-500">{modelStat.total_requests} requests</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Prompt</div>
+                        <div className="font-medium text-blue-400">{modelStat.total_prompt_tokens.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Cached</div>
+                        <div className="font-medium text-purple-400">{modelStat.total_cached_tokens.toLocaleString()}</div>
+                      </div>
+                      <div className="bg-neutral-800/50 rounded p-2">
+                        <div className="text-neutral-500">Completion</div>
+                        <div className="font-medium text-green-400">{modelStat.total_completion_tokens.toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-800">
+                      <div className="text-xs text-neutral-500">
+                        Total: <span className="text-neutral-300 font-medium">{modelStat.total_tokens.toLocaleString()}</span> tokens
+                      </div>
+                      {modelStat.last_used && (
+                        <div className="text-xs text-neutral-500">
+                          Last used: {new Date(modelStat.last_used).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+
+                    {modelStat.total_cached_tokens > 0 && (
+                      <div className="mt-2 text-xs text-purple-400 bg-purple-900/10 rounded p-2">
+                        💰 Saved ~${((modelStat.total_cached_tokens / 1_000_000) * 0.075).toFixed(4)} with caching (90% discount)
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {modelUsageData.models_stats.length === 0 && (
+                  <div className="text-xs text-neutral-500 italic">
+                    No usage data yet. Start analyzing videos to see real-time statistics.
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
+              ⚡ <strong>Real-Time Tracking:</strong> Usage is logged automatically after every API call.
+              This data is stored in the database and provides accurate, up-to-date statistics per model.
             </div>
           </CardContent>
         </Card>
