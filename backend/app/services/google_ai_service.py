@@ -94,6 +94,53 @@ class GoogleAIService:
             logger.info(f"Rotated to API key #{self.current_key_index + 1}")
             return True
         return False
+    
+    def _is_cache_enabled(self) -> bool:
+        """Check if Gemini caching is enabled in settings (default: True)."""
+        try:
+            db = SessionLocal()
+            try:
+                setting = db.query(AppSetting).filter(AppSetting.key == "gemini_cache_enabled").first()
+                if setting and setting.value:
+                    raw = setting.value
+                    if isinstance(raw, str):
+                        data = json.loads(raw)
+                    else:
+                        data = raw
+                    if isinstance(data, dict):
+                        return bool(data.get("enabled", True))
+                    elif isinstance(data, bool):
+                        return data
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Failed to check cache_enabled setting: {e}")
+        return True  # Default to enabled
+    
+    def _get_cache_ttl_seconds(self) -> int:
+        """Get cache TTL in seconds from settings (default: 24 hours = 86400 seconds)."""
+        try:
+            db = SessionLocal()
+            try:
+                setting = db.query(AppSetting).filter(AppSetting.key == "gemini_cache_ttl_hours").first()
+                if setting and setting.value:
+                    raw = setting.value
+                    if isinstance(raw, str):
+                        data = json.loads(raw)
+                    else:
+                        data = raw
+                    if isinstance(data, dict):
+                        ttl_hours = int(data.get("ttl_hours", 24))
+                    elif isinstance(data, int):
+                        ttl_hours = data
+                    else:
+                        ttl_hours = 24
+                    return ttl_hours * 3600  # Convert hours to seconds
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Failed to get cache_ttl setting: {e}")
+        return 86400  # Default to 24 hours in seconds
 
     def upload_file(self, file_path: str, display_name: Optional[str] = None) -> Dict[str, Any]:
         """Uploads a local file to Gemini Files API using resumable upload protocol.
@@ -352,18 +399,38 @@ class GoogleAIService:
             video_url: Original remote video URL (used by OpenRouter primary)
         """
         system_instruction = get_default_system_instruction()
+        selected_model: Optional[str] = None
 
-        # Optional override from AppSetting in DB so it can be edited from the Settings page
+        # Optional overrides from AppSetting in DB so they can be edited from the Settings page
         try:
             db = SessionLocal()
             try:
                 setting = db.query(AppSetting).filter(AppSetting.key == "gemini_system_instruction").first()
                 if setting and setting.value:
                     system_instruction = setting.value
+
+                # Load selected AI model if configured (e.g. gemini-2.0-flash-001 or openrouter:...)
+                model_setting = db.query(AppSetting).filter(AppSetting.key == "ai_model").first()
+                if model_setting and model_setting.value:
+                    raw = model_setting.value
+                    try:
+                        if isinstance(raw, str):
+                            data = json.loads(raw)
+                        else:
+                            data = raw
+                        if isinstance(data, dict):
+                            val = data.get("model_name") or data.get("model") or data.get("value")
+                            if isinstance(val, str) and val.strip():
+                                selected_model = val.strip()
+                        elif isinstance(raw, str) and raw.strip():
+                            selected_model = raw.strip()
+                    except Exception:
+                        if isinstance(raw, str) and raw.strip():
+                            selected_model = raw.strip()
             finally:
                 db.close()
         except Exception as e:
-            logger.warning(f"Failed to load system instruction override, using default: {e}")
+            logger.warning(f"Failed to load AI settings override, using defaults: {e}")
         
         # Append custom instruction if provided
         if custom_instruction:
@@ -557,6 +624,9 @@ class GoogleAIService:
         max_retries_per_key = 3
         last_error = None
         current_file_uri = file_uri
+        
+        # Determine model to use (from settings or default)
+        model_name = selected_model if selected_model and not selected_model.startswith("openrouter:") else "gemini-2.5-flash-lite"
 
         # If we have a pre-existing file_uri and are not re-uploading or using URL-only
         # mode, reuse that single Gemini file with its bound API key (no key rotation).
@@ -614,21 +684,24 @@ class GoogleAIService:
                     logger.warning(f"Proceeding without ACTIVE confirmation: {e}")
                     mime_type = None
 
-            # Create or reuse explicit cache for cost optimization
-            cache_to_use = cached_cache_name
-            if not url_only_gemini and current_file_uri and not cache_to_use:
+            # Context caching - check if enabled in settings
+            cache_to_use = None
+            if self._is_cache_enabled() and not url_only_gemini and current_file_uri and not cache_to_use:
                 try:
-                    logger.info("Creating explicit Gemini cache for system instruction + video...")
+                    ttl_seconds = self._get_cache_ttl_seconds()
+                    logger.info(f"Creating explicit Gemini cache for system instruction + video (TTL: {ttl_seconds}s / {ttl_seconds/3600}h)...")
                     cache = self.create_cache(
-                        model="models/gemini-2.0-flash-001",
+                        model=f"models/{model_name}",
                         system_instruction=system_instruction,
                         file_uri=current_file_uri,
-                        ttl_seconds=86400  # 24 hours
+                        ttl_seconds=ttl_seconds
                     )
                     cache_to_use = cache.get("name")
                     logger.info(f"✓ Created cache: {cache_to_use}")
                 except Exception as e:
                     logger.warning(f"Failed to create explicit cache, proceeding without: {e}")
+            elif not self._is_cache_enabled():
+                logger.info("Gemini caching is disabled in settings, skipping cache creation")
 
             # Build payload based on whether we're using cached content or not
             if cache_to_use:
@@ -661,7 +734,7 @@ class GoogleAIService:
                     "generation_config": {"temperature": 0.2, "response_mime_type": "application/json", "max_output_tokens": 16384}
                 }
 
-            url = f"{GEMINI_API_BASE}/models/gemini-2.0-flash-001:generateContent" if cache_to_use else f"{GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent"
+            url = f"{GEMINI_API_BASE}/models/{model_name}:generateContent"
 
             # Try current key multiple times with backoff for 503 errors
             for retry in range(max_retries_per_key):
@@ -945,15 +1018,15 @@ class GoogleAIService:
                     # Always record which API key index was used for this analysis
                     parsed["gemini_api_key_index"] = self.current_key_index
                     
-                    # Store cache metadata if created or reused
-                    if cache_to_use:
-                        parsed["gemini_cache_name"] = cache_to_use
-                        try:
-                            cache_info = self.get_cache(cache_to_use)
-                            if cache_info.get("expireTime"):
-                                parsed["gemini_cache_expire_time"] = cache_info["expireTime"]
-                        except Exception:
-                            pass
+                    # Cache metadata storage DISABLED - we don't use caching anymore
+                    # if cache_to_use:
+                    #     parsed["gemini_cache_name"] = cache_to_use
+                    #     try:
+                    #         cache_info = self.get_cache(cache_to_use)
+                    #         if cache_info.get("expireTime"):
+                    #             parsed["gemini_cache_expire_time"] = cache_info["expireTime"]
+                    #     except Exception:
+                    #         pass
                 
                 mv = data.get("modelVersion") or data.get("model")
                 if mv:
@@ -984,21 +1057,41 @@ class GoogleAIService:
                             provider = "gemini"
                             model_name = mv or ""
 
-                            # Default prices per 1M tokens (USD) for standard, paid tier.
+                            # Official Google Gemini pricing per 1M tokens (USD) for standard, paid tier.
+                            # Source: https://ai.google.dev/gemini-api/docs/pricing
                             # Converted later to per-1K for computation.
                             pricing_per_million = {
-                                # 2.5 Flash family
+                                # Gemini 3.0 family
+                                "gemini-3-pro-preview": {"prompt": 2.00, "cached_prompt": 0.20, "completion": 12.00},
+                                "models/gemini-3-pro-preview": {"prompt": 2.00, "cached_prompt": 0.20, "completion": 12.00},
+                                
+                                # Gemini 2.5 Pro family
+                                "gemini-2.5-pro": {"prompt": 1.25, "cached_prompt": 0.125, "completion": 10.00},
+                                "models/gemini-2.5-pro": {"prompt": 1.25, "cached_prompt": 0.125, "completion": 10.00},
+                                
+                                # Gemini 2.5 Flash family
                                 "gemini-2.5-flash": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
                                 "gemini-2.5-flash-001": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
                                 "gemini-2.5-flash-preview-09-2025": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
                                 "models/gemini-2.5-flash": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
                                 "models/gemini-2.5-flash-001": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
                                 "models/gemini-2.5-flash-preview-09-2025": {"prompt": 0.30, "cached_prompt": 0.03, "completion": 2.50},
-                                # 2.0 Flash family
+                                
+                                # Gemini 2.5 Flash-Lite family
+                                "gemini-2.5-flash-lite": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                                "gemini-2.5-flash-lite-preview-09-2025": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                                "models/gemini-2.5-flash-lite": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                                "models/gemini-2.5-flash-lite-preview-09-2025": {"prompt": 0.10, "cached_prompt": 0.01, "completion": 0.40},
+                                
+                                # Gemini 2.0 Flash family
                                 "gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
                                 "gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
                                 "models/gemini-2.0-flash": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
                                 "models/gemini-2.0-flash-001": {"prompt": 0.10, "cached_prompt": 0.025, "completion": 0.40},
+                                
+                                # Gemini 2.0 Flash-Lite family
+                                "gemini-2.0-flash-lite": {"prompt": 0.075, "cached_prompt": 0.075, "completion": 0.30},
+                                "models/gemini-2.0-flash-lite": {"prompt": 0.075, "cached_prompt": 0.075, "completion": 0.30},
                             }
 
                             # Try direct match, then normalize away any leading 'models/' prefix for robustness
@@ -1077,15 +1170,16 @@ class GoogleAIService:
                         raw_wrapper["gemini_file_uri"] = current_file_uri
                         raw_wrapper["gemini_api_key_index"] = self.current_key_index
 
-                    if cache_to_use:
-                        raw_wrapper["gemini_cache_name"] = cache_to_use
-                        try:
-                            cache_info = self.get_cache(cache_to_use)
-                            expire = cache_info.get("expireTime")
-                            if expire:
-                                raw_wrapper["gemini_cache_expire_time"] = expire
-                        except Exception:
-                            pass
+                    # Cache metadata storage DISABLED - we don't use caching anymore
+                    # if cache_to_use:
+                    #     raw_wrapper["gemini_cache_name"] = cache_to_use
+                    #     try:
+                    #         cache_info = self.get_cache(cache_to_use)
+                    #         expire = cache_info.get("expireTime")
+                    #         if expire:
+                    #             raw_wrapper["gemini_cache_expire_time"] = expire
+                    #     except Exception:
+                    #         pass
 
                 mv = data.get("modelVersion") or data.get("model")
                 if mv:

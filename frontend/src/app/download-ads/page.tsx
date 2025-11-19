@@ -2025,10 +2025,25 @@ export default function DownloadAdsPage() {
                                     ? t.totalTokenCount
                                     : promptTokens + completionTokens;
 
-                                  // Gemini 2.0 Flash Standard paid-tier pricing per 1M tokens
-                                  const promptPerMillion = 0.10;
-                                  const cachedPerMillion = 0.025;
-                                  const completionPerMillion = 0.40;
+                                  // Official Google Gemini pricing per 1M tokens (USD) - default to 2.0 Flash if unknown
+                                  // Source: https://ai.google.dev/gemini-api/docs/pricing
+                                  const modelName = (msg as any).model || 'gemini-2.0-flash-001';
+                                  const pricingTable: Record<string, {prompt: number, cached: number, completion: number}> = {
+                                    'gemini-3-pro-preview': {prompt: 2.00, cached: 0.20, completion: 12.00},
+                                    'gemini-2.5-pro': {prompt: 1.25, cached: 0.125, completion: 10.00},
+                                    'gemini-2.5-flash': {prompt: 0.30, cached: 0.03, completion: 2.50},
+                                    'gemini-2.5-flash-001': {prompt: 0.30, cached: 0.03, completion: 2.50},
+                                    'gemini-2.5-flash-preview-09-2025': {prompt: 0.30, cached: 0.03, completion: 2.50},
+                                    'gemini-2.5-flash-lite': {prompt: 0.10, cached: 0.01, completion: 0.40},
+                                    'gemini-2.5-flash-lite-preview-09-2025': {prompt: 0.10, cached: 0.01, completion: 0.40},
+                                    'gemini-2.0-flash': {prompt: 0.10, cached: 0.025, completion: 0.40},
+                                    'gemini-2.0-flash-001': {prompt: 0.10, cached: 0.025, completion: 0.40},
+                                    'gemini-2.0-flash-lite': {prompt: 0.075, cached: 0.075, completion: 0.30},
+                                  };
+                                  const pricing = pricingTable[modelName] || pricingTable['gemini-2.0-flash-001'];
+                                  const promptPerMillion = pricing.prompt;
+                                  const cachedPerMillion = pricing.cached;
+                                  const completionPerMillion = pricing.completion;
 
                                   const nonCachedPrompt = Math.max(promptTokens - cachedTokens, 0);
                                   const promptCost = (nonCachedPrompt / 1_000_000) * promptPerMillion;

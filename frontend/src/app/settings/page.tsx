@@ -33,6 +33,46 @@ interface OpenRouterApiKey {
   api_key: string;
 }
 
+interface AiModelSetting {
+  model_name: string;
+}
+
+interface CacheInfo {
+  cache_name: string;
+  expire_time?: string;
+  model?: string;
+  display_name?: string;
+}
+
+interface CacheStats {
+  key_index: number;
+  key_preview: string;
+  cache_count: number;
+  caches: CacheInfo[];
+  error?: string;
+}
+
+interface AllCachesResponse {
+  total_caches: number;
+  keys_stats: CacheStats[];
+}
+
+interface DeleteCachesResponse {
+  success: boolean;
+  deleted_count: number;
+  failed_count: number;
+  cleared_db_metadata: number;
+  message: string;
+}
+
+interface CacheEnabledSetting {
+  enabled: boolean;
+}
+
+interface CacheTTLSetting {
+  ttl_hours: number;
+}
+
 export default function SettingsPage() {
   const [value, setValue] = useState<string>("");
   const [source, setSource] = useState<string>("");
@@ -73,6 +113,29 @@ export default function SettingsPage() {
   const [veoSessionCookieError, setVeoSessionCookieError] = useState<string | null>(null);
   const [veoSessionCookieSaved, setVeoSessionCookieSaved] = useState<boolean>(false);
 
+  const [aiModel, setAiModel] = useState<string>("gemini-2.5-flash-lite");
+  const [aiModelLoading, setAiModelLoading] = useState<boolean>(false);
+  const [aiModelSaving, setAiModelSaving] = useState<boolean>(false);
+  const [aiModelError, setAiModelError] = useState<string | null>(null);
+  const [aiModelSaved, setAiModelSaved] = useState<boolean>(false);
+
+  const [cacheData, setCacheData] = useState<AllCachesResponse | null>(null);
+  const [cacheLoading, setCacheLoading] = useState<boolean>(false);
+  const [cacheError, setCacheError] = useState<string | null>(null);
+  const [cacheDeleting, setCacheDeleting] = useState<boolean>(false);
+  
+  const [cacheEnabled, setCacheEnabled] = useState<boolean>(true);
+  const [cacheEnabledLoading, setCacheEnabledLoading] = useState<boolean>(false);
+  const [cacheEnabledSaving, setCacheEnabledSaving] = useState<boolean>(false);
+  const [cacheEnabledError, setCacheEnabledError] = useState<string | null>(null);
+  const [cacheEnabledSaved, setCacheEnabledSaved] = useState<boolean>(false);
+
+  const [cacheTTL, setCacheTTL] = useState<number>(24);
+  const [cacheTTLLoading, setCacheTTLLoading] = useState<boolean>(false);
+  const [cacheTTLSaving, setCacheTTLSaving] = useState<boolean>(false);
+  const [cacheTTLError, setCacheTTLError] = useState<string | null>(null);
+  const [cacheTTLSaved, setCacheTTLSaved] = useState<boolean>(false);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -90,6 +153,23 @@ export default function SettingsPage() {
         setError(e?.message || "Failed to load system instruction");
       } finally {
         setLoading(false);
+      }
+    };
+    const loadAiModel = async () => {
+      try {
+        setAiModelLoading(true);
+        setAiModelError(null);
+        const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/model`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        const data: AiModelSetting = await res.json();
+        setAiModel(data.model_name || "gemini-2.5-flash-lite");
+      } catch (e: any) {
+        setAiModelError(e?.message || "Failed to load AI model");
+      } finally {
+        setAiModelLoading(false);
       }
     };
     const loadVeoKey = async () => {
@@ -177,12 +257,49 @@ export default function SettingsPage() {
         setOpenrouterKeyLoading(false);
       }
     };
+    const loadCacheEnabled = async () => {
+      try {
+        setCacheEnabledLoading(true);
+        setCacheEnabledError(null);
+        const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/cache-enabled`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        const data: CacheEnabledSetting = await res.json();
+        setCacheEnabled(data.enabled);
+      } catch (e: any) {
+        setCacheEnabledError(e?.message || "Failed to load cache enabled setting");
+      } finally {
+        setCacheEnabledLoading(false);
+      }
+    };
+    const loadCacheTTL = async () => {
+      try {
+        setCacheTTLLoading(true);
+        setCacheTTLError(null);
+        const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/cache-ttl`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        const data: CacheTTLSetting = await res.json();
+        setCacheTTL(data.ttl_hours);
+      } catch (e: any) {
+        setCacheTTLError(e?.message || "Failed to load cache TTL setting");
+      } finally {
+        setCacheTTLLoading(false);
+      }
+    };
     load();
     loadVeoKey();
     loadVeoToken();
     loadVeoSessionCookie();
     loadGeminiKeys();
     loadOpenrouterKey();
+    loadAiModel();
+    loadCacheEnabled();
+    loadCacheTTL();
   }, []);
 
   const handleSave = async () => {
@@ -398,6 +515,127 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveAiModel = async () => {
+    try {
+      setAiModelSaving(true);
+      setAiModelError(null);
+      setAiModelSaved(false);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/model`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model_name: aiModel }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: AiModelSetting = await res.json();
+      setAiModel(data.model_name || "gemini-2.5-flash-lite");
+      setAiModelSaved(true);
+      setTimeout(() => setAiModelSaved(false), 1500);
+    } catch (e: any) {
+      setAiModelError(e?.message || "Failed to save AI model");
+    } finally {
+      setAiModelSaving(false);
+    }
+  };
+
+  const loadCacheData = async () => {
+    try {
+      setCacheLoading(true);
+      setCacheError(null);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/gemini-caches`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: AllCachesResponse = await res.json();
+      setCacheData(data);
+    } catch (e: any) {
+      setCacheError(e?.message || "Failed to load cache data");
+    } finally {
+      setCacheLoading(false);
+    }
+  };
+
+  const handleDeleteAllCaches = async () => {
+    if (!confirm("⚠️ This will DELETE ALL Gemini caches and stop storage billing. Continue?")) {
+      return;
+    }
+
+    try {
+      setCacheDeleting(true);
+      setCacheError(null);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/gemini-caches`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: DeleteCachesResponse = await res.json();
+      alert(`✅ ${data.message}`);
+      // Reload cache data
+      await loadCacheData();
+    } catch (e: any) {
+      setCacheError(e?.message || "Failed to delete caches");
+      alert(`❌ Failed to delete caches: ${e?.message}`);
+    } finally {
+      setCacheDeleting(false);
+    }
+  };
+
+  const handleToggleCacheEnabled = async () => {
+    try {
+      setCacheEnabledSaving(true);
+      setCacheEnabledError(null);
+      setCacheEnabledSaved(false);
+      const newValue = !cacheEnabled;
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/cache-enabled`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newValue }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: CacheEnabledSetting = await res.json();
+      setCacheEnabled(data.enabled);
+      setCacheEnabledSaved(true);
+      setTimeout(() => setCacheEnabledSaved(false), 1500);
+    } catch (e: any) {
+      setCacheEnabledError(e?.message || "Failed to update cache setting");
+    } finally {
+      setCacheEnabledSaving(false);
+    }
+  };
+
+  const handleSaveCacheTTL = async () => {
+    try {
+      setCacheTTLSaving(true);
+      setCacheTTLError(null);
+      setCacheTTLSaved(false);
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/cache-ttl`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ttl_hours: cacheTTL }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data: CacheTTLSetting = await res.json();
+      setCacheTTL(data.ttl_hours);
+      setCacheTTLSaved(true);
+      setTimeout(() => setCacheTTLSaved(false), 1500);
+    } catch (e: any) {
+      setCacheTTLError(e?.message || "Failed to update cache TTL");
+    } finally {
+      setCacheTTLSaving(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
@@ -448,6 +686,82 @@ export default function SettingsPage() {
                   {saving ? "Saving…" : "Save"}
                 </Button>
                 {saved && (
+                  <span className="text-xs text-emerald-400">Saved</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Default AI Model</CardTitle>
+            <CardDescription>
+              Choose which model to use for video analysis and prompt generation. Costs are calculated based on this selection.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {aiModelError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {aiModelError}
+              </div>
+            )}
+            <select
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-md text-sm p-2 text-neutral-100"
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+              disabled={aiModelLoading || aiModelSaving}
+            >
+              <optgroup label="Gemini 2.0 (Recommended for video analysis)">
+                <option value="gemini-2.0-flash-001">
+                  2.0 Flash – Input $0.10/1M, Cached $0.025/1M, Output $0.40/1M (Best cost/quality)
+                </option>
+                <option value="gemini-2.0-flash-lite">
+                  2.0 Flash-Lite – Input $0.075/1M, Output $0.30/1M (Most cost-effective)
+                </option>
+              </optgroup>
+              <optgroup label="Gemini 2.5 (Higher quality, higher cost)">
+                <option value="gemini-2.5-flash-001">
+                  2.5 Flash – Input $0.30/1M, Cached $0.03/1M, Output $2.50/1M
+                </option>
+                <option value="gemini-2.5-flash-preview-09-2025">
+                  2.5 Flash Preview – Input $0.30/1M, Cached $0.03/1M, Output $2.50/1M
+                </option>
+                <option value="gemini-2.5-flash-lite">
+                  2.5 Flash-Lite – Input $0.10/1M, Cached $0.01/1M, Output $0.40/1M
+                </option>
+                <option value="gemini-2.5-flash-lite-preview-09-2025">
+                  2.5 Flash-Lite Preview – Input $0.10/1M, Cached $0.01/1M, Output $0.40/1M
+                </option>
+                <option value="gemini-2.5-pro">
+                  2.5 Pro – Input $1.25/1M, Cached $0.125/1M, Output $10.00/1M (Best quality)
+                </option>
+              </optgroup>
+              <optgroup label="Gemini 3 (Latest, premium pricing)">
+                <option value="gemini-3-pro-preview">
+                  3 Pro Preview – Input $2.00/1M, Cached $0.20/1M, Output $12.00/1M (Most advanced)
+                </option>
+              </optgroup>
+              <optgroup label="OpenRouter (Free fallback)">
+                <option value="openrouter:nvidia/nemotron-nano-12b-v2-vl:free">
+                  Nemotron Nano – Free ($0 cost)
+                </option>
+              </optgroup>
+            </select>
+            <div className="flex items-center gap-3 justify-between mt-2">
+              <div className="text-xs text-neutral-500">
+                This model is used by new analyses. Existing analyses keep their original model and cost.
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={handleSaveAiModel}
+                  disabled={aiModelLoading || aiModelSaving}
+                  className="px-4 py-1.5 text-sm"
+                >
+                  {aiModelSaving ? "Saving…" : "Save"}
+                </Button>
+                {aiModelSaved && (
                   <span className="text-xs text-emerald-400">Saved</span>
                 )}
               </div>
@@ -705,6 +1019,180 @@ export default function SettingsPage() {
                   <span className="text-xs text-emerald-400">Saved</span>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Gemini Cache Management</CardTitle>
+            <CardDescription>
+              Control caching behavior and manage existing caches. Caches reduce costs by 90% but incur storage fees ($1/hour per cache after 24h TTL expires).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {cacheError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {cacheError}
+              </div>
+            )}
+            {cacheEnabledError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {cacheEnabledError}
+              </div>
+            )}
+            {cacheTTLError && (
+              <div className="text-xs text-red-400 border border-red-500/40 rounded-md p-2 bg-red-500/5">
+                {cacheTTLError}
+              </div>
+            )}
+
+            {/* Cache Enable/Disable Toggle */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="text-sm font-medium mb-1">
+                    {cacheEnabled ? "✅ Caching Enabled" : "❌ Caching Disabled"}
+                  </div>
+                  <div className="text-xs text-neutral-500">
+                    {cacheEnabled 
+                      ? "New analyses will create caches for 90% cost savings on follow-ups"
+                      : "New analyses will NOT create caches (no storage fees, but higher costs for follow-ups)"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleToggleCacheEnabled}
+                    disabled={cacheEnabledLoading || cacheEnabledSaving}
+                    className="px-4 py-1.5 text-sm"
+                    variant={cacheEnabled ? "destructive" : "default"}
+                  >
+                    {cacheEnabledSaving ? "Saving..." : (cacheEnabled ? "Disable" : "Enable")}
+                  </Button>
+                  {cacheEnabledSaved && (
+                    <span className="text-xs text-emerald-400">Saved</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Cache TTL Setting */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-md p-3">
+              <div className="space-y-2">
+                <div className="text-sm font-medium">⏱️ Cache Expiration Time (TTL)</div>
+                <div className="text-xs text-neutral-500 mb-2">
+                  How long caches should last before expiring. After expiration, caches incur $1/hour storage fees.
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="720"
+                      value={cacheTTL}
+                      onChange={(e) => setCacheTTL(parseInt(e.target.value) || 24)}
+                      disabled={cacheTTLLoading || cacheTTLSaving}
+                      className="w-24 text-sm bg-neutral-800 border border-neutral-700 rounded-md text-neutral-100 p-2"
+                    />
+                    <span className="text-xs text-neutral-400">hours</span>
+                    <span className="text-xs text-neutral-600">
+                      ({cacheTTL} hours = {(cacheTTL / 24).toFixed(1)} days)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleSaveCacheTTL}
+                      disabled={cacheTTLLoading || cacheTTLSaving || cacheTTL < 1 || cacheTTL > 720}
+                      className="px-4 py-1.5 text-sm"
+                    >
+                      {cacheTTLSaving ? "Saving..." : "Save"}
+                    </Button>
+                    {cacheTTLSaved && (
+                      <span className="text-xs text-emerald-400">Saved</span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-xs text-neutral-600 mt-1">
+                  Valid range: 1-720 hours (1 hour to 30 days). Common values: 1h, 6h, 12h, 24h (default), 48h, 168h (7 days)
+                </div>
+              </div>
+            </div>
+
+            {/* Cache Management Actions */}
+            <div className="flex gap-2 pt-2 border-t border-neutral-800">
+              <Button
+                type="button"
+                onClick={loadCacheData}
+                disabled={cacheLoading || cacheDeleting}
+                className="px-4 py-1.5 text-sm"
+                variant="outline"
+              >
+                {cacheLoading ? "Loading..." : "🔄 Check Caches"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDeleteAllCaches}
+                disabled={cacheLoading || cacheDeleting || !cacheData || cacheData.total_caches === 0}
+                className="px-4 py-1.5 text-sm"
+                variant="destructive"
+              >
+                {cacheDeleting ? "Deleting..." : "🗑️ Delete All Caches"}
+              </Button>
+            </div>
+
+            {cacheData && (
+              <div className="space-y-3 pt-2 border-t border-neutral-800">
+                <div className="text-sm font-medium">
+                  Total Caches: <span className="text-emerald-400">{cacheData.total_caches}</span>
+                </div>
+
+                {cacheData.keys_stats.map((keyStat) => (
+                  <div key={keyStat.key_index} className="bg-neutral-900 border border-neutral-800 rounded-md p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-mono text-neutral-400">
+                        Key #{keyStat.key_index}: {keyStat.key_preview}
+                      </div>
+                      <div className="text-xs font-medium text-neutral-300">
+                        {keyStat.cache_count} cache{keyStat.cache_count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+
+                    {keyStat.error && (
+                      <div className="text-xs text-red-400 mt-1">
+                        Error: {keyStat.error}
+                      </div>
+                    )}
+
+                    {keyStat.caches.length > 0 && (
+                      <div className="space-y-1 mt-2">
+                        {keyStat.caches.map((cache, idx) => (
+                          <div key={idx} className="text-xs text-neutral-500 font-mono pl-2 border-l-2 border-neutral-700">
+                            {cache.cache_name.split('/').pop()}
+                            {cache.expire_time && (
+                              <span className="ml-2 text-neutral-600">
+                                (expires: {new Date(cache.expire_time).toLocaleString()})
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {cacheData.total_caches === 0 && (
+                  <div className="text-xs text-neutral-500 italic">
+                    ✅ No caches found. Storage billing is stopped.
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
+              💡 <strong>Tip:</strong> Caches are created automatically during video analysis to save costs on follow-up operations.
+              They expire after 24 hours but continue to incur storage fees. Delete them when not needed.
             </div>
           </CardContent>
         </Card>

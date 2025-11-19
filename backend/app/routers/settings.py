@@ -6,9 +6,10 @@ import logging
 import hashlib
 import json
 from datetime import datetime
+import requests
 
 from app.database import get_db
-from app.models import AppSetting, VeoGeneration, MergedVideo
+from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis
 from app.services.google_ai_service import get_default_system_instruction, GoogleAIService
 
 
@@ -22,6 +23,9 @@ SETTINGS_KEY_OPENROUTER_API_KEY = "openrouter_api_key"
 SETTINGS_KEY_VEO_ACCESS_TOKEN = "veo_access_token"
 SETTINGS_KEY_VEO_SESSION_COOKIE = "veo_session_cookie"
 SETTINGS_KEY_VEO_SANDBOX_API_KEY = "veo_sandbox_api_key"
+SETTINGS_KEY_AI_MODEL = "ai_model"
+SETTINGS_KEY_CACHE_ENABLED = "gemini_cache_enabled"
+SETTINGS_KEY_CACHE_TTL_HOURS = "gemini_cache_ttl_hours"
 
 
 class AISystemInstruction(BaseModel):
@@ -41,6 +45,18 @@ class GeminiApiKeyTest(BaseModel):
 
 class OpenRouterApiKey(BaseModel):
     api_key: str
+
+
+class AiModelSetting(BaseModel):
+    model_name: str
+
+
+class CacheEnabledSetting(BaseModel):
+    enabled: bool
+
+
+class CacheTTLSetting(BaseModel):
+    ttl_hours: int  # Time to live in hours (default: 24)
 
 
 class VeoToken(BaseModel):
@@ -1216,3 +1232,341 @@ async def update_openrouter_api_key(payload: OpenRouterApiKey, db: Session = Dep
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update OpenRouter API key: {e}")
+
+
+@router.get("/ai/model", response_model=AiModelSetting)
+async def get_ai_model(db: Session = Depends(get_db)) -> AiModelSetting:
+    """Get the default AI model used for analysis (e.g. gemini-2.5-flash-lite)."""
+    setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_AI_MODEL).first()
+    default_model = "gemini-2.5-flash-lite"
+    model_name = default_model
+    if setting and setting.value:
+        raw = setting.value
+        try:
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            else:
+                data = raw
+            if isinstance(data, dict):
+                val = data.get("model_name") or data.get("model") or data.get("value")
+                if isinstance(val, str) and val.strip():
+                    model_name = val.strip()
+            elif isinstance(raw, str) and raw.strip():
+                model_name = raw.strip()
+        except Exception:
+            if isinstance(raw, str) and raw.strip():
+                model_name = raw.strip()
+    return AiModelSetting(model_name=model_name)
+
+
+@router.put("/ai/model", response_model=AiModelSetting)
+async def update_ai_model(payload: AiModelSetting, db: Session = Depends(get_db)) -> AiModelSetting:
+    """Update the default AI model used for analysis."""
+    value = payload.model_name.strip() or "gemini-2.5-flash-lite"
+    try:
+        setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_AI_MODEL).first()
+        json_value = json.dumps({"model_name": value})
+        if setting is None:
+            setting = AppSetting(key=SETTINGS_KEY_AI_MODEL, value=json_value)
+            db.add(setting)
+        else:
+            setting.value = json_value
+        db.commit()
+        db.refresh(setting)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update AI model: {e}")
+    return AiModelSetting(model_name=value)
+
+
+@router.get("/ai/cache-enabled", response_model=CacheEnabledSetting)
+async def get_cache_enabled(db: Session = Depends(get_db)) -> CacheEnabledSetting:
+    """Get whether Gemini caching is enabled (default: True)."""
+    setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_CACHE_ENABLED).first()
+    enabled = True  # Default to enabled
+    if setting and setting.value:
+        try:
+            raw = setting.value
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            else:
+                data = raw
+            if isinstance(data, dict):
+                enabled = bool(data.get("enabled", True))
+            elif isinstance(data, bool):
+                enabled = data
+        except Exception as e:
+            logger.error(f"Failed to parse cache_enabled: {e}")
+    return CacheEnabledSetting(enabled=enabled)
+
+
+@router.put("/ai/cache-enabled", response_model=CacheEnabledSetting)
+async def update_cache_enabled(payload: CacheEnabledSetting, db: Session = Depends(get_db)) -> CacheEnabledSetting:
+    """Enable or disable Gemini caching system."""
+    try:
+        setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_CACHE_ENABLED).first()
+        json_value = json.dumps({"enabled": payload.enabled})
+        if setting is None:
+            setting = AppSetting(key=SETTINGS_KEY_CACHE_ENABLED, value=json_value)
+            db.add(setting)
+        else:
+            setting.value = json_value
+        db.commit()
+        db.refresh(setting)
+        logger.info(f"Updated cache_enabled to {payload.enabled}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update cache setting: {e}")
+    return CacheEnabledSetting(enabled=payload.enabled)
+
+
+@router.get("/ai/cache-ttl", response_model=CacheTTLSetting)
+async def get_cache_ttl(db: Session = Depends(get_db)) -> CacheTTLSetting:
+    """Get cache TTL in hours (default: 24 hours)."""
+    setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_CACHE_TTL_HOURS).first()
+    ttl_hours = 24  # Default to 24 hours
+    if setting and setting.value:
+        try:
+            raw = setting.value
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            else:
+                data = raw
+            if isinstance(data, dict):
+                ttl_hours = int(data.get("ttl_hours", 24))
+            elif isinstance(data, int):
+                ttl_hours = data
+        except Exception as e:
+            logger.error(f"Failed to parse cache_ttl_hours: {e}")
+    return CacheTTLSetting(ttl_hours=ttl_hours)
+
+
+@router.put("/ai/cache-ttl", response_model=CacheTTLSetting)
+async def update_cache_ttl(payload: CacheTTLSetting, db: Session = Depends(get_db)) -> CacheTTLSetting:
+    """Update cache TTL in hours. Valid range: 1-720 hours (1 hour to 30 days)."""
+    # Validate TTL range
+    if payload.ttl_hours < 1 or payload.ttl_hours > 720:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cache TTL must be between 1 and 720 hours (30 days)"
+        )
+    
+    try:
+        setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_CACHE_TTL_HOURS).first()
+        json_value = json.dumps({"ttl_hours": payload.ttl_hours})
+        if setting is None:
+            setting = AppSetting(key=SETTINGS_KEY_CACHE_TTL_HOURS, value=json_value)
+            db.add(setting)
+        else:
+            setting.value = json_value
+        db.commit()
+        db.refresh(setting)
+        logger.info(f"Updated cache_ttl_hours to {payload.ttl_hours}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update cache TTL: {e}")
+    return CacheTTLSetting(ttl_hours=payload.ttl_hours)
+
+
+# ========================================
+# Gemini Cache Management
+# ========================================
+
+class CacheInfo(BaseModel):
+    """Information about a single cache."""
+    cache_name: str
+    expire_time: Optional[str] = None
+    model: Optional[str] = None
+    display_name: Optional[str] = None
+
+
+class CacheStats(BaseModel):
+    """Cache statistics for a single API key."""
+    key_index: int
+    key_preview: str
+    cache_count: int
+    caches: List[CacheInfo] = []
+    error: Optional[str] = None
+
+
+class AllCachesResponse(BaseModel):
+    """Response containing cache info for all API keys."""
+    total_caches: int
+    keys_stats: List[CacheStats]
+
+
+class DeleteCachesResponse(BaseModel):
+    """Response after deleting caches."""
+    success: bool
+    deleted_count: int
+    failed_count: int
+    cleared_db_metadata: int
+    message: str
+
+
+def _list_caches_for_key(api_key: str) -> List[Dict[str, Any]]:
+    """List all caches for a given API key."""
+    url = "https://generativelanguage.googleapis.com/v1beta/cachedContents"
+    try:
+        resp = requests.get(url, params={"key": api_key}, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("cachedContents", [])
+        else:
+            logger.warning(f"Failed to list caches: HTTP {resp.status_code}")
+            return []
+    except Exception as e:
+        logger.error(f"Error listing caches: {e}")
+        return []
+
+
+def _delete_cache(cache_name: str, api_key: str) -> bool:
+    """Delete a single cache."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/{cache_name}"
+    try:
+        resp = requests.delete(url, params={"key": api_key}, timeout=30)
+        if resp.status_code in [200, 204]:
+            logger.info(f"Deleted cache: {cache_name}")
+            return True
+        else:
+            logger.warning(f"Failed to delete {cache_name}: HTTP {resp.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Error deleting {cache_name}: {e}")
+        return False
+
+
+def _clear_cache_metadata_from_db(db: Session) -> int:
+    """Remove cache metadata from all stored analyses to prevent reuse."""
+    try:
+        analyses = db.query(AdAnalysis).all()
+        updated_count = 0
+        
+        for analysis in analyses:
+            if analysis.raw_ai_response:
+                try:
+                    raw = json.loads(analysis.raw_ai_response) if isinstance(analysis.raw_ai_response, str) else analysis.raw_ai_response
+                    if isinstance(raw, dict):
+                        changed = False
+                        if "gemini_cache_name" in raw:
+                            del raw["gemini_cache_name"]
+                            changed = True
+                        if "gemini_cache_expire_time" in raw:
+                            del raw["gemini_cache_expire_time"]
+                            changed = True
+                        
+                        if changed:
+                            analysis.raw_ai_response = json.dumps(raw)
+                            updated_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to process analysis {analysis.id}: {e}")
+        
+        if updated_count > 0:
+            db.commit()
+            logger.info(f"Cleared cache metadata from {updated_count} analyses")
+        
+        return updated_count
+    except Exception as e:
+        logger.error(f"Failed to clear database metadata: {e}")
+        db.rollback()
+        return 0
+
+
+def _get_gemini_api_keys_list(db: Session) -> List[str]:
+    """Load Gemini API keys from database."""
+    setting = db.query(AppSetting).filter(AppSetting.key == SETTINGS_KEY_GEMINI_API_KEYS).first()
+    keys = []
+    if setting and setting.value:
+        try:
+            raw = setting.value
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            else:
+                data = raw
+            keys = data if isinstance(data, list) else []
+        except Exception as e:
+            logger.error(f"Failed to parse gemini_api_keys: {e}")
+    return keys
+
+
+@router.get("/ai/gemini-caches", response_model=AllCachesResponse)
+async def get_all_gemini_caches(db: Session = Depends(get_db)) -> AllCachesResponse:
+    """Get information about all Gemini caches across all API keys."""
+    api_keys = _get_gemini_api_keys_list(db)
+    
+    if not api_keys:
+        return AllCachesResponse(total_caches=0, keys_stats=[])
+    
+    keys_stats = []
+    total_caches = 0
+    
+    for i, key in enumerate(api_keys, 1):
+        key_preview = f"{key[:8]}****...****{key[-8:]}" if len(key) > 16 else key
+        
+        try:
+            caches_raw = _list_caches_for_key(key)
+            cache_infos = []
+            
+            for cache in caches_raw:
+                cache_infos.append(CacheInfo(
+                    cache_name=cache.get("name", ""),
+                    expire_time=cache.get("expireTime"),
+                    model=cache.get("model"),
+                    display_name=cache.get("displayName")
+                ))
+            
+            keys_stats.append(CacheStats(
+                key_index=i,
+                key_preview=key_preview,
+                cache_count=len(cache_infos),
+                caches=cache_infos
+            ))
+            total_caches += len(cache_infos)
+            
+        except Exception as e:
+            logger.error(f"Failed to get caches for key #{i}: {e}")
+            keys_stats.append(CacheStats(
+                key_index=i,
+                key_preview=key_preview,
+                cache_count=0,
+                caches=[],
+                error=str(e)
+            ))
+    
+    return AllCachesResponse(total_caches=total_caches, keys_stats=keys_stats)
+
+
+@router.delete("/ai/gemini-caches", response_model=DeleteCachesResponse)
+async def delete_all_gemini_caches(db: Session = Depends(get_db)) -> DeleteCachesResponse:
+    """Delete ALL Gemini caches across all API keys and clear database metadata."""
+    api_keys = _get_gemini_api_keys_list(db)
+    
+    if not api_keys:
+        raise HTTPException(status_code=400, detail="No Gemini API keys configured")
+    
+    deleted_count = 0
+    failed_count = 0
+    
+    # Delete all caches for each key
+    for i, key in enumerate(api_keys, 1):
+        logger.info(f"Processing API Key #{i}")
+        caches = _list_caches_for_key(key)
+        
+        for cache in caches:
+            cache_name = cache.get("name", "")
+            if cache_name:
+                if _delete_cache(cache_name, key):
+                    deleted_count += 1
+                else:
+                    failed_count += 1
+    
+    # Clear metadata from database
+    cleared_db_metadata = _clear_cache_metadata_from_db(db)
+    
+    return DeleteCachesResponse(
+        success=True,
+        deleted_count=deleted_count,
+        failed_count=failed_count,
+        cleared_db_metadata=cleared_db_metadata,
+        message=f"Deleted {deleted_count} cache(s), cleared metadata from {cleared_db_metadata} analysis records"
+    )
