@@ -557,12 +557,12 @@ async def get_veo_task_status(task_id: str) -> VeoTaskStatusResponse:
         # PENDING can mean either "not started yet" or "doesn't exist"
         if task_state == 'PENDING':
             # Try to get more info - if result and info are both None, task likely doesn't exist
+            # but we'll still report PENDING to allow for slow workers.
             if task_result.result is None and task_result.info is None:
-                # Check if task was recently created (still in queue)
                 return VeoTaskStatusResponse(
                     task_id=task_id,
                     state='PENDING',
-                    status='Task is queued and waiting to start',
+                    status='Task is pending or not yet started',
                     progress=0
                 )
             return VeoTaskStatusResponse(
@@ -617,6 +617,226 @@ async def get_veo_task_status(task_id: str) -> VeoTaskStatusResponse:
     except Exception as e:
         logger.error(f"Failed to get task status for {task_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get task status: {e}")
+
+
+class CreativeBriefGenerateRequest(BaseModel):
+    """Request model for generating creative brief variations."""
+    script: str
+    styles: List[str]
+    character: Optional[Dict[str, Any]] = None
+    model: Optional[str] = "gemini-2.0-flash-exp"
+
+
+class CreativeBriefVariation(BaseModel):
+    """Single creative brief variation with 8-second segments."""
+    style: str
+    segments: List[str]
+
+
+class CreativeBriefGenerateResponse(BaseModel):
+    """Response model for creative brief generation."""
+    success: bool
+    variations: List[CreativeBriefVariation] = []
+    error: Optional[str] = None
+
+
+class AvailableStyle(BaseModel):
+    """Available style with description."""
+    id: str
+    name: str
+    description: str
+    example_use_case: str
+
+
+class AvailableStylesResponse(BaseModel):
+    """Response model for available styles."""
+    styles: List[AvailableStyle]
+
+
+class CharacterPreset(BaseModel):
+    """Character preset with details."""
+    id: str
+    name: str
+    age: str
+    gender: str
+    ethnicity: str
+    features: str
+    wardrobe: str
+    energy: str
+
+
+class CharacterPresetsResponse(BaseModel):
+    """Response model for character presets."""
+    presets: List[CharacterPreset]
+
+
+@router.get("/ai/veo/available-styles", response_model=AvailableStylesResponse)
+async def get_available_styles() -> AvailableStylesResponse:
+    """
+    Get list of available video styles for prompt generation.
+    """
+    styles = [
+        AvailableStyle(
+            id="podcast",
+            name="Podcast Style",
+            description="Modern podcast studio with microphone, warm lighting, comfortable seating",
+            example_use_case="Interview-style content, expert commentary, conversational videos"
+        ),
+        AvailableStyle(
+            id="walking",
+            name="Walking Style",
+            description="Urban environment with smooth tracking shots following the subject",
+            example_use_case="Product launches, lifestyle content, dynamic presentations"
+        ),
+        AvailableStyle(
+            id="testimonial",
+            name="Testimonial Style",
+            description="Clean professional background with direct-to-camera framing",
+            example_use_case="Customer testimonials, trust-building content, authentic reviews"
+        ),
+        AvailableStyle(
+            id="product_demo",
+            name="Product Demo Style",
+            description="Clean workspace with hands-on product demonstration",
+            example_use_case="Product features, how-to guides, unboxing videos"
+        ),
+        AvailableStyle(
+            id="cinematic",
+            name="Cinematic Style",
+            description="Carefully art-directed with dramatic lighting and dynamic camera work",
+            example_use_case="Brand stories, high-end commercials, emotional narratives"
+        ),
+        AvailableStyle(
+            id="social_media",
+            name="Social Media Style",
+            description="Casual, vertical format with authentic, engaging presentation",
+            example_use_case="TikTok, Instagram Reels, short-form viral content"
+        ),
+        AvailableStyle(
+            id="tutorial",
+            name="Tutorial Style",
+            description="Well-lit workspace with clear step-by-step demonstrations",
+            example_use_case="Educational content, skill training, instructional videos"
+        ),
+        AvailableStyle(
+            id="motivational",
+            name="Motivational Style",
+            description="Inspiring location with dynamic angles and empowering visuals",
+            example_use_case="Fitness content, self-improvement, inspirational speeches"
+        ),
+    ]
+    return AvailableStylesResponse(styles=styles)
+
+
+@router.get("/ai/veo/character-presets", response_model=CharacterPresetsResponse)
+async def get_character_presets() -> CharacterPresetsResponse:
+    """
+    Get list of character presets for video generation.
+    """
+    presets = [
+        CharacterPreset(
+            id="professional_male",
+            name="Professional Male",
+            age="35-45",
+            gender="Male",
+            ethnicity="Caucasian",
+            features="Clean-cut professional appearance, confident demeanor, well-groomed",
+            wardrobe="Business casual: button-down shirt, slacks, clean modern aesthetic",
+            energy="Confident, approachable, authoritative yet friendly"
+        ),
+        CharacterPreset(
+            id="professional_female",
+            name="Professional Female",
+            age="30-40",
+            gender="Female",
+            ethnicity="Caucasian",
+            features="Professional appearance, warm smile, polished presentation",
+            wardrobe="Business casual: blazer, professional top, modern professional attire",
+            energy="Confident, warm, professional yet personable"
+        ),
+        CharacterPreset(
+            id="young_creative",
+            name="Young Creative",
+            age="25-30",
+            gender="Any",
+            ethnicity="Diverse",
+            features="Modern, creative appearance, trendy styling, energetic presence",
+            wardrobe="Casual modern: streetwear, contemporary fashion, creative expression",
+            energy="Energetic, authentic, relatable, slightly informal"
+        ),
+        CharacterPreset(
+            id="expert_authority",
+            name="Expert Authority",
+            age="45-55",
+            gender="Male",
+            ethnicity="Diverse",
+            features="Distinguished appearance, mature, wisdom conveyed through presence",
+            wardrobe="Professional formal: suit or refined business attire",
+            energy="Authoritative, trustworthy, experienced, measured delivery"
+        ),
+        CharacterPreset(
+            id="friendly_coach",
+            name="Friendly Coach",
+            age="30-40",
+            gender="Any",
+            ethnicity="Diverse",
+            features="Approachable, fit appearance, encouraging demeanor",
+            wardrobe="Athletic casual: sportswear, activewear, comfortable athletic clothing",
+            energy="Motivating, encouraging, friendly, high-energy"
+        ),
+        CharacterPreset(
+            id="casual_influencer",
+            name="Casual Influencer",
+            age="22-28",
+            gender="Female",
+            ethnicity="Diverse",
+            features="Trendy, relatable, social-media savvy appearance",
+            wardrobe="Casual trendy: modern casual fashion, accessories, on-trend styling",
+            energy="Authentic, engaging, conversational, social media native"
+        ),
+    ]
+    return CharacterPresetsResponse(presets=presets)
+
+
+@router.post("/ai/veo/generate-briefs", response_model=CreativeBriefGenerateResponse)
+async def generate_creative_briefs(payload: CreativeBriefGenerateRequest) -> CreativeBriefGenerateResponse:
+    """
+    Generate creative brief variations based on script and selected styles.
+    
+    This endpoint uses Gemini to create detailed VEO 3 creative briefs for each
+    selected style, allowing users to choose from different visual approaches
+    for the same script.
+    """
+    try:
+        service = GoogleAIService()
+        result = service.generate_creative_brief_variations(
+            script=payload.script,
+            styles=payload.styles,
+            character=payload.character,
+            model=payload.model or "gemini-2.0-flash-exp"
+        )
+        
+        if result.get("success"):
+            variations = [
+                CreativeBriefVariation(
+                    style=v.get("style", "unknown"),
+                    segments=v.get("segments", [])
+                )
+                for v in result.get("variations", [])
+            ]
+            return CreativeBriefGenerateResponse(
+                success=True,
+                variations=variations
+            )
+        else:
+            return CreativeBriefGenerateResponse(
+                success=False,
+                error=result.get("error", "Unknown error occurred")
+            )
+            
+    except Exception as e:
+        logger.error(f"Failed to generate creative briefs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate creative briefs: {e}")
 
 
 @router.get("/ai/veo/credits", response_model=VeoCredits)

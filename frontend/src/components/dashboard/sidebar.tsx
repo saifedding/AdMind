@@ -149,19 +149,8 @@ function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProp
   const [veoTier, setVeoTier] = useState<string | null>(null);
   const [veoRefreshing, setVeoRefreshing] = useState<boolean>(false);
 
+  // Always initialize with defaults to avoid hydration mismatch
   const [openGroups, setOpenGroups] = useState<Record<number, boolean>>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = window.localStorage.getItem("sidebarOpenGroups");
-        if (stored) {
-          const parsed = JSON.parse(stored) as Record<number, boolean>;
-          return parsed;
-        }
-      } catch {
-        // ignore parse errors and fall back to defaults
-      }
-    }
-
     const initial: Record<number, boolean> = {};
     navigationGroups.forEach((group, index) => {
       // Default: all groups open except System
@@ -173,6 +162,20 @@ function SidebarContent({ isCollapsed = false, onItemClick }: SidebarContentProp
     });
     return initial;
   });
+
+  // Load from localStorage after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = window.localStorage.getItem("sidebarOpenGroups");
+      if (stored) {
+        const parsed = JSON.parse(stored) as Record<number, boolean>;
+        setOpenGroups(parsed);
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
 
   const toggleGroup = (index: number) => {
     setOpenGroups((prev) => ({

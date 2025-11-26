@@ -84,7 +84,7 @@ class GoogleAIService:
         self.api_key = self.api_keys[0]
 
     def _auth_params(self) -> Dict[str, str]:
-        return {"key": self.api_key}
+        return {"key": str(self.api_key)}
     
     def _rotate_key(self) -> bool:
         """Rotate to next API key. Returns True if rotated, False if no more keys."""
@@ -1052,15 +1052,33 @@ class GoogleAIService:
                             # Fallback: stringify the whole dict if no 'prompt' key
                             prompts_array.append(str(item))
                     parsed["generation_prompts"] = prompts_array
+                    gps = parsed.get("generation_prompts")
                 
-                # Case 3: Array of strings that need regrouping
-                elif isinstance(gps, list) and gps and all(isinstance(s, str) for s in gps):
+                # Case 3: Array of strings that need regrouping / splitting
+                if isinstance(gps, list) and gps and all(isinstance(s, str) for s in gps):
                     header = "# VEO 3 CREATIVE BRIEF"
-                    # Only regroup if at least one header exists
-                    if any(header in s for s in gps):
+                    flat: list[str] = []
+                    # First, if any string contains multiple briefs, split them
+                    for s in gps:
+                        if header in s:
+                            parts = s.split(header)
+                            for part in parts:
+                                part = part.strip()
+                                if not part:
+                                    continue
+                                # Re-attach header if it was removed by split
+                                if not part.startswith(header):
+                                    flat.append(f"{header} {part}")
+                                else:
+                                    flat.append(part)
+                        else:
+                            flat.append(s)
+
+                    # Now regroup by header so each prompt is a single consolidated string
+                    if any(header in s for s in flat):
                         grouped: list[str] = []
                         current: list[str] = []
-                        for chunk in gps:
+                        for chunk in flat:
                             if header in chunk and current:
                                 grouped.append("\n".join(current).strip())
                                 current = [chunk]
@@ -1069,9 +1087,10 @@ class GoogleAIService:
                         if current:
                             grouped.append("\n".join(current).strip())
                         parsed["generation_prompts"] = grouped
+                    else:
+                        parsed["generation_prompts"] = flat
                 
-                # Case 3: Already in correct format or empty
-                # No changes needed
+                # Otherwise: already in correct format or empty – no changes
                 
             except Exception as e:
                 logger.warning(f"generation_prompts processing failed: {e}")
@@ -1844,3 +1863,634 @@ class GoogleAIService:
             "credits": int(credits) if isinstance(credits, (int, float)) else 0,
             "userPaygateTier": str(tier) if tier is not None else "",
         }
+    
+    def generate_creative_brief_variations(
+        self,
+        script: str,
+        styles: list,
+        character: Optional[Dict[str, Any]] = None,
+        model: str = "gemini-2.0-flash",
+    ) -> Dict[str, Any]:
+        """
+        Generate creative brief variations based on a script/VO with different styles.
+        
+        Args:
+            script: The script or voice-over content
+            styles: List of style names (e.g., ["podcast", "walking", "testimonial"])
+            character: Optional character description dict with keys like age, gender, ethnicity, clothing
+            model: Model to use - can be Gemini model or OpenRouter model (prefix with "openrouter:")
+            
+        Returns:
+            Dict with variations for each style
+        """
+        
+        # Check if this is an OpenRouter model
+        if model.startswith("openrouter:"):
+            return self._generate_briefs_via_openrouter(script, styles, character, model)
+        
+        # Otherwise use Gemini
+        return self._generate_briefs_via_gemini(script, styles, character, model)
+    
+    def _build_veo_prompt(
+        self,
+        script: str,
+        styles: list,
+        character: Optional[Dict[str, Any]] = None,
+    ) -> tuple:
+        """
+        Build the comprehensive VEO 3 creative brief prompt structure.
+        Returns (system_instruction, variations_request) tuple.
+        This is shared by both Gemini and OpenRouter implementations.
+        """
+        # Build character description if provided
+        character_desc = ""
+        if character:
+            character_desc = f"""
+### Character Specifications:
+- **Age**: {character.get('age', '30-40')}
+- **Gender**: {character.get('gender', 'Male')}
+- **Ethnicity**: {character.get('ethnicity', 'Caucasian')}
+- **Physical Features**: {character.get('features', 'Professional appearance')}
+- **Wardrobe**: {character.get('wardrobe', 'Business casual attire')}
+- **Energy Level**: {character.get('energy', 'Confident and approachable')}
+"""
+        
+        # Style definitions with specific characteristics
+        style_definitions = {
+            "podcast": {
+                "setting": "Modern podcast studio with microphone, warm lighting, comfortable seating",
+                "camera": "Static medium close-up, slight depth of field with blurred background",
+                "movement": "Minimal movement, natural hand gestures while speaking",
+                "atmosphere": "Intimate, conversational, professional yet relaxed"
+            },
+            "walking": {
+                "setting": "Urban environment, modern city street or corporate campus",
+                "camera": "Smooth tracking shot following subject, steady cam movement",
+                "movement": "Natural walking pace, confident stride, occasional turns to camera",
+                "atmosphere": "Dynamic, energetic, authentic lifestyle"
+            },
+            "testimonial": {
+                "setting": "Clean, professional background - could be office, home office, or neutral backdrop",
+                "camera": "Direct-to-camera framing, stable shot with slight zoom during key moments",
+                "movement": "Seated or standing, minimal movement, strong eye contact",
+                "atmosphere": "Trustworthy, authentic, personal connection"
+            },
+            "product_demo": {
+                "setting": "Clean workspace or studio setup with product visible",
+                "camera": "Mix of wide shots and close-ups, smooth transitions between angles",
+                "movement": "Hands-on demonstration, pointing, showing features",
+                "atmosphere": "Educational, clear, professional"
+            },
+            "cinematic": {
+                "setting": "Carefully art-directed environment with dramatic lighting",
+                "camera": "Dynamic camera movements, dolly shots, varying angles",
+                "movement": "Choreographed movements, intentional blocking",
+                "atmosphere": "Dramatic, high-production-value, visually striking"
+            },
+            "social_media": {
+                "setting": "Casual, relatable environment - could be home, cafe, outdoor",
+                "camera": "Handheld or phone-style framing, vertical 9:16 aspect ratio",
+                "movement": "Natural, spontaneous movements, direct engagement",
+                "atmosphere": "Casual, authentic, engaging, fast-paced"
+            },
+            "tutorial": {
+                "setting": "Well-lit workspace with clear visibility of demonstrations",
+                "camera": "Over-the-shoulder and close-up shots for detailed steps",
+                "movement": "Step-by-step demonstrations, clear pointing and showing",
+                "atmosphere": "Educational, clear, encouraging, patient"
+            },
+            "motivational": {
+                "setting": "Inspiring location - could be gym, outdoor scenic area, modern office",
+                "camera": "Dynamic angles, low-angle shots for empowerment",
+                "movement": "Confident, purposeful movement, strong body language",
+                "atmosphere": "Inspiring, energetic, empowering"
+            }
+        }
+        
+        # Build the prompt for Gemini
+        system_instruction = f"""You are an expert video creative director specializing in creating detailed VEO 3 creative briefs.
+
+Given a script/voiceover and a list of style variations, generate 8-SECOND SEGMENT creative briefs for EACH style.
+
+🚨🚨🚨 CRITICAL UNDERSTANDING 🚨🚨🚨
+
+**THE VIDEO GENERATION AI CANNOT SEE PREVIOUS SEGMENTS!**
+
+This means EVERY segment must be COMPLETELY SELF-CONTAINED with FULL descriptions of:
+- Character appearance (exact details every time)
+- Environment layout (exact positions every time)
+- Lighting setup (exact sources every time)
+- Camera framing (exact angles every time)
+
+You CANNOT say "same as before" or "continues from previous" without RE-DESCRIBING everything in complete detail!
+
+**ABSOLUTELY NO ON-SCREEN TEXT OR TEXT OVERLAYS!**
+
+Do NOT include ANY text overlays, captions, subtitles, or on-screen text in the video generation prompts. The dialogue is spoken, not shown as text.
+
+---
+
+You are generating ALL segments in a single batch, so you have complete knowledge of the full script and can ensure PERFECT CONTINUITY.
+
+Each segment brief should follow this EXACT structure and be EXTREMELY DETAILED:
+
+# VEO 3 CREATIVE BRIEF: [Style Name] - [Title]
+
+## TECHNICAL SPECIFICATIONS
+**Duration:** TARGET: 7.0-8.0 seconds per segment (8.0 is ideal). HARD LIMIT: Never exceed 8.0 seconds.
+🚫 **NO ON-SCREEN TEXT:** Do NOT include any text overlays, captions, subtitles, or on-screen text in this segment. All dialogue is SPOKEN, not displayed as text.
+**Resolution:** 4K (3840×2160)
+**Frame Rate:** 30fps
+**Aspect Ratio:** 9:16 vertical (or 16:9 for certain styles)
+**Style:** Hyper-realistic, photorealistic commercial cinematography
+**Color Grading:** [Specify palette based on style]
+
+## 1. VISUAL NARRATIVE & ARTISTIC DIRECTION
+**Core Concept:** [What this video is about]
+**Artistic Mandate:**
+- [Specific visual direction]
+- [Specific visual direction]
+- [Specific visual direction]
+
+## 2. THE PROTAGONIST: [Role]
+
+⚠️ REMEMBER: The video generation AI CANNOT see previous segments, so you must provide COMPLETE descriptions every time, not shortcuts like "same person as before."
+
+When writing the following subsections, DO NOT output any instructional placeholder text like [EXACT, COMPLETE description...] or similar notes. Instead, directly write the final, fully-detailed descriptions exactly as they should appear in the user-facing creative brief.
+
+### Physical Appearance & Ethnicity
+[EXACT, COMPLETE description: age, gender, ethnicity, facial features, hair color/style/length, **highly realistic facial detail** (fine wrinkles, skin texture, pores, subtle blemishes), **natural skin shading and undertones**, body type, height, and **eye detail** (iris color, reflections, catchlights).
+In every segment, you MUST describe the face so it looks like a real human face in high-end commercial video: include forehead lines, smile lines, micro-wrinkles around the eyes and mouth, realistic skin texture (not plastic or airbrushed), and natural variation in tone.
+Also describe **eye behavior** clearly: natural blinking, subtle eye movements following the camera or scene, and micro-expressions that match the emotion of the dialogue.
+For segments 2+: COPY this exact description from segment 1 - word for word. The description MUST be IDENTICAL in EVERY SINGLE SEGMENT - no variations, no shortcuts, no abbreviations.]
+
+### Wardrobe & Styling
+[COMPLETE outfit description: every garment, colors, patterns, accessories, jewelry, shoes. This MUST match EXACTLY across ALL segments - same clothes, same style, NO CHANGES whatsoever.]
+
+### Character Energy (MUST BE CONSISTENT ACROSS ALL SEGMENTS)
+[Personality, demeanor, energy level. CRITICAL: Since you're generating all segments at once, establish the character's energy level and maintain it consistently in EVERY segment. If energetic in segment 1, stay energetic in ALL segments. If calm, keep that tone throughout. Do NOT vary the energy between segments - it must feel like one continuous performance.]
+
+### Position & Spatial Reference (CRITICAL FOR CONTINUITY)
+- **Starting Position in Frame:** [Exact position: left/center/right third, foreground/midground/background, distance from camera. For segments 2+, this MUST match the ending position from the previous segment.]
+- **Body Orientation:** [Facing camera, 3/4 turn, profile, which direction they're looking]
+- **Ending Position in Frame:** [Where person ends up by end of this segment - this becomes the starting position for the next segment]
+- **Movement Path:** [Describe any movement: static, walking, gesturing, etc.]
+
+## 3. THE ENVIRONMENT: [Location]
+
+### Location & Setting
+[Exact location type, architectural details, floor/wall/ceiling materials, colors, textures. MUST remain IDENTICAL across ALL segments.]
+
+### Spatial Layout & Props (CRITICAL FOR CONTINUITY)
+- **Left Side of Frame:** [List EVERY visible object, furniture, prop with exact position and appearance. These MUST stay in the same positions across ALL segments.]
+- **Center of Frame:** [List EVERY visible object, furniture, prop with exact position and appearance. These MUST stay in the same positions across ALL segments.]
+- **Right Side of Frame:** [List EVERY visible object, furniture, prop with exact position and appearance. These MUST stay in the same positions across ALL segments.]
+- **Background Elements:** [Walls, windows, doors, artwork, shelving - exact positions and details. MUST remain identical.]
+- **Foreground Elements:** [Any objects between camera and subject. MUST remain identical.]
+
+### Lighting & Atmosphere
+[Light sources (position, type, color temperature), shadows, ambient light, time of day. MUST remain CONSISTENT across ALL segments - same light sources, same shadows, same color temperature.]
+
+## 4. CINEMATOGRAPHY
+### Camera Movement & Technique
+[Camera work for this style]
+
+### Framing & Composition
+[Composition details]
+
+### Focus & Depth of Field
+[Focus details]
+
+## 5. THE PERFORMANCE
+
+### Dialogue & Script (EXACT SPOKEN WORDS ONLY)
+[For this segment, write ONLY the final spoken lines that the on-screen character will speak, in the exact order they will say them.
+Use ONLY words taken from the provided script for this segment. You may trim or split the script into shorter sentences, but you MUST NOT invent new phrases, greetings, filler words, or rephrasings that are not present in the original script.
+Do NOT include explanations, timestamps, brackets, bullet labels, or commentary here – just the clean sentences to be spoken on camera, exactly as they should be pronounced.]
+
+### Vocal Delivery Specifications
+[Describe HOW the lines above should be delivered (tone, pace, emphasis, accent), but do NOT introduce any new dialogue text or additional words.]
+
+### Physical Performance & Body Language
+[Describe gestures, posture, facial expressions, and movement that MATCH the lines above, but do NOT add any new spoken words or dialogue.]
+
+## 6. TIMELINE: BEAT-BY-BEAT BREAKDOWN
+
+🚨 CRITICAL: This timeline MUST cover EVERY SINGLE SECOND from 0.0 to the EXACT duration specified. If duration is 7.2 seconds, timeline MUST go from 0.0 to 7.2 with NO GAPS. Every second must be accounted for with specific visual actions, body language, facial expressions, dialogue timing, and camera behavior. 🚨
+
+### SECONDS 0.0 - [time]
+- Visual: [What is seen]
+- Action: [What character is doing]
+- Audio: [Dialogue with exact words]
+
+[Continue with more time segments covering EVERY SECOND until end]
+
+## 7. BACKGROUND EXTRAS & ENVIRONMENTAL LIFE
+[Any background elements]
+
+## 8. COLOR GRADING & VISUAL STYLE
+[Color palette and visual treatment]
+
+## 9. AUDIO SPECIFICATIONS
+[Audio requirements]
+
+## 10. OPTIMIZATION & CHECKLIST
+- Avoid pitfalls: No on-screen text overlays, no hallucinations, no invented elements
+- Success criteria: Seamless continuity, consistent character, smooth merging between segments
+
+---
+
+🚨 CONTINUITY ENFORCEMENT (MANDATORY) 🚨
+
+**REMEMBER: THE VIDEO AI CANNOT SEE PREVIOUS SEGMENTS!**
+
+You must FULLY RE-DESCRIBE everything in COMPLETE DETAIL in EVERY segment.
+
+**For Segment 1:** Establish the complete visual world with exhaustive detail.
+
+**For Segments 2, 3, 4, etc.:**
+- Begin with "CONTINUING FROM PREVIOUS SEGMENT"
+- Then provide COMPLETE, FULL RE-DESCRIPTIONS (not just "same as before"):
+
+1. **Person - FULL RE-DESCRIPTION REQUIRED:**
+   - Re-describe EVERY detail: age, gender, ethnicity, face shape, eye color, hair (color, length, style), skin tone, body type, height
+   - Re-describe COMPLETE wardrobe: every piece of clothing, colors, patterns, accessories, jewelry, shoes
+   - NO CHANGES from previous segment - copy the exact descriptions
+   - Example: "A 35-year-old Caucasian male with short brown hair, blue eyes, wearing a navy blue polo shirt and khaki pants" (NOT "same person as before")
+
+2. **Environment - FULL RE-DESCRIPTION REQUIRED:**
+   - Re-describe EVERY element: room type, wall color, floor material, ceiling
+   - Re-list EVERY prop and its exact position: "White desk on left with laptop, black office chair center, tall plant in corner right"
+   - NO shortcuts like "same room" - write it all out again
+
+3. **Lighting - FULL RE-DESCRIPTION REQUIRED:**
+   - Re-describe ALL light sources: "Soft key light from front-left, fill light from right, backlight creating rim lighting on hair"
+   - Re-describe shadows, color temperature, ambient light
+   - NOT "same lighting" - describe it fully
+
+4. **Camera - FULL RE-DESCRIPTION REQUIRED:**
+   - Re-describe framing: "Medium close-up shot, subject centered in frame at chest level, slight depth of field"
+   - NOT "same framing" - describe it completely
+
+5. **Energy - FULL RE-DESCRIPTION REQUIRED:**
+   - Re-describe performance style: "Confident, energetic delivery with animated hand gestures and direct eye contact"
+   - NOT "same energy" - describe it fully
+
+**Position Continuity:** The person's STARTING position in segment N must match their ENDING position from segment N-1. Describe both positions explicitly.
+
+**Environmental Continuity:** Copy-paste prop descriptions from segment to segment to ensure identical positioning.
+
+**Think of it as describing the same scene from scratch each time** - the AI generating each segment is blind to the others!
+
+CRITICAL RULES:
+- Be extremely specific and detailed in EVERY segment
+- Match the style characteristics precisely
+- Use the character specifications if provided
+- Ensure dialogue timing matches the script (3.0-3.5 words/sec)
+- Make each segment production-ready and complete
+- NO hallucinations - only describe what should actually be visible
+- DO NOT include on-screen text overlays in prompts
+"""
+
+        # Build the user prompt
+        variations_request = f"""
+Generate {len(styles)} creative brief variations for the following script:
+
+---
+SCRIPT:
+{script}
+---
+{character_desc}
+
+Generate a complete, detailed creative brief for EACH of these styles:
+{', '.join(styles)}
+
+Style Characteristics:
+"""
+        
+        for style in styles:
+            if style.lower() in style_definitions:
+                style_info = style_definitions[style.lower()]
+                variations_request += f"""
+**{style.upper()}:**
+- Setting: {style_info['setting']}
+- Camera: {style_info['camera']}
+- Movement: {style_info['movement']}
+- Atmosphere: {style_info['atmosphere']}
+"""
+        
+        variations_request += """
+
+🚨 SEGMENT GENERATION INSTRUCTIONS 🚨
+
+For each style, you MUST:
+
+1. **Calculate Total Duration:** Count words in script, divide by 3.0-3.5 words/sec
+2. **Determine Segment Count:** Divide total duration by 8 seconds (round up)
+3. **Plan Segment Boundaries:** Find natural break points at complete sentences, gestures, or pauses
+4. **Generate ALL Segments for that style** before moving to the next style
+
+Return a JSON object with this EXACT structure:
+{
+  "variations": [
+    {
+      "style": "style_name",
+      "segments": [
+        "SEGMENT 1: Complete VEO 3 creative brief (7-8 seconds). Establish character appearance, environment, and energy level that will be MAINTAINED across ALL segments.",
+        "SEGMENT 2: Start with 'CONTINUING FROM PREVIOUS SEGMENT' and re-describe identical character, environment, lighting. Starting position MUST match segment 1's ending position.",
+        "SEGMENT 3+: Same continuity rules - IDENTICAL character/environment/lighting/energy, position continuity"
+      ]
+    }
+  ]
+}
+
+Each segment brief MUST:
+✅ TARGET 7.0-8.0 seconds (HARD LIMIT: 8.0s max)
+✅ End at natural break points (complete sentences, stable poses, finished gestures)
+✅ Include the FULL VEO 3 template structure (all 10 sections)
+✅ Cover a portion of the script with precise timing (3.0-3.5 words/sec)
+✅ Be production-ready for individual video generation
+✅ Maintain PERFECT continuity (segments 2+ must start with "CONTINUING FROM PREVIOUS SEGMENT")
+✅ Keep IDENTICAL character appearance, wardrobe, energy, environment, lighting, and camera style
+✅ Match starting position to previous segment's ending position
+✅ Account for EVERY SECOND in the timeline breakdown (no gaps!)
+✅ **FULLY RE-DESCRIBE everything in EVERY segment** (the video AI can't see previous segments!)
+✅ **ABSOLUTELY NO on-screen text, captions, or text overlays** (dialogue is spoken only!)
+
+CRITICAL REMINDERS:
+🚫 NO text overlays or on-screen text of any kind
+🚫 NO shortcuts like "same as before" - FULL re-descriptions required
+✅ Each segment is SELF-CONTAINED with complete visual descriptions
+✅ The segments will be stitched together, so they MUST merge seamlessly like a single continuous shot
+"""
+        
+        return (system_instruction, variations_request)
+    
+    def _generate_briefs_via_gemini(
+        self,
+        script: str,
+        styles: list,
+        character: Optional[Dict[str, Any]] = None,
+        model: str = "gemini-2.0-flash",
+    ) -> Dict[str, Any]:
+        """Generate creative briefs using Gemini API."""
+        
+        # Get the shared VEO prompt structure
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character)
+
+        # Use iterative generation to handle long responses (MAX_TOKENS truncation)
+        full_response_text = ""
+        conversation_history = [
+            {
+                "role": "user",
+                "parts": [{"text": variations_request}]
+            }
+        ]
+        
+        max_iterations = 5
+        iteration = 0
+        
+        while iteration < max_iterations:
+            iteration += 1
+            logger.info(f"Generating creative briefs - Iteration {iteration}/{max_iterations}")
+            
+            url = f"{GEMINI_API_BASE}/models/{model}:generateContent"
+            body = {
+                "contents": conversation_history,
+                "systemInstruction": {
+                    "parts": [{"text": system_instruction}]
+                },
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "topK": 40,
+                    "topP": 0.95,
+                    "maxOutputTokens": 65536,  # Maximize for long detailed generation
+                    "responseMimeType": "application/json" if iteration == 1 else "text/plain"
+                }
+            }
+    
+            try:
+                resp = requests.post(url, params=self._auth_params(), json=body, timeout=120)
+                resp.raise_for_status()
+                data = resp.json()
+    
+                # Log usage
+                if "usageMetadata" in data:
+                    self._log_usage(model, data["usageMetadata"], request_type=f"prompt_generation_iter_{iteration}")
+    
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    candidate = data["candidates"][0]
+                    content = candidate.get("content", {})
+                    parts = content.get("parts", [])
+                    
+                    text_chunk = ""
+                    if parts:
+                        text_chunk = parts[0].get("text", "")
+                        full_response_text += text_chunk
+                        
+                    finish_reason = candidate.get("finishReason")
+                    logger.info(f"Iteration {iteration} finish reason: {finish_reason}")
+                    
+                    # If finished successfully, break
+                    if finish_reason == "STOP":
+                        break
+                    
+                    # If truncated due to length, continue
+                    if finish_reason == "MAX_TOKENS":
+                        logger.info("Response truncated (MAX_TOKENS). Requesting continuation...")
+                        # Add model response to history
+                        conversation_history.append({
+                            "role": "model",
+                            "parts": [{"text": text_chunk}]
+                        })
+                        # Add user continuation prompt - be very explicit to avoid re-starting JSON
+                        conversation_history.append({
+                            "role": "user",
+                            "parts": [{"text": "CONTINUE THE RAW TEXT EXACTLY WHERE YOU STOPPED. Do NOT add ```json or any markdown. Do NOT restart the JSON structure. Just append the continuation directly as plain text."}]
+                        })
+                        continue
+                    
+                    # Other reasons (SAFETY, RECITATION, etc.)
+                    logger.warning(f"Generation stopped due to {finish_reason}")
+                    break
+                else:
+                    logger.warning("No candidates in response")
+                    break
+                    
+            except Exception as e:
+                logger.error(f"API request failed on iteration {iteration}: {e}")
+                break
+                
+        # Attempt to parse the accumulated JSON with robust fallbacks
+        text_to_parse = full_response_text.strip()
+        
+        # Clean up markdown code blocks that Gemini sometimes adds around AND inside JSON
+        # Remove opening fence at start
+        if text_to_parse.startswith("```json"):
+            text_to_parse = text_to_parse[7:]
+        elif text_to_parse.startswith("```"):
+            text_to_parse = text_to_parse[3:]
+        # Remove closing fence at end
+        if text_to_parse.endswith("```"):
+            text_to_parse = text_to_parse[:-3]
+        text_to_parse = text_to_parse.strip()
+        
+        # Remove any embedded markdown fences that appear mid-stream (from continuations)
+        # Use regex to only remove fences at structural boundaries (newline-delimited)
+        # This prevents breaking JSON by removing ``` that might appear in string content
+        text_to_parse = re.sub(r'\n```json\n', '\n', text_to_parse)
+        text_to_parse = re.sub(r'\n```\n', '\n', text_to_parse)
+        # Also handle fences at very start/end without newlines
+        text_to_parse = re.sub(r'^```json\s*', '', text_to_parse)
+        text_to_parse = re.sub(r'\s*```$', '', text_to_parse)
+
+        # Pre-sanitize problematic control characters that can break json.loads.
+        # Replace all ASCII control chars (< 0x20) and Unicode line separators
+        # with spaces. This keeps the semantic content while avoiding
+        # "Invalid control character" errors inside strings.
+        text_to_parse = "".join(
+            ch if (ord(ch) >= 32 and ch not in ("\u2028", "\u2029")) else " "
+            for ch in text_to_parse
+        )
+        
+        parsed_json = None
+        parsing_error = None
+
+        # Strategy 1: Strict parsing
+        try:
+            parsed_json = json.loads(text_to_parse)
+        except json.JSONDecodeError as e:
+            parsing_error = e
+            # Strategy 2: Lenient parsing
+            try:
+                parsed_json = json.loads(text_to_parse, strict=False)
+            except Exception:
+                # Strategy 3: Sanitize control chars
+                try:
+                    sanitized = re.sub(r"[\x00-\x1F]", " ", text_to_parse)
+                    sanitized = re.sub(r"\\(?![\\\/bfnrt\"u])", r"\\\\", sanitized)
+                    parsed_json = json.loads(sanitized, strict=False)
+                except Exception:
+                    # Strategy 4: Extract first balanced JSON object
+                    try:
+                        start = text_to_parse.find('{')
+                        if start != -1:
+                            depth = 0
+                            end = -1
+                            for i, ch in enumerate(text_to_parse[start:], start=start):
+                                if ch == '{':
+                                    depth += 1
+                                elif ch == '}':
+                                    depth -= 1
+                                    if depth == 0:
+                                        end = i
+                                        break
+                            if end != -1:
+                                candidate = text_to_parse[start:end+1]
+                                try:
+                                    parsed_json = json.loads(candidate)
+                                except:
+                                    parsed_json = json.loads(candidate, strict=False)
+                    except Exception:
+                        pass
+
+        if parsed_json:
+            return {"success": True, "variations": parsed_json.get("variations", [])}
+        else:
+            logger.error(f"Failed to parse JSON after {iteration} iterations. Error: {parsing_error}")
+            logger.error(f"Full response preview (first 1000 chars): {full_response_text[:1000]}")
+            
+            # Save the full unparseable response to a debug file
+            try:
+                debug_path = tempfile.mktemp(suffix=".txt", prefix="veo_parse_error_")
+                with open(debug_path, "w", encoding="utf-8") as f:
+                    f.write(full_response_text)
+                logger.error(f"Full unparseable response saved to: {debug_path}")
+            except Exception as e:
+                logger.error(f"Failed to save debug file: {e}")
+            
+            return {"success": False, "error": "Failed to parse generated JSON", "raw_text": full_response_text[:2000]}
+    
+    def _generate_briefs_via_openrouter(
+        self,
+        script: str,
+        styles: list,
+        character: Optional[Dict[str, Any]] = None,
+        model: str = "openrouter:google/gemini-2.0-flash-exp:free",
+    ) -> Dict[str, Any]:
+        """Generate creative briefs using OpenRouter API."""
+        from app.services.openrouter_service import OpenRouterService
+        
+        # Extract the actual model name (remove "openrouter:" prefix)
+        actual_model = model.replace("openrouter:", "")
+        
+        # Get OpenRouter API key from settings
+        db = SessionLocal()
+        try:
+            setting = db.query(AppSetting).filter(AppSetting.key == "openrouter_api_key").first()
+            if not setting or not setting.value:
+                return {"success": False, "error": "OpenRouter API key not configured in settings"}
+            
+            import json as json_lib
+            key_data = json_lib.loads(setting.value) if isinstance(setting.value, str) else setting.value
+            openrouter_key = key_data.get("api_key", "") if isinstance(key_data, dict) else ""
+            
+            if not openrouter_key:
+                return {"success": False, "error": "OpenRouter API key not found in settings"}
+        finally:
+            db.close()
+        
+        # Get the shared VEO prompt structure (same as Gemini)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character)
+        
+        # Combine system instruction and user prompt
+        full_prompt = system_instruction + "\n\n" + variations_request
+        
+        try:
+            service = OpenRouterService(openrouter_key)
+            
+            # Call OpenRouter API with the comprehensive prompt
+            response = requests.post(
+                f"{service.base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {openrouter_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://admind.app",
+                    "X-Title": "AdMind VEO Brief Generator"
+                },
+                json={
+                    "model": actual_model,
+                    "messages": [
+                        {"role": "user", "content": full_prompt}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 65536,  # Match Gemini's max tokens
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=300  # Longer timeout for detailed responses
+            )
+            
+            if response.status_code >= 400:
+                logger.error(f"OpenRouter error {response.status_code}: {response.text}")
+                return {"success": False, "error": f"OpenRouter API error: {response.status_code}"}
+            
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            
+            # Parse JSON response
+            try:
+                parsed = json.loads(content)
+                return {"success": True, "variations": parsed.get("variations", [])}
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse OpenRouter JSON response: {e}")
+                # Try lenient parsing
+                try:
+                    parsed = json.loads(content, strict=False)
+                    return {"success": True, "variations": parsed.get("variations", [])}
+                except Exception:
+                    return {"success": False, "error": "Failed to parse OpenRouter response", "raw_text": content[:2000]}
+                    
+        except Exception as e:
+            logger.error(f"OpenRouter brief generation failed: {e}")
+            return {"success": False, "error": f"OpenRouter generation failed: {str(e)}"}
+
