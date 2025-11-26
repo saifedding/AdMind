@@ -7,5 +7,6 @@ from .app_setting import AppSetting
 from .veo_generation import VeoGeneration
 from .merged_video import MergedVideo
 from .api_usage import ApiUsage
+from .video_style_template import VideoStyleTemplate
 
-__all__ = ["Competitor", "Ad", "AdAnalysis", "TaskStatus", "AdSet", "AppSetting", "VeoGeneration", "MergedVideo", "ApiUsage"]
+__all__ = ["Competitor", "Ad", "AdAnalysis", "TaskStatus", "AdSet", "AppSetting", "VeoGeneration", "MergedVideo", "ApiUsage", "VideoStyleTemplate"]

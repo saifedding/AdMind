@@ -1870,6 +1870,7 @@ class GoogleAIService:
         styles: list,
         character: Optional[Dict[str, Any]] = None,
         model: str = "gemini-2.0-flash",
+        saved_style: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generate creative brief variations based on a script/VO with different styles.
@@ -1879,6 +1880,7 @@ class GoogleAIService:
             styles: List of style names (e.g., ["podcast", "walking", "testimonial"])
             character: Optional character description dict with keys like age, gender, ethnicity, clothing
             model: Model to use - can be Gemini model or OpenRouter model (prefix with "openrouter:")
+            saved_style: Optional saved video style characteristics to apply
             
         Returns:
             Dict with variations for each style
@@ -1886,25 +1888,33 @@ class GoogleAIService:
         
         # Check if this is an OpenRouter model
         if model.startswith("openrouter:"):
-            return self._generate_briefs_via_openrouter(script, styles, character, model)
+            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style)
         
         # Otherwise use Gemini
-        return self._generate_briefs_via_gemini(script, styles, character, model)
+        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style)
     
     def _build_veo_prompt(
         self,
         script: str,
         styles: list,
         character: Optional[Dict[str, Any]] = None,
+        saved_style: Optional[Dict[str, Any]] = None,
     ) -> tuple:
         """
         Build the comprehensive VEO 3 creative brief prompt structure.
         Returns (system_instruction, variations_request) tuple.
         This is shared by both Gemini and OpenRouter implementations.
+        
+        If saved_style is provided, injects the analyzed style characteristics into the prompt.
         """
-        # Build character description if provided
+        # If using saved_style but no predefined styles, add a default one to ensure generation happens
+        if saved_style and not styles:
+            styles = ["Replicated Video Style"]
+            
+        # Build character description if provided AND no saved style
+        # (saved style already contains character details from analyzed video)
         character_desc = ""
-        if character:
+        if character and not saved_style:
             character_desc = f"""
 ### Character Specifications:
 - **Age**: {character.get('age', '30-40')}
@@ -1964,6 +1974,12 @@ class GoogleAIService:
                 "camera": "Dynamic angles, low-angle shots for empowerment",
                 "movement": "Confident, purposeful movement, strong body language",
                 "atmosphere": "Inspiring, energetic, empowering"
+            },
+            "informative": {
+                "setting": "DYNAMIC - Changes based on script content. Show relevant B-roll footage, locations, objects, or scenes that match what's being discussed. For example: if script mentions 'Dubai Mall', show mall architecture; if mentions 'construction', show building sites; if mentions 'tourism', show tourists/landmarks",
+                "camera": "Smooth cinematic movements - slow pans, gentle zooms, drone aerials where appropriate. Professional documentary-style cinematography with varied angles to maintain visual interest",
+                "movement": "Minimal on-screen talent. Focus on showing the SUBJECT MATTER being discussed. Use establishing shots, detail shots, and dynamic B-roll that tells the story visually. Transition smoothly between different visuals as topics change",
+                "atmosphere": "Educational, engaging, documentary-style. High production value with smooth transitions. Each segment should visually represent what's being narrated - the visuals ARE the story, not just background"
             }
         }
         
@@ -2152,6 +2168,31 @@ CRITICAL RULES:
 - DO NOT include on-screen text overlays in prompts
 """
 
+        # Build saved style section if provided
+        saved_style_section = ""
+        if saved_style:
+            saved_style_section = "\n\n🎨 **APPLY THIS EXACT VISUAL STYLE TO ALL BRIEFS:**\n\n"
+            saved_style_section += "Use the following analyzed characteristics from a reference video. Copy these details EXACTLY to ensure visual consistency:\n\n"
+            
+            # Add all saved style characteristics
+            for key, value in saved_style.items():
+                if isinstance(value, dict):
+                    saved_style_section += f"### {key.replace('_', ' ').title()}:\n"
+                    for sub_key, sub_value in value.items():
+                        saved_style_section += f"- **{sub_key.replace('_', ' ').title()}:** {sub_value}\n"
+                    saved_style_section += "\n"
+                else:
+                    saved_style_section += f"**{key.replace('_', ' ').title()}:** {value}\n\n"
+            
+            saved_style_section += """
+⚠️ CRITICAL STYLE INSTRUCTIONS:
+1. Use these EXACT visual characteristics. Do NOT deviate.
+2. 🚫 DO NOT ADD RANDOM ELEMENTS: Do not invent furniture, props, or background details not listed above.
+3. 🚫 NO HALLUCINATIONS: If the background is "white wall", do not add "office plants" or "bookshelves".
+4. 🔄 STRICT REPLICATION: Your goal is to RECONSTRUCT the exact set and character from the analysis.
+5. 🎥 ONLY change the SCRIPT/ACTION. The world, character, and look must remain FROZEN in this style.
+\n---\n"""
+        
         # Build the user prompt
         variations_request = f"""
 Generate {len(styles)} creative brief variations for the following script:
@@ -2161,17 +2202,20 @@ SCRIPT:
 {script}
 ---
 {character_desc}
+{saved_style_section}
 
 Generate a complete, detailed creative brief for EACH of these styles:
 {', '.join(styles)}
-
-Style Characteristics:
 """
         
-        for style in styles:
-            if style.lower() in style_definitions:
-                style_info = style_definitions[style.lower()]
-                variations_request += f"""
+        # Only add style characteristics if NOT using saved style
+        # (saved style already contains all visual characteristics from analyzed video)
+        if not saved_style:
+            variations_request += "\nStyle Characteristics:\n"
+            for style in styles:
+                if style.lower() in style_definitions:
+                    style_info = style_definitions[style.lower()]
+                    variations_request += f"""
 **{style.upper()}:**
 - Setting: {style_info['setting']}
 - Camera: {style_info['camera']}
@@ -2206,9 +2250,9 @@ Return a JSON object with this EXACT structure:
 
 Each segment brief MUST:
 ✅ TARGET 7.0-8.0 seconds (HARD LIMIT: 8.0s max)
-✅ End at natural break points (complete sentences, stable poses, finished gestures)
+✅ **CRITICAL: End at natural break points (complete sentences, stable poses, finished gestures). NEVER cut off mid-word or mid-sentence.**
 ✅ Include the FULL VEO 3 template structure (all 10 sections)
-✅ Cover a portion of the script with precise timing (3.0-3.5 words/sec)
+✅ Cover a portion of the script with precise timing (3.0-3.5 words/sec). **If a sentence is too long for the remaining time in a segment, MOVE IT ENTIRELY to the next segment.**
 ✅ Be production-ready for individual video generation
 ✅ Maintain PERFECT continuity (segments 2+ must start with "CONTINUING FROM PREVIOUS SEGMENT")
 ✅ Keep IDENTICAL character appearance, wardrobe, energy, environment, lighting, and camera style
@@ -2220,6 +2264,7 @@ Each segment brief MUST:
 CRITICAL REMINDERS:
 🚫 NO text overlays or on-screen text of any kind
 🚫 NO shortcuts like "same as before" - FULL re-descriptions required
+🚫 **NO CUT-OFF ENDINGS. Ensure every segment feels complete and resolves its action/sentence.**
 ✅ Each segment is SELF-CONTAINED with complete visual descriptions
 ✅ The segments will be stitched together, so they MUST merge seamlessly like a single continuous shot
 """
@@ -2232,11 +2277,12 @@ CRITICAL REMINDERS:
         styles: list,
         character: Optional[Dict[str, Any]] = None,
         model: str = "gemini-2.0-flash",
+        saved_style: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using Gemini API."""
         
         # Get the shared VEO prompt structure
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style)
 
         # Use iterative generation to handle long responses (MAX_TOKENS truncation)
         full_response_text = ""
@@ -2417,6 +2463,7 @@ CRITICAL REMINDERS:
         styles: list,
         character: Optional[Dict[str, Any]] = None,
         model: str = "openrouter:google/gemini-2.0-flash-exp:free",
+        saved_style: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using OpenRouter API."""
         from app.services.openrouter_service import OpenRouterService
@@ -2441,7 +2488,7 @@ CRITICAL REMINDERS:
             db.close()
         
         # Get the shared VEO prompt structure (same as Gemini)
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style)
         
         # Combine system instruction and user prompt
         full_prompt = system_instruction + "\n\n" + variations_request
@@ -2494,3 +2541,270 @@ CRITICAL REMINDERS:
             logger.error(f"OpenRouter brief generation failed: {e}")
             return {"success": False, "error": f"OpenRouter generation failed: {str(e)}"}
 
+    def analyze_video_style(
+        self,
+        video_url: str,
+        style_name: str,
+        model: str = "gemini-2.0-flash-lite"
+    ) -> Dict[str, Any]:
+        """
+        Analyze a video to extract comprehensive style characteristics that can be reused.
+        Extracts EVERYTHING: background, faces, lighting, camera, colors, performance style.
+        
+        Args:
+            video_url: URL to the video file (Instagram, Ad Library, YouTube, direct MP4, etc.)
+            style_name: User-friendly name for this style
+            model: Gemini model to use for analysis
+            
+        Returns:
+            Dict with extracted style characteristics in VEO-compatible format
+        """
+        try:
+            # Download and upload video to Gemini (reusing existing logic)
+            logger.info(f"Processing video for style analysis: {video_url}")
+            
+            file_path = None
+            lower_url = video_url.lower()
+            is_instagram = ("instagram.com" in lower_url) or ("cdninstagram" in lower_url)
+            is_facebook = ("facebook.com" in lower_url) or ("fbcdn.net" in lower_url)
+            
+            # Download video based on source
+            if is_instagram:
+                logger.info("Instagram URL detected; downloading with yt-dlp")
+                try:
+                    file_path = self._download_instagram_video(video_url)
+                except Exception as e:
+                    logger.error(f"Failed to download Instagram video: {e}")
+                    return {"success": False, "error": f"Failed to download Instagram video: {str(e)}"}
+                    
+            elif is_facebook:
+                logger.info("Facebook Ad Library URL detected; downloading video")
+                try:
+                    # If it's a page URL, resolve to direct mp4 first
+                    if "ads/library" in lower_url and ".mp4" not in lower_url:
+                        from urllib.parse import urlparse, parse_qs
+                        parsed = urlparse(video_url)
+                        q = parse_qs(parsed.query)
+                        ad_archive_id = q.get("id", [None])[0]
+                        if ad_archive_id:
+                            db = SessionLocal()
+                            try:
+                                from app.services.media_refresh_service import MediaRefreshService
+                                refresh_service = MediaRefreshService(db)
+                                ad_data = refresh_service.fetch_ad_from_facebook(ad_archive_id)
+                                if ad_data:
+                                    urls = refresh_service.extract_urls_from_ad_data(ad_data)
+                                    if urls.get("video_hd_urls"):
+                                        video_url = urls["video_hd_urls"][0]
+                                    elif urls.get("video_sd_urls"):
+                                        video_url = urls["video_sd_urls"][0]
+                            finally:
+                                db.close()
+                    
+                    # Download the resolved URL
+                    file_path = self._download_facebook_http(video_url)
+                except Exception as e:
+                    logger.error(f"Failed to download Facebook video: {e}")
+                    return {"success": False, "error": f"Failed to download Facebook video: {str(e)}"}
+                    
+            elif video_url.startswith("http"):
+                # Direct HTTP URL (MP4, etc.)
+                logger.info("Direct HTTP URL detected; downloading")
+                try:
+                    file_path = self._download_facebook_http(video_url)
+                except Exception as e:
+                    logger.error(f"Failed to download video from URL: {e}")
+                    return {"success": False, "error": f"Failed to download video: {str(e)}"}
+            else:
+                return {"success": False, "error": "Unsupported video URL format"}
+            
+            # Upload to Gemini
+            if not file_path:
+                return {"success": False, "error": "Failed to download video"}
+                
+            logger.info(f"Uploading video to Gemini...")
+            upload_result = self.upload_file(file_path, display_name=os.path.basename(file_path))
+            file_uri = (
+                upload_result.get('file', {}).get('uri')
+                or upload_result.get('uri')
+                or f"https://generativelanguage.googleapis.com/v1beta/files/{upload_result.get('name', '').split('/')[-1]}"
+            )
+            
+            if not file_uri:
+                return {"success": False, "error": "Failed to upload video to Gemini"}
+            
+            # Wait for file to become ACTIVE before using it (same as existing analysis)
+            logger.info("Waiting for Gemini file to become ACTIVE...")
+            try:
+                file_info = self.wait_for_file_active(file_uri, timeout_sec=120, poll_interval_sec=3)
+                logger.info(f"✅ File is ACTIVE: {file_info.get('name')}")
+            except Exception as e:
+                logger.error(f"File failed to become ACTIVE: {e}")
+                return {"success": False, "error": f"File upload failed to become active: {str(e)}"}
+            
+            # Comprehensive style extraction prompt
+            analysis_prompt = """You are an expert cinematographer and video production analyst. Analyze this video in EXTREME DETAIL to extract every visual characteristic so it can be perfectly replicated in future videos.
+
+🎯 YOUR MISSION: Extract EVERYTHING about the visual style - every detail about faces, background, lighting, camera work, color grading, and performance. This analysis will be used to recreate the exact same visual look with different scripts.
+
+Return a JSON object with these exact keys:
+
+{
+  "character_appearance": {
+    "description": "[ULTRA-DETAILED description of the person: exact age estimate, gender, ethnicity, face shape, eye color, eyebrow shape, nose shape, lip shape, facial hair, skin tone with undertones, realistic skin texture (wrinkles, pores, blemishes, smile lines, forehead lines), hair (exact color, length, style, texture, how it falls), height estimate, body type, posture]",
+    "facial_realism": "[Describe realistic facial details: specific wrinkles (crow's feet, laugh lines, forehead creases), skin texture (pores, slight imperfections), natural skin shading, under-eye area, facial asymmetry if any]",
+    "eye_details": "[Exact iris color, pupil behavior, catchlights, eye shape, eyelashes, blinking pattern, eye movements, gaze direction]",
+    "micro_expressions": "[Subtle facial movements, emotion transitions, eyebrow movements, mouth corners, nostril flare, jaw tension]"
+  },
+  
+  "wardrobe_styling": {
+    "complete_outfit": "[EVERY garment in exact detail: top (brand style, color, pattern, fabric texture, fit, collar type, sleeves), bottom (type, color, fit, material), shoes (style, color), accessories (watch, jewelry, glasses - exact descriptions), any visible logos or branding]",
+    "colors_and_patterns": "[Exact color codes if possible, patterns, textures, how light interacts with fabrics]",
+    "styling_details": "[How clothes fit, wrinkles in fabric, tucked/untucked, rolled sleeves, buttons, zippers, any styling choices]"
+  },
+  
+  "environment_background": {
+    "location_type": "[Exact description: indoor/outdoor, room type, architectural style]",
+    "walls": "[Material, color (exact shade), texture, finish (matte/glossy), any wall art, frames, shelving, mounted objects - with exact positions]",
+    "floor": "[Material, color, pattern, reflectivity]",
+    "ceiling": "[Height, color, lighting fixtures, beams, texture]",
+    "left_side_frame": "[EVERY visible object on left: furniture (exact type, color, material, position), props, decorations, plants - with precise positions and descriptions]",
+    "center_frame": "[EVERY object in center: what's directly behind/around the subject]",
+    "right_side_frame": "[EVERY visible object on right: complete inventory with positions]",
+    "depth_background": "[What's visible in far background, windows, doors, depth of space]",
+    "foreground_elements": "[Any objects between camera and subject]",
+    "set_dressing_density": "[Minimalist, cluttered, organized, messy - describe the density of objects]"
+  },
+  
+  "lighting_setup": {
+    "key_light": "[Position (clock position, angle, distance), type (soft/hard), color temperature (warm/cool/neutral), intensity, size of source]",
+    "fill_light": "[Same detailed description as key light, fill ratio]",
+    "back_rim_light": "[Description if present: creates separation from background, intensity, color]",
+    "ambient_light": "[Overall room lighting, natural vs artificial, color cast]",
+    "shadows": "[Where shadows fall, hardness/softness, density, color in shadows, falloff rate]",
+    "light_ratios": "[Contrast between bright and dark areas, mood created, high-key vs low-key]",
+    "practical_lights": "[Visible lamps, screens, windows - how they contribute to the scene]",
+    "time_of_day_feel": "[Morning/afternoon/evening based on light quality and direction]",
+    "catchlights": "[Shape and position of reflection in eyes]"
+  },
+  
+  "camera_cinematography": {
+    "shot_type": "[Extreme close-up, close-up, medium close-up, medium shot, etc.]",
+    "framing_composition": "[Rule of thirds placement, headroom, looking room, subject position in frame, symmetry]",
+    "camera_angle": "[Eye level, high angle, low angle - exact degrees if noticeable]",
+    "camera_movement": "[Static, slow push in, pull out, pan, tilt, handheld shake, gimbal smooth - exact description of any movement including speed]",
+    "focal_length_estimate": "[Wide angle (e.g., 24mm), normal (50mm), telephoto (85mm+) based on compression and field of view]",
+    "depth_of_field": "[Sharp throughout, slight bokeh, heavy bokeh - exact description of background blur]",
+    "focus": "[What's in focus, focus pulls, rack focus moments]",
+    "camera_stability": "[Perfectly locked off, slight movement, handheld feel, tripod]",
+    "lens_characteristics": "[Distortion, chromatic aberration, lens flares, vignette]"
+  },
+  
+  "color_grading_palette": {
+    "overall_palette": "[Warm, cool, neutral - exact color mood]",
+    "primary_colors": "[Dominant colors in the frame with specific shades]",
+    "secondary_colors": "[Supporting colors]",
+    "accent_colors": "[Pop of color if any]",
+    "skin_tone_treatment": "[How skin is graded: warm/cool, saturated/desaturated, pink/orange undertones]",
+    "contrast": "[High contrast, low contrast, crushing blacks, lifted blacks]",
+    "saturation": "[Highly saturated, natural, desaturated, specific color channel boosts]",
+    "highlights_shadows": "[Blown highlights, preserved detail, shadow detail, tonal range]",
+    "color_temperature": "[Overall warmth in Kelvin estimate, any color casts]",
+    "lut_style_description": "[Film look, digital, vintage, modern commercial, teal & orange, specific LUT style if recognizable]",
+    "grain_texture": "[Clean digital, film grain present, noise level]"
+  },
+  
+  "performance_energy": {
+    "overall_energy": "[Calm, energetic, professional, casual, intense - exact vibe]",
+    "speaking_style": "[Paced, fast, slow, emphatic, conversational, authoritative]",
+    "eye_contact": "[Direct to camera, looking away, shifting gaze, intensity of eye contact]",
+    "facial_expressions": "[Smiling, serious, thoughtful, animated - how expressions change]",
+    "hand_gestures": "[Descriptive, minimal, emphatic, natural, where hands are positioned]",
+    "body_language": "[Open, closed, leaning forward/back, posture, movement]",
+    "head_movements": "[Nods, tilts, turns, stillness]",
+    "breathing_visible": "[Calm breathing, visible chest movement, speaking rhythm]"
+  },
+  
+  "audio_visual_sync": {
+    "dialogue_pacing": "[Words per minute estimate, pauses, rhythm]",
+    "lip_sync_quality": "[Perfect sync, natural mouth movements]",
+    "audio_ambience": "[Room tone, echo, outdoor sounds if visible]"
+  },
+  
+  "technical_quality": {
+    "resolution": "[Appears to be 4K, HD, or SD based on sharpness]",
+    "compression": "[High quality, visible compression, grain/noise]",
+    "motion_blur": "[Natural motion blur, shutter speed estimate]",
+    "overall_polish": "[Professional, semi-professional, social media style]",
+    "aspect_ratio": "[16:9, 9:16, 4:5, etc.]"
+  },
+  
+  "overall_aesthetic_mood": "[Summary: modern commercial, cinematic, documentary style, social media, podcast vibe, corporate, lifestyle - complete description of the overall visual feel]",
+  
+  "replication_notes": "[Specific instructions for replicating this style: 'Use soft overhead key light', 'Grade towards warm tones', 'Keep background minimalist', etc.]"
+}
+
+BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that allow perfect replication of the visual style."""
+
+            # Call Gemini using the same payload style as generate_transcript_and_analysis
+            # (generation_config + response_mime_type), which we know works.
+            url = f"{GEMINI_API_BASE}/models/{model}:generateContent"
+            payload = {
+                "contents": [{
+                    "role": "user",
+                    "parts": [
+                        {"file_data": {"file_uri": file_uri, "mime_type": "video/mp4"}},
+                        {"text": analysis_prompt}
+                    ]
+                }],
+                "generation_config": {
+                    "temperature": 0.3,  # Lower temp for more consistent analysis
+                    "response_mime_type": "application/json",
+                    "max_output_tokens": 8192,
+                }
+            }
+
+            response = requests.post(url, params=self._auth_params(), json=payload, timeout=120)
+            try:
+                response.raise_for_status()
+            except Exception:
+                # Log response body to help debug 400 errors from Gemini
+                try:
+                    logger.error(f"Video style analysis failed with status {response.status_code}: {response.text[:1000]}")
+                except Exception:
+                    logger.error("Video style analysis failed and response body could not be read")
+                raise
+
+            data = response.json()
+            
+            # Log usage
+            if "usageMetadata" in data:
+                self._log_usage(model, data["usageMetadata"], request_type="video_style_analysis")
+            
+            if "candidates" in data and len(data["candidates"]) > 0:
+                candidate = data["candidates"][0]
+                content = candidate.get("content", {})
+                parts = content.get("parts", [])
+                
+                if parts and "text" in parts[0]:
+                    analysis_text = parts[0]["text"]
+                    
+                    try:
+                        style_data = json.loads(analysis_text)
+                        return {
+                            "success": True,
+                            "style_name": style_name,
+                            "video_url": video_url,
+                            "gemini_file_uri": file_uri,
+                            "style_characteristics": style_data,
+                            "analysis_metadata": data
+                        }
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse style analysis JSON: {e}")
+                        return {"success": False, "error": "Failed to parse analysis JSON", "raw_text": analysis_text[:2000]}
+            
+            return {"success": False, "error": "No analysis generated"}
+            
+        except Exception as e:
+            logger.error(f"Video style analysis failed: {e}")
+            return {"success": False, "error": f"Style analysis failed: {str(e)}"}

@@ -817,6 +817,31 @@ export const adsApi = {
   getVeoGenerations: (ad_id?: number, include_archived?: boolean) => apiClient.getVeoGenerations(ad_id, include_archived),
   mergeVeoVideos: (data: MergeVideosRequest) => apiClient.mergeVeoVideos(data),
   getMergedVideos: (ad_id?: number) => apiClient.getMergedVideos(ad_id),
+  
+  // Video Style Analyzer API
+  analyzeVideoStyle: async (data: { video_url: string; style_name: string; description?: string }) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/analyze-video-style`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to analyze video style');
+    return response.json();
+  },
+  
+  getStyleLibrary: async () => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/style-library`);
+    if (!response.ok) throw new Error('Failed to fetch style library');
+    return response.json();
+  },
+  
+  deleteStyleTemplate: async (templateId: number) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/style-library/${templateId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete style template');
+    return response.json();
+  },
 };
 
 export default apiClient;
@@ -1053,6 +1078,30 @@ export type MergedVideoResponse = {
   clip_count: number;
   source_clips: string[];
   created_at: string;
+};
+
+// Video Style Analyzer Types
+export type VideoStyleTemplate = {
+  id: number;
+  name: string;
+  description?: string;
+  video_url: string;
+  thumbnail_url?: string;
+  style_characteristics: Record<string, any>;
+  usage_count: number;
+  created_at: string;
+};
+
+export type VideoStyleLibraryResponse = {
+  success: boolean;
+  templates: VideoStyleTemplate[];
+  error?: string;
+};
+
+export type VideoStyleAnalyzeResponse = {
+  success: boolean;
+  template?: VideoStyleTemplate;
+  error?: string;
 };
 
 // ========================================

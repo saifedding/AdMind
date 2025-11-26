@@ -1366,12 +1366,12 @@ export default function DownloadAdsPage() {
             {loadingHistory ? (
               <div className="text-center py-8 text-neutral-400">Loading history...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex overflow-x-auto gap-4 pb-4 snap-x scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
                 {history.map((h: any) => {
                   const firstMedia = h.media && h.media.length > 0 ? h.media[0] : null;
                   const hasVideoPreview = firstMedia?.type === 'video';
                   return (
-                    <div key={h.id} className="border rounded-md p-3 bg-neutral-900/40 border-neutral-800 space-y-2 relative">
+                    <div key={h.id} className="border rounded-md p-3 bg-neutral-900/40 border-neutral-800 space-y-2 relative min-w-[300px] max-w-[300px] snap-start flex-shrink-0">
                       {/* 3-dot menu */}
                       <div className="absolute top-2 right-2">
                         <button

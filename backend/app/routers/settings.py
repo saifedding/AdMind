@@ -9,7 +9,7 @@ from datetime import datetime
 import requests
 
 from app.database import get_db
-from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage
+from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage, VideoStyleTemplate as DBVideoStyleTemplate
 from app.services.google_ai_service import get_default_system_instruction, GoogleAIService
 from sqlalchemy import func
 
@@ -625,6 +625,7 @@ class CreativeBriefGenerateRequest(BaseModel):
     styles: List[str]
     character: Optional[Dict[str, Any]] = None
     model: Optional[str] = "gemini-2.0-flash-exp"
+    style_template_id: Optional[int] = None  # Apply saved video style
 
 
 class CreativeBriefVariation(BaseModel):
@@ -668,6 +669,39 @@ class CharacterPreset(BaseModel):
 class CharacterPresetsResponse(BaseModel):
     """Response model for character presets."""
     presets: List[CharacterPreset]
+
+
+class VideoStyleAnalyzeRequest(BaseModel):
+    """Request model for analyzing video style."""
+    video_url: str
+    style_name: str
+    description: Optional[str] = None
+
+
+class VideoStyleTemplate(BaseModel):
+    """Video style template model."""
+    id: int
+    name: str
+    description: Optional[str]
+    video_url: str
+    thumbnail_url: Optional[str]
+    style_characteristics: Dict[str, Any]
+    usage_count: int
+    created_at: str
+
+
+class VideoStyleLibraryResponse(BaseModel):
+    """Response model for video style library."""
+    success: bool
+    templates: List[VideoStyleTemplate] = []
+    error: Optional[str] = None
+
+
+class VideoStyleAnalyzeResponse(BaseModel):
+    """Response model for video style analysis."""
+    success: bool
+    template: Optional[VideoStyleTemplate] = None
+    error: Optional[str] = None
 
 
 @router.get("/ai/veo/available-styles", response_model=AvailableStylesResponse)
@@ -723,6 +757,12 @@ async def get_available_styles() -> AvailableStylesResponse:
             name="Motivational Style",
             description="Inspiring location with dynamic angles and empowering visuals",
             example_use_case="Fitness content, self-improvement, inspirational speeches"
+        ),
+        AvailableStyle(
+            id="informative",
+            name="Informative Style",
+            description="Documentary-style with dynamic B-roll that changes based on script content",
+            example_use_case="Explainer videos, news content, educational narratives, real estate showcases"
         ),
     ]
     return AvailableStylesResponse(styles=styles)
@@ -799,21 +839,36 @@ async def get_character_presets() -> CharacterPresetsResponse:
 
 
 @router.post("/ai/veo/generate-briefs", response_model=CreativeBriefGenerateResponse)
-async def generate_creative_briefs(payload: CreativeBriefGenerateRequest) -> CreativeBriefGenerateResponse:
+async def generate_creative_briefs(payload: CreativeBriefGenerateRequest, db: Session = Depends(get_db)) -> CreativeBriefGenerateResponse:
     """
     Generate creative brief variations based on script and selected styles.
     
     This endpoint uses Gemini to create detailed VEO 3 creative briefs for each
     selected style, allowing users to choose from different visual approaches
     for the same script.
+    
+    If style_template_id is provided, applies the saved video style to all generated briefs.
     """
     try:
+        # Fetch saved style template if provided
+        saved_style = None
+        if payload.style_template_id:
+            template = db.query(DBVideoStyleTemplate).filter(DBVideoStyleTemplate.id == payload.style_template_id).first()
+            if template:
+                saved_style = template.style_characteristics
+                # Increment usage count
+                template.usage_count += 1
+                db.commit()
+            else:
+                logger.warning(f"Style template {payload.style_template_id} not found, generating without it")
+        
         service = GoogleAIService()
         result = service.generate_creative_brief_variations(
             script=payload.script,
             styles=payload.styles,
             character=payload.character,
-            model=payload.model or "gemini-2.0-flash-exp"
+            model=payload.model or "gemini-2.0-flash-exp",
+            saved_style=saved_style
         )
         
         if result.get("success"):
@@ -2001,3 +2056,104 @@ async def delete_all_gemini_caches(db: Session = Depends(get_db)) -> DeleteCache
         cleared_db_metadata=cleared_db_metadata,
         message=f"Deleted {deleted_count} cache(s), cleared metadata from {cleared_db_metadata} analysis records"
     )
+
+
+# === VIDEO STYLE LIBRARY ENDPOINTS ===
+
+@router.post("/ai/veo/analyze-video-style", response_model=VideoStyleAnalyzeResponse)
+async def analyze_video_style(payload: VideoStyleAnalyzeRequest, db: Session = Depends(get_db)) -> VideoStyleAnalyzeResponse:
+    """
+    Analyze a video URL to extract comprehensive visual style characteristics.
+    Saves the analysis to the style library for future reuse.
+    """
+    try:
+        logger.info(f"Analyzing video style: {payload.style_name} from {payload.video_url}")
+        
+        service = GoogleAIService()
+        result = service.analyze_video_style(
+            video_url=payload.video_url,
+            style_name=payload.style_name
+        )
+        
+        if not result.get("success"):
+            return VideoStyleAnalyzeResponse(
+                success=False,
+                error=result.get("error", "Failed to analyze video")
+            )
+        
+        # Save to database
+        template = DBVideoStyleTemplate(
+            name=payload.style_name,
+            description=payload.description,
+            video_url=payload.video_url,
+            style_characteristics=result["style_characteristics"],
+            analysis_metadata=result.get("analysis_metadata"),
+            gemini_file_uri=result.get("gemini_file_uri")
+        )
+        db.add(template)
+        db.commit()
+        db.refresh(template)
+        
+        return VideoStyleAnalyzeResponse(
+            success=True,
+            template=VideoStyleTemplate(
+                id=template.id,
+                name=template.name,
+                description=template.description,
+                video_url=template.video_url,
+                thumbnail_url=template.thumbnail_url,
+                style_characteristics=template.style_characteristics,
+                usage_count=template.usage_count,
+                created_at=template.created_at.isoformat() if template.created_at else ""
+            )
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to analyze video style: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze video style: {e}")
+
+
+@router.get("/ai/veo/style-library", response_model=VideoStyleLibraryResponse)
+async def get_style_library(db: Session = Depends(get_db)) -> VideoStyleLibraryResponse:
+    """Get all saved video style templates from the library."""
+    try:
+        templates = db.query(DBVideoStyleTemplate).order_by(DBVideoStyleTemplate.created_at.desc()).all()
+        
+        return VideoStyleLibraryResponse(
+            success=True,
+            templates=[
+                VideoStyleTemplate(
+                    id=t.id,
+                    name=t.name,
+                    description=t.description,
+                    video_url=t.video_url,
+                    thumbnail_url=t.thumbnail_url,
+                    style_characteristics=t.style_characteristics,
+                    usage_count=t.usage_count,
+                    created_at=t.created_at.isoformat() if t.created_at else ""
+                )
+                for t in templates
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Failed to get style library: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get style library: {e}")
+
+
+@router.delete("/ai/veo/style-library/{template_id}")
+async def delete_style_template(template_id: int, db: Session = Depends(get_db)):
+    """Delete a video style template from the library."""
+    try:
+        template = db.query(DBVideoStyleTemplate).filter(DBVideoStyleTemplate.id == template_id).first()
+        if not template:
+            raise HTTPException(status_code=404, detail="Style template not found")
+        
+        db.delete(template)
+        db.commit()
+        
+        return {"success": True, "message": f"Style template '{template.name}' deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete style template: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete style template: {e}")

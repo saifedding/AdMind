@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -77,11 +78,21 @@ export default function VeoPage() {
   const [seed, setSeed] = useState<number>(9831);
   const [geminiModel, setGeminiModel] = useState<string>('gemini-2.0-flash-lite');
 
-  // Load available styles, character presets, and veo models
+  // Video Style Analyzer state
+  const [videoStyleUrl, setVideoStyleUrl] = useState<string>('');
+  const [videoStyleName, setVideoStyleName] = useState<string>('');
+  const [videoStyleDescription, setVideoStyleDescription] = useState<string>('');
+  const [analyzingVideo, setAnalyzingVideo] = useState(false);
+  const [styleLibrary, setStyleLibrary] = useState<any[]>([]);
+  const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState<number | null>(null);
+  const [showStyleLibrary, setShowStyleLibrary] = useState(false);
+
+  // Load available styles, character presets, veo models, and style library
   useEffect(() => {
     loadAvailableStyles();
     loadCharacterPresets();
     loadVeoModels();
+    loadStyleLibrary();
   }, []);
 
   const loadAvailableStyles = async () => {
@@ -139,6 +150,66 @@ export default function VeoPage() {
     return compatible.find(m => m.key.includes('veo_3_1')) || compatible[0] || null;
   };
 
+  const loadStyleLibrary = async () => {
+    try {
+      const res = await adsApi.getStyleLibrary();
+      setStyleLibrary(res.templates || []);
+    } catch (error) {
+      console.error('Failed to load style library:', error);
+    }
+  };
+
+  const handleAnalyzeVideo = async () => {
+    if (!videoStyleUrl.trim()) {
+      toast.error('Please enter a video URL');
+      return;
+    }
+    if (!videoStyleName.trim()) {
+      toast.error('Please enter a style name');
+      return;
+    }
+
+    setAnalyzingVideo(true);
+    try {
+      const res = await adsApi.analyzeVideoStyle({
+        video_url: videoStyleUrl,
+        style_name: videoStyleName,
+        description: videoStyleDescription || undefined,
+      });
+
+      if (res.success) {
+        toast.success(`✅ Style "${videoStyleName}" analyzed and saved!`);
+        setVideoStyleUrl('');
+        setVideoStyleName('');
+        setVideoStyleDescription('');
+        await loadStyleLibrary(); // Reload library
+      } else {
+        toast.error(res.error || 'Failed to analyze video');
+      }
+    } catch (error: any) {
+      console.error('Failed to analyze video:', error);
+      toast.error('Failed to analyze video: ' + error.message);
+    } finally {
+      setAnalyzingVideo(false);
+    }
+  };
+
+  const handleDeleteStyleTemplate = async (templateId: number) => {
+    if (!confirm('Are you sure you want to delete this style template?')) return;
+
+    try {
+      await adsApi.deleteStyleTemplate(templateId);
+      toast.success('Style template deleted');
+      await loadStyleLibrary();
+      if (selectedStyleTemplateId === templateId) {
+        setSelectedStyleTemplateId(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete style template:', error);
+      toast.error('Failed to delete style template');
+    }
+  };
+
   const handleStyleToggle = (styleId: string) => {
     setSelectedStyles(prev => 
       prev.includes(styleId) 
@@ -153,8 +224,8 @@ export default function VeoPage() {
       return;
     }
 
-    if (selectedStyles.length === 0) {
-      toast.error('Please select at least one style');
+    if (selectedStyles.length === 0 && !selectedStyleTemplateId) {
+      toast.error('Please select at least one style or a video style template');
       return;
     }
 
@@ -180,6 +251,7 @@ export default function VeoPage() {
           styles: selectedStyles,
           character,
           model: geminiModel,
+          style_template_id: selectedStyleTemplateId || undefined,
         }),
       });
 
@@ -533,10 +605,142 @@ export default function VeoPage() {
             </CardContent>
           </Card>
 
+          {/* Video Style Analyzer */}
+          <Card className="border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🎨 Video Style Analyzer
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowStyleLibrary(!showStyleLibrary)}
+                  className="ml-auto"
+                >
+                  📚 Style Library ({styleLibrary.length})
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Analyze any video to extract its complete visual style (faces, lighting, background, camera work, colors)
+                {selectedStyleTemplateId && (
+                  <span className="block mt-2 text-purple-400 font-semibold">
+                    ✅ Using saved style from library
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Style Library Browser */}
+              {showStyleLibrary && (
+                <div className="border border-purple-500/30 rounded-md p-4 bg-purple-950/20">
+                  <h4 className="text-sm font-semibold mb-3">📚 Saved Styles</h4>
+                  {styleLibrary.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No saved styles yet. Analyze a video to get started!</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
+                      {styleLibrary.map((template) => (
+                        <div
+                          key={template.id}
+                          className={`border rounded-md p-3 cursor-pointer transition-all ${
+                            selectedStyleTemplateId === template.id
+                              ? 'border-purple-500 bg-purple-500/20'
+                              : 'border-neutral-700 hover:border-purple-500/50'
+                          }`}
+                          onClick={() => setSelectedStyleTemplateId(
+                            selectedStyleTemplateId === template.id ? null : template.id
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm truncate">{template.name}</span>
+                                <span className="text-xs text-muted-foreground">({template.usage_count} uses)</span>
+                              </div>
+                              {template.description && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{template.description}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(template.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteStyleTemplate(template.id);
+                              }}
+                              className="text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Analyze New Video */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">🔍 Analyze New Video</h4>
+                <Input
+                  placeholder="Video URL (Instagram, Ad Library, YouTube, etc.)"
+                  value={videoStyleUrl}
+                  onChange={(e) => setVideoStyleUrl(e.target.value)}
+                  className="w-full"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    placeholder="Style name (e.g., 'Modern Tech Ad')"
+                    value={videoStyleName}
+                    onChange={(e) => setVideoStyleName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={videoStyleDescription}
+                    onChange={(e) => setVideoStyleDescription(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleAnalyzeVideo}
+                  disabled={analyzingVideo || !videoStyleUrl.trim() || !videoStyleName.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {analyzingVideo ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Analyzing Video... (extracting 100+ characteristics)
+                    </>
+                  ) : (
+                    '🎨 Analyze & Save Style'
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  💡 This will extract: faces, skin details, lighting, background, camera work, color grading, and more.
+                  {selectedStyleTemplateId && (
+                    <span className="block mt-1 text-purple-400">
+                      ⚠️ Character Preset and Predefined Styles will be ignored when using saved style
+                    </span>
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Generate Button */}
           <Button
             onClick={handleGenerateBriefs}
-            disabled={isGenerating || !script.trim() || selectedStyles.length === 0}
+            disabled={isGenerating || !script.trim() || (selectedStyles.length === 0 && !selectedStyleTemplateId)}
+            title={
+              isGenerating ? "Currently generating..." :
+              !script.trim() ? "Please enter a script first" :
+              (selectedStyles.length === 0 && !selectedStyleTemplateId) ? "Please select styles or a video style template" :
+              "Generate creative briefs"
+            }
             className="w-full h-12 text-lg"
             size="lg"
           >
@@ -548,7 +752,7 @@ export default function VeoPage() {
             ) : (
               <>
                 <Sparkles className="mr-2 h-5 w-5" />
-                Generate {selectedStyles.length} Creative Brief{selectedStyles.length !== 1 ? 's' : ''}
+                Generate {selectedStyleTemplateId ? 1 : selectedStyles.length} Creative Brief{(selectedStyleTemplateId || selectedStyles.length) !== 1 ? 's' : ''}
               </>
             )}
           </Button>
