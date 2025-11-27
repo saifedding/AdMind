@@ -1871,6 +1871,7 @@ class GoogleAIService:
         character: Optional[Dict[str, Any]] = None,
         model: str = "gemini-2.0-flash",
         saved_style: Optional[Dict[str, Any]] = None,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
     ) -> Dict[str, Any]:
         """
         Generate creative brief variations based on a script/VO with different styles.
@@ -1888,10 +1889,10 @@ class GoogleAIService:
         
         # Check if this is an OpenRouter model
         if model.startswith("openrouter:"):
-            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style)
+            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style, aspect_ratio)
         
         # Otherwise use Gemini
-        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style)
+        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style, aspect_ratio)
     
     def _build_veo_prompt(
         self,
@@ -1899,6 +1900,7 @@ class GoogleAIService:
         styles: list,
         character: Optional[Dict[str, Any]] = None,
         saved_style: Optional[Dict[str, Any]] = None,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
     ) -> tuple:
         """
         Build the comprehensive VEO 3 creative brief prompt structure.
@@ -1983,6 +1985,14 @@ class GoogleAIService:
             }
         }
         
+        # Map aspect ratio to descriptive text
+        ratio_map = {
+            "VIDEO_ASPECT_RATIO_PORTRAIT": "9:16 vertical",
+            "VIDEO_ASPECT_RATIO_LANDSCAPE": "16:9 widescreen",
+            "VIDEO_ASPECT_RATIO_SQUARE": "1:1 square"
+        }
+        aspect_ratio_desc = ratio_map.get(aspect_ratio, "9:16 vertical")
+
         # Build the prompt for Gemini
         system_instruction = f"""You are an expert video creative director specializing in creating detailed VEO 3 creative briefs.
 
@@ -2017,7 +2027,7 @@ Each segment brief should follow this EXACT structure and be EXTREMELY DETAILED:
 🚫 **NO ON-SCREEN TEXT:** Do NOT include any text overlays, captions, subtitles, or on-screen text in this segment. All dialogue is SPOKEN, not displayed as text.
 **Resolution:** 4K (3840×2160)
 **Frame Rate:** 30fps
-**Aspect Ratio:** 9:16 vertical (or 16:9 for certain styles)
+**Aspect Ratio:** {aspect_ratio_desc}
 **Style:** Hyper-realistic, photorealistic commercial cinematography
 **Color Grading:** [Specify palette based on style]
 
@@ -2278,11 +2288,12 @@ CRITICAL REMINDERS:
         character: Optional[Dict[str, Any]] = None,
         model: str = "gemini-2.0-flash",
         saved_style: Optional[Dict[str, Any]] = None,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
     ) -> Dict[str, Any]:
         """Generate creative briefs using Gemini API."""
         
         # Get the shared VEO prompt structure
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio)
 
         # Use iterative generation to handle long responses (MAX_TOKENS truncation)
         full_response_text = ""
@@ -2311,7 +2322,7 @@ CRITICAL REMINDERS:
                     "topK": 40,
                     "topP": 0.95,
                     "maxOutputTokens": 65536,  # Maximize for long detailed generation
-                    "responseMimeType": "application/json" if iteration == 1 else "text/plain"
+                    "responseMimeType": "application/json"  # Always use JSON mode for proper escaping
                 }
             }
     
@@ -2349,10 +2360,10 @@ CRITICAL REMINDERS:
                             "role": "model",
                             "parts": [{"text": text_chunk}]
                         })
-                        # Add user continuation prompt - be very explicit to avoid re-starting JSON
+                        # Add user continuation prompt - maintain JSON structure
                         conversation_history.append({
                             "role": "user",
-                            "parts": [{"text": "CONTINUE THE RAW TEXT EXACTLY WHERE YOU STOPPED. Do NOT add ```json or any markdown. Do NOT restart the JSON structure. Just append the continuation directly as plain text."}]
+                            "parts": [{"text": "CONTINUE the JSON exactly where you stopped. Complete the current segment string, then continue with remaining segments and close all JSON structures properly. Do NOT restart the JSON object."}]
                         })
                         continue
                     
@@ -2391,13 +2402,48 @@ CRITICAL REMINDERS:
         text_to_parse = re.sub(r'\s*```$', '', text_to_parse)
 
         # Pre-sanitize problematic control characters that can break json.loads.
-        # Replace all ASCII control chars (< 0x20) and Unicode line separators
-        # with spaces. This keeps the semantic content while avoiding
-        # "Invalid control character" errors inside strings.
+        # Replace all ASCII control chars (< 0x20) except \n and \t, and Unicode line separators
+        # We preserve \n and \t initially to handle them separately
         text_to_parse = "".join(
-            ch if (ord(ch) >= 32 and ch not in ("\u2028", "\u2029")) else " "
+            ch if (ord(ch) >= 32 or ch in ("\n", "\t")) and ch not in ("\u2028", "\u2029") else " "
             for ch in text_to_parse
         )
+        
+        # Fix unescaped literal newlines and tabs within JSON string values
+        # This is a common issue with long markdown content in JSON strings
+        # We need to escape literal \n and \t that appear within quoted strings
+        def escape_literals_in_strings(text: str) -> str:
+            """Escape unescaped newlines and tabs within JSON string values."""
+            result = []
+            in_string = False
+            escape_next = False
+            
+            for i, ch in enumerate(text):
+                if escape_next:
+                    result.append(ch)
+                    escape_next = False
+                elif ch == '\\':
+                    result.append(ch)
+                    escape_next = True
+                elif ch == '"':
+                    result.append(ch)
+                    in_string = not in_string
+                elif in_string:
+                    # Inside a string - escape literal newlines and tabs
+                    if ch == '\n':
+                        result.append('\\n')
+                    elif ch == '\t':
+                        result.append('\\t')
+                    elif ch == '\r':
+                        result.append('\\r')
+                    else:
+                        result.append(ch)
+                else:
+                    result.append(ch)
+            
+            return ''.join(result)
+        
+        text_to_parse = escape_literals_in_strings(text_to_parse)
         
         parsed_json = None
         parsing_error = None
@@ -2464,6 +2510,7 @@ CRITICAL REMINDERS:
         character: Optional[Dict[str, Any]] = None,
         model: str = "openrouter:google/gemini-2.0-flash-exp:free",
         saved_style: Optional[Dict[str, Any]] = None,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
     ) -> Dict[str, Any]:
         """Generate creative briefs using OpenRouter API."""
         from app.services.openrouter_service import OpenRouterService
@@ -2488,7 +2535,7 @@ CRITICAL REMINDERS:
             db.close()
         
         # Get the shared VEO prompt structure (same as Gemini)
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio)
         
         # Combine system instruction and user prompt
         full_prompt = system_instruction + "\n\n" + variations_request

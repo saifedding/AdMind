@@ -817,7 +817,7 @@ export const adsApi = {
   getVeoGenerations: (ad_id?: number, include_archived?: boolean) => apiClient.getVeoGenerations(ad_id, include_archived),
   mergeVeoVideos: (data: MergeVideosRequest) => apiClient.mergeVeoVideos(data),
   getMergedVideos: (ad_id?: number) => apiClient.getMergedVideos(ad_id),
-  
+
   // Video Style Analyzer API
   analyzeVideoStyle: async (data: { video_url: string; style_name: string; description?: string }) => {
     const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/analyze-video-style`, {
@@ -828,19 +828,83 @@ export const adsApi = {
     if (!response.ok) throw new Error('Failed to analyze video style');
     return response.json();
   },
-  
+
   getStyleLibrary: async () => {
     const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/style-library`);
     if (!response.ok) throw new Error('Failed to fetch style library');
     return response.json();
   },
-  
+
   deleteStyleTemplate: async (templateId: number) => {
     const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/style-library/${templateId}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete style template');
     return response.json();
+  },
+
+  // Veo Session API - NEW
+  createVeoSession: async (data: VeoSessionCreate) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create Veo session');
+    return response.json() as Promise<VeoSessionResponse>;
+  },
+
+  listVeoSessions: async (skip: number = 0, limit: number = 20) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions?skip=${skip}&limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to list Veo sessions');
+    return response.json() as Promise<VeoSessionResponse[]>;
+  },
+
+  getVeoSession: async (sessionId: number) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions/${sessionId}`);
+    if (!response.ok) throw new Error('Failed to get Veo session');
+    return response.json() as Promise<VeoSessionResponse>;
+  },
+
+  deleteVeoSession: async (sessionId: number) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions/${sessionId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete Veo session');
+    return response.json();
+  },
+
+  saveVideoToSegment: async (segmentId: number, videoData: {
+    video_url: string;
+    prompt_used: string;
+    model_key: string;
+    aspect_ratio: string;
+    seed?: number;
+    generation_time_seconds?: number;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/segments/${segmentId}/videos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(videoData),
+    });
+    if (!response.ok) throw new Error('Failed to save video to segment');
+    return response.json();
+  },
+
+  updateSegmentPrompt: async (segmentId: number, currentPrompt: string) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/segments/${segmentId}/prompt`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_prompt: currentPrompt }),
+    });
+    if (!response.ok) throw new Error('Failed to update segment prompt');
+    return response.json() as Promise<VeoSegmentResponse>;
+  },
+
+  getSegmentVideos: async (segmentId: number) => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/segments/${segmentId}/videos`);
+    if (!response.ok) throw new Error('Failed to get segment videos');
+    return response.json() as Promise<VeoVideoResponse[]>;
   },
 };
 
@@ -1049,6 +1113,55 @@ export type VeoGenerationResponse = {
   seed?: number;
   generation_metadata?: Record<string, any>;
   created_at: string;
+};
+
+// Veo Session Types
+export type VeoSessionCreate = {
+  script: string;
+  styles: string[];
+  character?: Record<string, any>;
+  model?: string;
+  aspect_ratio?: string;
+  video_model_key?: string;
+  style_template_id?: number;
+};
+
+export type VeoVideoResponse = {
+  id: number;
+  prompt_used: string;
+  video_url: string;
+  model_key: string;
+  aspect_ratio: string;
+  seed?: number;
+  generation_time_seconds?: number;
+  created_at: string;
+};
+
+export type VeoSegmentResponse = {
+  id: number;
+  segment_index: number;
+  original_prompt: string;
+  current_prompt: string;
+  videos: VeoVideoResponse[];
+};
+
+export type VeoBriefResponse = {
+  id: number;
+  style_id: string;
+  style_name: string;
+  segments: VeoSegmentResponse[];
+};
+
+export type VeoSessionResponse = {
+  id: number;
+  script: string;
+  selected_styles: string[];
+  character_preset_id?: string;
+  gemini_model: string;
+  aspect_ratio: string;
+  video_model_key: string;
+  created_at: string;
+  briefs: VeoBriefResponse[];
 };
 
 export type MergeVideosRequest = {

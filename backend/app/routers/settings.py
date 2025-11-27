@@ -9,7 +9,11 @@ from datetime import datetime
 import requests
 
 from app.database import get_db
-from app.models import AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage, VideoStyleTemplate as DBVideoStyleTemplate
+from app.models import (
+    AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage, 
+    VideoStyleTemplate as DBVideoStyleTemplate,
+    VeoScriptSession, VeoCreativeBrief, VeoPromptSegment, VeoVideoGeneration
+)
 from app.services.google_ai_service import get_default_system_instruction, GoogleAIService
 from sqlalchemy import func
 
@@ -2157,3 +2161,436 @@ async def delete_style_template(template_id: int, db: Session = Depends(get_db))
     except Exception as e:
         logger.error(f"Failed to delete style template: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete style template: {e}")
+
+
+# ============================================================================
+# VEO SCRIPT SESSION & HISTORY TRACKING ENDPOINTS
+# ============================================================================
+
+class VeoSessionCreate(BaseModel):
+    """Request model for creating a new Veo script session."""
+    script: str
+    styles: List[str]
+    character: Optional[Dict[str, Any]] = None
+    model: str = "gemini-2.0-flash-lite"
+    aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT"
+    video_model_key: str = "veo_3_1_t2v_portrait"
+    style_template_id: Optional[int] = None
+
+
+class VeoVideoResponse(BaseModel):
+    """Response model for video generation."""
+    id: int
+    prompt_used: str
+    video_url: str
+    model_key: str
+    aspect_ratio: str
+    seed: Optional[int]
+    generation_time_seconds: Optional[int]
+    created_at: str
+
+
+class VeoSegmentResponse(BaseModel):
+    """Response model for prompt segment."""
+    id: int
+    segment_index: int
+    original_prompt: str
+    current_prompt: str
+    videos: List[VeoVideoResponse] = []
+
+
+class VeoBriefResponse(BaseModel):
+    """Response model for creative brief."""
+    id: int
+    style_id: str
+    style_name: str
+    segments: List[VeoSegmentResponse] = []
+
+
+class VeoSessionResponse(BaseModel):
+    """Response model for script session."""
+    id: int
+    script: str
+    selected_styles: List[str]
+    character_preset_id: Optional[str]
+    gemini_model: str
+    aspect_ratio: str
+    video_model_key: str
+    created_at: str
+    briefs: List[VeoBriefResponse] = []
+
+
+class VeoPromptUpdate(BaseModel):
+    """Request model for updating a prompt."""
+    current_prompt: str
+
+
+@router.post("/ai/veo/sessions", response_model=VeoSessionResponse)
+async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(get_db)) -> VeoSessionResponse:
+    """Create a new Veo script session with creative briefs and prompts.
+    
+    This endpoint:
+    1. Creates a session record with script and configuration
+    2. Generates creative briefs using Gemini
+    3. Stores all briefs and their prompt segments in the database
+    4. Returns the complete session structure with IDs for future reference
+    """
+    try:
+        # Create session record
+        session = VeoScriptSession(
+            script=payload.script,
+            selected_styles=payload.styles,
+            character_preset_id=payload.character.get("id") if payload.character else None,
+            gemini_model=payload.model,
+            aspect_ratio=payload.aspect_ratio,
+            video_model_key=payload.video_model_key,
+            style_template_id=payload.style_template_id,
+            session_metadata={"character": payload.character} if payload.character else None
+        )
+        db.add(session)
+        db.flush()  # Get session ID before generating briefs
+        
+        # Generate creative briefs using existing logic
+        saved_style = None
+        if payload.style_template_id:
+            template = db.query(DBVideoStyleTemplate).filter(DBVideoStyleTemplate.id == payload.style_template_id).first()
+            if template:
+                saved_style = template.style_characteristics
+                template.usage_count += 1
+        
+        service = GoogleAIService()
+        result = service.generate_creative_brief_variations(
+            script=payload.script,
+            styles=payload.styles,
+            character=payload.character,
+            model=payload.model,
+            saved_style=saved_style,
+            aspect_ratio=payload.aspect_ratio
+        )
+        
+        if not result.get("success"):
+            db.rollback()
+            raise HTTPException(status_code=500, detail=result.get("error", "Failed to generate briefs"))
+        
+        # Store briefs and segments
+        briefs_response = []
+        for variation in result.get("variations", []):
+            brief = VeoCreativeBrief(
+                session_id=session.id,
+                style_id=variation.get("style", "unknown"),
+                style_name=variation.get("style", "unknown").replace("_", " ").title(),
+                brief_metadata=variation
+            )
+            db.add(brief)
+            db.flush()
+            
+            segments_response = []
+            for idx, segment_text in enumerate(variation.get("segments", [])):
+                segment = VeoPromptSegment(
+                    brief_id=brief.id,
+                    segment_index=idx,
+                    original_prompt=segment_text,
+                    current_prompt=segment_text
+                )
+                db.add(segment)
+                db.flush()
+                
+                segments_response.append(VeoSegmentResponse(
+                    id=segment.id,
+                    segment_index=segment.segment_index,
+                    original_prompt=segment.original_prompt,
+                    current_prompt=segment.current_prompt,
+                    videos=[]
+                ))
+            
+            briefs_response.append(VeoBriefResponse(
+                id=brief.id,
+                style_id=brief.style_id,
+                style_name=brief.style_name,
+                segments=segments_response
+            ))
+        
+        db.commit()
+        
+        return VeoSessionResponse(
+            id=session.id,
+            script=session.script,
+            selected_styles=session.selected_styles,
+            character_preset_id=session.character_preset_id,
+            gemini_model=session.gemini_model,
+            aspect_ratio=session.aspect_ratio,
+            video_model_key=session.video_model_key,
+            created_at=session.created_at.isoformat() if session.created_at else "",
+            briefs=briefs_response
+        )
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create Veo session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create Veo session: {e}")
+
+
+@router.get("/ai/veo/sessions", response_model=List[VeoSessionResponse])
+async def list_veo_sessions(
+    skip: int = 0,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+) -> List[VeoSessionResponse]:
+    """List all Veo script sessions with pagination."""
+    try:
+        sessions = db.query(VeoScriptSession).order_by(
+            VeoScriptSession.created_at.desc()
+        ).offset(skip).limit(limit).all()
+        
+        result = []
+        for session in sessions:
+            briefs_response = []
+            for brief in session.creative_briefs:
+                segments_response = []
+                for segment in brief.segments:
+                    videos_response = [
+                        VeoVideoResponse(
+                            id=v.id,
+                            prompt_used=v.prompt_used,
+                            video_url=v.video_url,
+                            model_key=v.model_key,
+                            aspect_ratio=v.aspect_ratio,
+                            seed=v.seed,
+                            generation_time_seconds=v.generation_time_seconds,
+                            created_at=v.created_at.isoformat() if v.created_at else ""
+                        )
+                        for v in segment.video_generations
+                    ]
+                    segments_response.append(VeoSegmentResponse(
+                        id=segment.id,
+                        segment_index=segment.segment_index,
+                        original_prompt=segment.original_prompt,
+                        current_prompt=segment.current_prompt,
+                        videos=videos_response
+                    ))
+                
+                briefs_response.append(VeoBriefResponse(
+                    id=brief.id,
+                    style_id=brief.style_id,
+                    style_name=brief.style_name,
+                    segments=segments_response
+                ))
+            
+            result.append(VeoSessionResponse(
+                id=session.id,
+                script=session.script,
+                selected_styles=session.selected_styles,
+                character_preset_id=session.character_preset_id,
+                gemini_model=session.gemini_model,
+                aspect_ratio=session.aspect_ratio,
+                video_model_key=session.video_model_key,
+                created_at=session.created_at.isoformat() if session.created_at else "",
+                briefs=briefs_response
+            ))
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to list Veo sessions: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list Veo sessions: {e}")
+
+
+@router.get("/ai/veo/sessions/{session_id}", response_model=VeoSessionResponse)
+async def get_veo_session(session_id: int, db: Session = Depends(get_db)) -> VeoSessionResponse:
+    """Get a specific Veo session with all briefs, prompts, and videos."""
+    try:
+        session = db.query(VeoScriptSession).filter(VeoScriptSession.id == session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        briefs_response = []
+        for brief in session.creative_briefs:
+            segments_response = []
+            for segment in brief.segments:
+                videos_response = [
+                    VeoVideoResponse(
+                        id=v.id,
+                        prompt_used=v.prompt_used,
+                        video_url=v.video_url,
+                        model_key=v.model_key,
+                        aspect_ratio=v.aspect_ratio,
+                        seed=v.seed,
+                        generation_time_seconds=v.generation_time_seconds,
+                        created_at=v.created_at.isoformat() if v.created_at else ""
+                    )
+                    for v in segment.video_generations
+                ]
+                segments_response.append(VeoSegmentResponse(
+                    id=segment.id,
+                    segment_index=segment.segment_index,
+                    original_prompt=segment.original_prompt,
+                    current_prompt=segment.current_prompt,
+                    videos=videos_response
+                ))
+            
+            briefs_response.append(VeoBriefResponse(
+                id=brief.id,
+                style_id=brief.style_id,
+                style_name=brief.style_name,
+                segments=segments_response
+            ))
+        
+        return VeoSessionResponse(
+            id=session.id,
+            script=session.script,
+            selected_styles=session.selected_styles,
+            character_preset_id=session.character_preset_id,
+            gemini_model=session.gemini_model,
+            aspect_ratio=session.aspect_ratio,
+            video_model_key=session.video_model_key,
+            created_at=session.created_at.isoformat() if session.created_at else "",
+            briefs=briefs_response
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get Veo session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get Veo session: {e}")
+
+
+@router.put("/ai/veo/segments/{segment_id}/prompt", response_model=VeoSegmentResponse)
+async def update_segment_prompt(
+    segment_id: int,
+    payload: VeoPromptUpdate,
+    db: Session = Depends(get_db)
+) -> VeoSegmentResponse:
+    """Update the current prompt text for a segment."""
+    try:
+        segment = db.query(VeoPromptSegment).filter(VeoPromptSegment.id == segment_id).first()
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+        
+        segment.current_prompt = payload.current_prompt
+        db.commit()
+        db.refresh(segment)
+        
+        videos_response = [
+            VeoVideoResponse(
+                id=v.id,
+                prompt_used=v.prompt_used,
+                video_url=v.video_url,
+                model_key=v.model_key,
+                aspect_ratio=v.aspect_ratio,
+                seed=v.seed,
+                generation_time_seconds=v.generation_time_seconds,
+                created_at=v.created_at.isoformat() if v.created_at else ""
+            )
+            for v in segment.video_generations
+        ]
+        
+        return VeoSegmentResponse(
+            id=segment.id,
+            segment_index=segment.segment_index,
+            original_prompt=segment.original_prompt,
+            current_prompt=segment.current_prompt,
+            videos=videos_response
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update segment prompt: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update segment prompt: {e}")
+
+
+@router.get("/ai/veo/segments/{segment_id}/videos", response_model=List[VeoVideoResponse])
+async def get_segment_videos(segment_id: int, db: Session = Depends(get_db)) -> List[VeoVideoResponse]:
+    """Get all video generations for a specific prompt segment."""
+    try:
+        segment = db.query(VeoPromptSegment).filter(VeoPromptSegment.id == segment_id).first()
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+        
+        return [
+            VeoVideoResponse(
+                id=v.id,
+                prompt_used=v.prompt_used,
+                video_url=v.video_url,
+                model_key=v.model_key,
+                aspect_ratio=v.aspect_ratio,
+                seed=v.seed,
+                generation_time_seconds=v.generation_time_seconds,
+                created_at=v.created_at.isoformat() if v.created_at else ""
+            )
+            for v in segment.video_generations
+        ]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get segment videos: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get segment videos: {e}")
+
+
+@router.delete("/ai/veo/sessions/{session_id}")
+async def delete_veo_session(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete a Veo session and all associated data (cascade)"""
+    session = db.query(VeoScriptSession).filter(VeoScriptSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    db.delete(session)
+    db.commit()
+    return {"success": True}
+
+
+# Pydantic model for video generation
+class VeoVideoGenerationCreate(BaseModel):
+    video_url: str
+    prompt_used: str
+    model_key: str
+    aspect_ratio: str
+    seed: Optional[int] = None
+    generation_time_seconds: Optional[int] = None
+
+
+@router.post("/ai/veo/segments/{segment_id}/videos")
+async def save_video_to_segment(
+    segment_id: int,
+    video_data: VeoVideoGenerationCreate,
+    db: Session = Depends(get_db)
+):
+    """Save a generated video to a specific segment"""
+    # Verify segment exists
+    segment = db.query(VeoPromptSegment).filter(VeoPromptSegment.id == segment_id).first()
+    if not segment:
+        raise HTTPException(status_code=404, detail="Segment not found")
+    
+    # Create video generation record
+    video = VeoVideoGeneration(
+        segment_id=segment_id,
+        video_url=video_data.video_url,
+        prompt_used=video_data.prompt_used,
+        model_key=video_data.model_key,
+        aspect_ratio=video_data.aspect_ratio,
+        seed=video_data.seed,
+        generation_time_seconds=video_data.generation_time_seconds
+    )
+    
+    db.add(video)
+    db.commit()
+    db.refresh(video)
+    
+    return {
+        "id": video.id,
+        "video_url": video.video_url,
+        "prompt_used": video.prompt_used,
+        "model_key": video.model_key,
+        "aspect_ratio": video.aspect_ratio,
+        "seed": video.seed,
+        "generation_time_seconds": video.generation_time_seconds,
+        "created_at": video.created_at.isoformat()
+    }

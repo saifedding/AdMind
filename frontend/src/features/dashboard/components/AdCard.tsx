@@ -472,7 +472,7 @@ export function AdCard({
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
             
             {/* Score Badge Overlay */}
-            {ad.analysis?.overall_score !== undefined && (
+            {ad.analysis?.overall_score != null && (
               <div
                 className={cn(
                   "absolute top-2 right-2 z-20 px-2 py-0.5 rounded-md text-xs font-bold shadow-md backdrop-blur-sm",
