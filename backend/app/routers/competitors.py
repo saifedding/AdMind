@@ -411,4 +411,18 @@ async def get_competitor_ads(
         logger.error(f"Error fetching ads for competitor {competitor_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching competitor ads: {str(e)}")
 
+@router.delete("/{competitor_id}/ads")
+async def clear_competitor_ads(
+    competitor_id: int,
+    competitor_service: "CompetitorService" = Depends(get_competitor_service_dependency)
+):
+    try:
+        result = competitor_service.clear_competitor_ads(competitor_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error clearing ads for competitor {competitor_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error clearing competitor ads: {str(e)}")
+
 # Import required models 

@@ -2090,6 +2090,7 @@ async def analyze_video_style(payload: VideoStyleAnalyzeRequest, db: Session = D
             name=payload.style_name,
             description=payload.description,
             video_url=payload.video_url,
+            thumbnail_url=result.get("thumbnail_url"),
             style_characteristics=result["style_characteristics"],
             analysis_metadata=result.get("analysis_metadata"),
             gemini_file_uri=result.get("gemini_file_uri")

@@ -1982,14 +1982,25 @@ async def bulk_delete_ads(
         logger.error(f"Error bulk deleting ads: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error bulk deleting ads: {str(e)}")
 
+@router.delete("/ads/all", response_model=DeleteAllAdsResponse)
+async def delete_all_ads(
+    ad_service: "AdService" = Depends(get_ad_service_dependency)
+):
+    try:
+        count = ad_service.delete_all_ads()
+        return DeleteAllAdsResponse(
+            message=f"Successfully deleted all {count} ads",
+            deleted_count=count
+        )
+    except Exception as e:
+        logger.error(f"Error deleting all ads: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting all ads: {str(e)}")
+
 @router.delete("/ads/{ad_id}")
 async def delete_ad(
     ad_id: int,
     ad_service: "AdService" = Depends(get_ad_service_dependency)
 ):
-    """
-    Delete an ad by ID.
-    """
     try:
         result = ad_service.delete_ad(ad_id)
         logger.info(f"Deleted ad ID {ad_id}")
@@ -2000,26 +2011,6 @@ async def delete_ad(
     except Exception as e:
         logger.error(f"Error deleting ad {ad_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting ad: {str(e)}")
-
-@router.delete("/ads/all", response_model=DeleteAllAdsResponse)
-async def delete_all_ads(
-    ad_service: "AdService" = Depends(get_ad_service_dependency)
-):
-    """
-    Delete all ads from the database.
-    
-    DANGER: This endpoint is for development purposes only!
-    It will delete all ads and their analyses from the database.
-    """
-    try:
-        count = ad_service.delete_all_ads()
-        return DeleteAllAdsResponse(
-            message=f"Successfully deleted all {count} ads",
-            deleted_count=count
-        )
-    except Exception as e:
-        logger.error(f"Error deleting all ads: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting all ads: {str(e)}")
 
 # ========================================
 # AI Analysis Endpoints

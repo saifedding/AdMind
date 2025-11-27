@@ -8,6 +8,8 @@ import re
 import tempfile
 import subprocess
 import shutil
+import hashlib
+from pathlib import Path
 from urllib.parse import urlparse
 import requests
 from typing import Dict, Any, Optional
@@ -2844,7 +2846,8 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
                             "video_url": video_url,
                             "gemini_file_uri": file_uri,
                             "style_characteristics": style_data,
-                            "analysis_metadata": data
+                            "analysis_metadata": data,
+                            "thumbnail_url": self._generate_thumbnail(file_path) if file_path else None
                         }
                     except json.JSONDecodeError as e:
                         logger.error(f"Failed to parse style analysis JSON: {e}")
@@ -2855,3 +2858,72 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
         except Exception as e:
             logger.error(f"Video style analysis failed: {e}")
             return {"success": False, "error": f"Style analysis failed: {str(e)}"}
+
+    def _generate_thumbnail(self, video_path: str) -> Optional[str]:
+        """
+        Generate a thumbnail from a video file using ffmpeg.
+        Returns the relative URL path to the thumbnail.
+        """
+        try:
+            video_path_obj = Path(video_path)
+            if not video_path_obj.exists():
+                logger.error(f"Video file not found for thumbnail generation: {video_path}")
+                return None
+            
+            # Create thumbnails directory if it doesn't exist
+            # We'll use the same base directory structure as downloads
+            # If video is in media/downloads/ad_name/video.mp4, put thumbnail in media/thumbnails/ad_name/video.jpg
+            
+            # For simplicity, let's put all thumbnails in media/thumbnails for now
+            thumbnails_dir = Path("media/thumbnails")
+            thumbnails_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate unique filename for thumbnail
+            # Use the video filename stem + hash to avoid collisions
+            video_hash = hashlib.md5(str(video_path).encode()).hexdigest()[:8]
+            thumbnail_filename = f"{video_path_obj.stem}_{video_hash}.jpg"
+            thumbnail_path = thumbnails_dir / thumbnail_filename
+            
+            # If thumbnail already exists, return it
+            if thumbnail_path.exists() and thumbnail_path.stat().st_size > 0:
+                # Convert to relative URL path
+                # Assuming app mounts 'media' folder at /media
+                return f"/media/thumbnails/{thumbnail_filename}"
+            
+            # Run ffmpeg to extract frame at 1 second (or 00:00:01)
+            # -ss 1: seek to 1 second
+            # -vframes 1: output 1 frame
+            # -q:v 2: high quality jpeg
+            cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output files
+                '-ss', '00:00:01',
+                '-i', str(video_path),
+                '-vframes', '1',
+                '-q:v', '2',
+                str(thumbnail_path)
+            ]
+            
+            # Run command
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                logger.warning(f"ffmpeg thumbnail generation failed (1s mark), trying 0s: {result.stderr}")
+                # Try again at 0s if 1s failed (e.g. video shorter than 1s)
+                cmd[2] = '00:00:00'
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                if result.returncode != 0:
+                    logger.error(f"ffmpeg thumbnail generation failed: {result.stderr}")
+                    return None
+            
+            if thumbnail_path.exists() and thumbnail_path.stat().st_size > 0:
+                logger.info(f"Generated thumbnail: {thumbnail_path}")
+                return f"/media/thumbnails/{thumbnail_filename}"
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to generate thumbnail: {e}")
+            return None
+

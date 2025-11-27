@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Filter, Edit2, Trash2, Eye, Download, AlertCircle, CheckCircle, XCircle, Users, Settings, Globe, Clock, Activity, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, Download, AlertCircle, CheckCircle, XCircle, Users, Settings, Globe, Clock, Activity, MoreVertical, ChevronDown, ChevronUp, Eraser, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import {
   bulkDeleteCompetitors,
   scrapeCompetitorAds,
   getCompetitorAds,
+  clearCompetitorAds,
   type Competitor, 
   type CompetitorStats,
   type CompetitorCreate,
@@ -28,6 +29,7 @@ import {
   type PaginatedCompetitors,
   type CompetitorScrapeRequest 
 } from '@/lib/api';
+import { adsApi } from '@/lib/api';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCw } from 'lucide-react';
@@ -118,6 +120,11 @@ export default function CompetitorsPage() {
   });
   const [scrapingCompetitor, setScrapingCompetitor] = useState<Competitor | null>(null);
   const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearingCompetitor, setClearingCompetitor] = useState<Competitor | null>(null);
+  const [clearLoading, setClearLoading] = useState(false);
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [clearAllLoading, setClearAllLoading] = useState(false);
 
   const visibleCompetitorIds = useMemo(() => competitors.data.map(c => c.id), [competitors.data]);
   const isAllVisibleSelected = useMemo(() => selectedIds.length > 0 && visibleCompetitorIds.every(id => selectedIds.includes(id)), [selectedIds, visibleCompetitorIds]);
@@ -235,6 +242,45 @@ export default function CompetitorsPage() {
       setShowScrapeDialog(true);
     } catch (err) {
       alert(`Failed to open scraping dialog: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleClearAds = (competitor: Competitor) => {
+    setClearingCompetitor(competitor);
+    setShowClearDialog(true);
+  };
+
+  const performClearAds = async () => {
+    if (!clearingCompetitor) return;
+    try {
+      setClearLoading(true);
+      const result = await clearCompetitorAds(clearingCompetitor.id);
+      alert(`${result.message}`);
+      setShowClearDialog(false);
+      setClearingCompetitor(null);
+      loadData();
+    } catch (err) {
+      alert(`Failed to clear ads: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setClearLoading(false);
+    }
+  };
+
+  const openClearAllDialog = () => {
+    setShowClearAllDialog(true);
+  };
+
+  const performClearAllAds = async () => {
+    try {
+      setClearAllLoading(true);
+      const result = await adsApi.deleteAllAds();
+      alert(`${result.message}\nDeleted: ${result.deleted_count}`);
+      setShowClearAllDialog(false);
+      loadData();
+    } catch (err) {
+      alert(`Failed to clear all ads: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setClearAllLoading(false);
     }
   };
 
@@ -398,6 +444,13 @@ export default function CompetitorsPage() {
             >
               <Activity className="h-4 w-4 mr-2" />
               View Tasks
+            </Button>
+            <Button 
+              onClick={openClearAllDialog}
+              variant="destructive"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Clear ALL Ads
             </Button>
             
             <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
@@ -584,6 +637,7 @@ export default function CompetitorsPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleViewCompetitor(c)}><Eye className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(c)}><Edit2 className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => handleScrape(c)}><Download className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleClearAds(c)}><Eraser className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteCompetitor(c)}><Trash2 className="h-4 w-4" /></Button>
                       </td>
                     </tr>
@@ -759,6 +813,38 @@ export default function CompetitorsPage() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>Cancel</Button>
               <Button variant="destructive" onClick={handleBulkDelete}>Yes, delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Clear Ads Confirmation Dialog */}
+        <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Clear ads for {clearingCompetitor?.name}</DialogTitle>
+              <DialogDescription>
+                This will permanently delete all ads associated with this competitor.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowClearDialog(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={performClearAds} disabled={clearLoading}>{clearLoading ? 'Clearing...' : 'Clear Ads'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Clear ALL Ads Confirmation Dialog */}
+        <Dialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Clear ALL ads for ALL competitors</DialogTitle>
+              <DialogDescription>
+                This will permanently delete every ad in the database across all competitors. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowClearAllDialog(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={performClearAllAds} disabled={clearAllLoading}>{clearAllLoading ? 'Clearing...' : 'Clear ALL Ads'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

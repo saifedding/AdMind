@@ -1084,10 +1084,13 @@ class AdService:
             Number of ads deleted
         """
         try:
-            # First delete all analyses
+            from app.models.ad_set import AdSet
+            from app.models.veo_generation import VeoGeneration
+
+            self.db.query(AdSet).filter(AdSet.best_ad_id.isnot(None)).update({"best_ad_id": None}, synchronize_session=False)
+
+            self.db.query(VeoGeneration).delete(synchronize_session=False)
             analyses_deleted = self.db.query(AdAnalysis).delete(synchronize_session=False)
-            
-            # Then delete all ads
             ads_deleted = self.db.query(Ad).delete(synchronize_session=False)
             
             self.db.commit()

@@ -463,17 +463,11 @@ class ApiClient {
     );
   }
 
-  async deleteAllAds(): Promise<{ message: string; count: number }> {
-    return this.request<{ message: string; count: number }>(
+  async deleteAllAds(): Promise<{ message: string; deleted_count: number }> {
+    return this.request<{ message: string; deleted_count: number }>(
       `/ads/all`,
       {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          confirmation: true
-        })
+        method: 'DELETE'
       }
     );
   }
@@ -1391,6 +1385,20 @@ export async function bulkDeleteCompetitors(competitorIds: number[]): Promise<{ 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'Failed to bulk delete competitors');
+  }
+  return response.json();
+}
+
+export async function clearCompetitorAds(competitorId: number): Promise<{ message: string; deleted_count: number }> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/${competitorId}/ads`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to clear competitor ads');
   }
   return response.json();
 }

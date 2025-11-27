@@ -449,4 +449,35 @@ class CompetitorService:
             
         except Exception as e:
             logger.error(f"Error searching competitors: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error searching competitors: {str(e)}") 
+            raise HTTPException(status_code=500, detail=f"Error searching competitors: {str(e)}")
+
+    def clear_competitor_ads(self, competitor_id: int) -> dict:
+        try:
+            competitor = self.db.query(Competitor).filter(Competitor.id == competitor_id).first()
+            if not competitor:
+                raise HTTPException(status_code=404, detail="Competitor not found")
+
+            ad_ids = [row[0] for row in self.db.query(Ad.id).filter(Ad.competitor_id == competitor_id).all()]
+            if not ad_ids:
+                return {"message": "No ads found for competitor", "deleted_count": 0}
+
+            from app.models.ad_set import AdSet
+            from app.models.ad_analysis import AdAnalysis
+            from app.models.veo_generation import VeoGeneration
+            from app.models.merged_video import MergedVideo
+
+            self.db.query(AdSet).filter(AdSet.best_ad_id.in_(ad_ids)).update({"best_ad_id": None}, synchronize_session=False)
+            self.db.query(VeoGeneration).filter(VeoGeneration.ad_id.in_(ad_ids)).delete(synchronize_session=False)
+            self.db.query(MergedVideo).filter(MergedVideo.ad_id.in_(ad_ids)).delete(synchronize_session=False)
+            self.db.query(AdAnalysis).filter(AdAnalysis.ad_id.in_(ad_ids)).delete(synchronize_session=False)
+            deleted_ads = self.db.query(Ad).filter(Ad.id.in_(ad_ids)).delete(synchronize_session=False)
+
+            self.db.commit()
+
+            return {"message": f"Deleted {deleted_ads} ads for competitor", "deleted_count": deleted_ads}
+        except HTTPException:
+            raise
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error clearing ads for competitor {competitor_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error clearing competitor ads: {str(e)}")
