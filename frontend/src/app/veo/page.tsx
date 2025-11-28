@@ -13,10 +13,13 @@ import { Button } from '@/components/ui/button';
 import { History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { VeoHistory } from './components/VeoHistory';
+import { VeoImageToVideo } from './components/VeoImageToVideo';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function VeoPage() {
   const veo = useVeoGenerator();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'text-to-video' | 'image-to-video'>('text-to-video');
 
   return (
     <DashboardLayout>
@@ -56,9 +59,22 @@ export default function VeoPage() {
               </Sheet>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
-              {/* Left Column: Inputs */}
-              <div className="space-y-6 min-w-0">
+            {/* Mode Tabs */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+              <TabsList className="bg-slate-900 border border-slate-800">
+                <TabsTrigger value="text-to-video" className="data-[state=active]:bg-purple-600">
+                  Text-to-Video
+                </TabsTrigger>
+                <TabsTrigger value="image-to-video" className="data-[state=active]:bg-purple-600">
+                  Image-to-Video
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Text-to-Video Tab */}
+              <TabsContent value="text-to-video" className="mt-6">
+                <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+                  {/* Left Column: Inputs */}
+                  <div className="space-y-6 min-w-0">
                 <VeoScriptInput
                   script={veo.script}
                   setScript={veo.setScript}
@@ -94,50 +110,55 @@ export default function VeoPage() {
                 />
               </div>
 
-              {/* Right Column: Settings */}
-              <div className="xl:sticky xl:top-0">
-                <VeoSettingsPanel
-                  geminiModel={veo.geminiModel}
-                  setGeminiModel={veo.setGeminiModel}
-                  aspectRatio={veo.aspectRatio}
-                  setAspectRatio={veo.setAspectRatio}
+                  {/* Right Column: Settings */}
+                  <div className="xl:sticky xl:top-0">
+                    <VeoSettingsPanel
+                      geminiModel={veo.geminiModel}
+                      setGeminiModel={veo.setGeminiModel}
+                      aspectRatio={veo.aspectRatio}
+                      setAspectRatio={veo.setAspectRatio}
+                      veoModels={veo.veoModels}
+                      veoModelsLoading={veo.veoModelsLoading}
+                      selectedModel={veo.selectedModel}
+                      setSelectedModel={veo.setSelectedModel}
+                      isGenerating={veo.isGenerating}
+                      handleGenerateBriefs={veo.handleGenerateBriefs}
+                      script={veo.script}
+                      hasSelectedStyle={veo.selectedStyles.length > 0 || !!veo.selectedStyleTemplateId}
+                    />
+                  </div>
+                </div>
 
-                  veoModels={veo.veoModels}
-                  veoModelsLoading={veo.veoModelsLoading}
-                  selectedModel={veo.selectedModel}
-                  setSelectedModel={veo.setSelectedModel}
-                  isGenerating={veo.isGenerating}
-                  handleGenerateBriefs={veo.handleGenerateBriefs}
-                  script={veo.script}
-                  hasSelectedStyle={veo.selectedStyles.length > 0 || !!veo.selectedStyleTemplateId}
-                />
-              </div>
-            </div>
+                {/* Feed / Gallery Section - Full Width */}
+                <div className="pt-4">
+                  <VeoFeed
+                    generatedVariations={veo.generatedVariations}
+                    veoGeneratingKeys={veo.veoGeneratingKeys}
+                    veoVideoByPromptKey={veo.veoVideoByPromptKey}
+                    veoErrorByPromptKey={veo.veoErrorByPromptKey}
+                    generationTimeRemaining={veo.generationTimeRemaining}
+                    generationStartTime={veo.generationStartTime}
+                    actualGenerationTime={veo.actualGenerationTime}
+                    generateVideoForPrompt={veo.generateVideoForPrompt}
+                    handleCopy={veo.handleCopy}
+                    copiedKey={veo.copiedKey}
+                    selectedClipsForMerge={veo.selectedClipsForMerge}
+                    toggleClipSelection={veo.toggleClipSelection}
+                    handleMergeClips={veo.handleMergeClips}
+                    mergingStyles={veo.mergingStyles}
+                    mergedVideoByStyle={veo.mergedVideoByStyle}
+                    mergeErrorByStyle={veo.mergeErrorByStyle}
+                    aspectRatio={veo.aspectRatio}
+                    saveEditedPrompt={veo.saveEditedPrompt}
+                  />
+                </div>
+              </TabsContent>
 
-            {/* Feed / Gallery Section - Full Width */}
-            <div className="pt-4">
-              <VeoFeed
-                generatedVariations={veo.generatedVariations}
-                veoGeneratingKeys={veo.veoGeneratingKeys}
-                veoVideoByPromptKey={veo.veoVideoByPromptKey}
-                veoErrorByPromptKey={veo.veoErrorByPromptKey}
-                generationTimeRemaining={veo.generationTimeRemaining}
-                generationStartTime={veo.generationStartTime}
-                actualGenerationTime={veo.actualGenerationTime}
-                generateVideoForPrompt={veo.generateVideoForPrompt}
-                handleCopy={veo.handleCopy}
-                copiedKey={veo.copiedKey}
-                selectedClipsForMerge={veo.selectedClipsForMerge}
-                toggleClipSelection={veo.toggleClipSelection}
-                handleMergeClips={veo.handleMergeClips}
-                mergingStyles={veo.mergingStyles}
-                mergedVideoByStyle={veo.mergedVideoByStyle}
-                mergeErrorByStyle={veo.mergeErrorByStyle}
-                aspectRatio={veo.aspectRatio}
-
-                saveEditedPrompt={veo.saveEditedPrompt}
-              />
-            </div>
+              {/* Image-to-Video Tab */}
+              <TabsContent value="image-to-video" className="mt-6">
+                <VeoImageToVideo aspectRatio={veo.aspectRatio as 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_SQUARE'} />
+              </TabsContent>
+            </Tabs>
 
           </div>
         </ScrollArea>

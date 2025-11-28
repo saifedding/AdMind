@@ -13,9 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info, RefreshCw } from 'lucide-react';
+import { Play, Image, ArrowLeft, Globe2, Eye, DollarSign, Zap, TrendingUp, ChevronLeft, ChevronRight, Calendar, Info, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { differenceInDays, format, parseISO } from 'date-fns';
+import type { AnalyzeVideoResponse } from '@/lib/api';
 
 const CreativeCard = ({ creative, index }: { creative: AdWithAnalysis['creatives'][0], index: number }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -64,6 +65,11 @@ export default function AdDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentCreativeIndex, setCurrentCreativeIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalyzeVideoResponse | null>(null);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [isAnalyzingSet, setIsAnalyzingSet] = useState<boolean>(false);
+  const [hookScore, setHookScore] = useState<number>(0);
 
   useEffect(() => {
     const fetchAd = async () => {
@@ -88,6 +94,24 @@ export default function AdDetailPage() {
       fetchAd();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (ad?.analysis?.hook_score !== undefined && ad?.analysis?.hook_score !== null) {
+      setHookScore(ad.analysis.hook_score as number);
+    } else {
+      setHookScore(0);
+    }
+    if (ad?.ad_set_id) {
+      try {
+        const cached = localStorage.getItem(`adSetAnalysis:${ad.ad_set_id}`);
+        if (cached) {
+          const parsed: AnalyzeVideoResponse = JSON.parse(cached);
+          setAnalysis(parsed);
+          setPrompts(parsed.generation_prompts || []);
+        }
+      } catch {}
+    }
+  }, [ad?.id, ad?.analysis?.hook_score, ad?.ad_set_id]);
 
   const handleRefresh = async () => {
     if (isRefreshing || !ad) return;
@@ -297,16 +321,141 @@ export default function AdDetailPage() {
             <div className="flex items-center gap-1 text-foreground">
               <TrendingUp className="h-4 w-4" />
               <span className="font-mono font-semibold text-lg">
-                {ad.analysis?.overall_score ? ad.analysis.overall_score.toFixed(1) : 'N/A'}
+                {ad.analysis?.overall_score !== undefined && ad.analysis?.overall_score !== null ? ad.analysis.overall_score.toFixed(1) : '0.0'}
               </span>
             </div>
             <span className="text-xs text-muted-foreground">Overall Score</span>
+            <div className="mt-1 flex items-center gap-1 text-foreground">
+              <TrendingUp className="h-4 w-4" />
+              <span className="font-mono font-semibold text-sm">
+                {hookScore !== undefined && hookScore !== null ? (hookScore.toFixed ? hookScore.toFixed(1) : hookScore) : '0.0'}
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">Hook Score</span>
           </div>
         </div>
 
         {/* Media */}
         {renderMedia()}
         {renderCarouselControls()}
+
+        <div className="mt-6 grid gap-4">
+          <div className="flex items-center gap-3">
+            <Button onClick={analyzeCurrentAd} disabled={analyzing} className="bg-blue-600 text-white hover:bg-blue-700">
+              {analyzing ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />Analyzing...</>) : 'Analyze current ad'}
+            </Button>
+            {ad?.ad_set_id && ad?.variant_count && ad.variant_count > 1 && (
+              <Button onClick={analyzeAdSetBestVariant} disabled={isAnalyzingSet} className="bg-indigo-600 text-white hover:bg-indigo-700">
+                {isAnalyzingSet ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />Analyzing set...</>) : 'Analyze ad set (best variant)'}
+              </Button>
+            )}
+          </div>
+
+          {analysis && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Analysis</CardTitle>
+                <CardDescription>
+                  Overall Score: {(ad?.analysis?.overall_score ?? 0).toFixed ? (ad?.analysis?.overall_score as number).toFixed(1) : (ad?.analysis?.overall_score ?? 0)} | Hook Score: {hookScore.toFixed ? hookScore.toFixed(1) : hookScore}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ad?.media_type === 'video' || media?.type === 'Video' ? (
+                  <div className="space-y-2">
+                    {analysis.transcript && (
+                      <div>
+                        <Label>Transcript</Label>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.transcript}</p>
+                      </div>
+                    )}
+                    {analysis.beats && analysis.beats.length > 0 && (
+                      <div>
+                        <Label>Beats</Label>
+                        <ul className="text-sm list-disc pl-5">
+                          {analysis.beats.map((b, i) => (
+                            <li key={i}>{b.summary}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {analysis.text_on_video && (
+                      <div>
+                        <Label>Text on Video</Label>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.text_on_video}</p>
+                      </div>
+                    )}
+                    {analysis.voice_over && (
+                      <div>
+                        <Label>Voice Over</Label>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.voice_over}</p>
+                      </div>
+                    )}
+                    {analysis.storyboard && analysis.storyboard.length > 0 && (
+                      <div>
+                        <Label>Storyboard</Label>
+                        <ul className="text-sm list-disc pl-5">
+                          {analysis.storyboard.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {analysis.summary && (
+                      <div>
+                        <Label>Summary</Label>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.summary}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <Label>Prompts</Label>
+                  {prompts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No prompts</p>
+                  ) : (
+                    <ul className="text-sm list-disc pl-5">
+                      {(ad?.media_type === 'video' || media?.type === 'Video' ? prompts : prompts.slice(0,1)).map((p, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="flex-1">{p}</span>
+                          <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(p)}>Copy</Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {(analysis.strengths && analysis.strengths.length > 0) && (
+                  <div>
+                    <Label>Strengths</Label>
+                    <ul className="text-sm list-disc pl-5">
+                      {analysis.strengths.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {(analysis.recommendations && analysis.recommendations.length > 0) && (
+                  <div>
+                    <Label>Recommendations</Label>
+                    <ul className="text-sm list-disc pl-5">
+                      {analysis.recommendations.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" onClick={() => window.open('/veo', '_blank')}>Open in VEO</Button>
+              </CardFooter>
+            </Card>
+          )}
+        </div>
 
         {/* Content & Analysis */}
         <div className="grid lg:grid-cols-3 gap-6">
@@ -420,4 +569,78 @@ export default function AdDetailPage() {
       </div>
     </DashboardLayout>
   );
-} 
+}
+  const analyzeCurrentAd = async () => {
+    if (!ad) return;
+    try {
+      setAnalyzing(true);
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const body: any = {};
+      if (media?.type === 'Video' && media?.url) {
+        body.video_url = media.url;
+      }
+      const res = await fetch(`${backendUrl}/api/v1/ads/${ad.id}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('Analyze failed');
+      const data: AnalyzeVideoResponse = await res.json();
+      setAnalysis(data);
+      setPrompts(data.generation_prompts || []);
+      if (ad?.ad_set_id) {
+        try { localStorage.setItem(`adSetAnalysis:${ad.ad_set_id}`, JSON.stringify(data)); } catch {}
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to analyze ad');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const analyzeAdSetBestVariant = async () => {
+    if (!ad?.ad_set_id) return;
+    try {
+      setIsAnalyzingSet(true);
+      const variantsResp = await adsApi.getAdsInSet(ad.ad_set_id, 1, 50);
+      const variants = variantsResp.data || [];
+      if (variants.length === 0) throw new Error('No variants in set');
+      const transformed = transformAdsWithAnalysis(variants);
+      const pickBest = (adsArr: AdWithAnalysis[]) => {
+        let best = adsArr[0];
+        const days = (a: AdWithAnalysis) => {
+          try {
+            const start = a.start_date ? parseISO(a.start_date) : null;
+            const end = a.end_date ? parseISO(a.end_date) : new Date();
+            if (!start) return 0;
+            return Math.max(1, differenceInDays(end, start));
+          } catch { return 0; }
+        };
+        for (const item of adsArr) {
+          if (days(item) > days(best)) best = item;
+        }
+        return best;
+      };
+      const bestVariant = pickBest(transformed);
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${backendUrl}/api/v1/ads/${bestVariant.id}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (!res.ok) throw new Error('Analyze set failed');
+      const data: AnalyzeVideoResponse = await res.json();
+      setAnalysis(data);
+      setPrompts(data.generation_prompts || []);
+      if (ad?.ad_set_id) {
+        try { localStorage.setItem(`adSetAnalysis:${ad.ad_set_id}`, JSON.stringify(data)); } catch {}
+      }
+      alert(`Analyzed best variant (ID: ${bestVariant.id})`);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to analyze ad set');
+    } finally {
+      setIsAnalyzingSet(false);
+    }
+  };

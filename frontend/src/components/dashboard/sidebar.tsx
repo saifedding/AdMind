@@ -28,7 +28,8 @@ import {
   Clock,
   Heart,
   FolderHeart,
-  Video
+  Video,
+  ImageIcon
 } from "lucide-react";
 
 const navigationGroups = [
@@ -108,6 +109,12 @@ const navigationGroups = [
         name: "Veo Generator",
         href: "/veo",
         icon: Video,
+        current: false
+      },
+      {
+        name: "Imagen Studio",
+        href: "/imagen",
+        icon: ImageIcon,
         current: false
       }
     ]

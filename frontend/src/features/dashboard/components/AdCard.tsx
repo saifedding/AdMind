@@ -119,9 +119,9 @@ export function AdCard({
   const displayContent = getMainAdContent(ad, currentCreative);
   
   // Format score for display
-  const scoreText = ad.analysis?.overall_score 
-    ? `${ad.analysis.overall_score.toFixed(1)}`
-    : 'N/A';
+  const scoreText = ad.analysis?.overall_score !== undefined && ad.analysis?.overall_score !== null
+    ? `${(ad.analysis.overall_score as number).toFixed(1)}`
+    : '0.0';
   
   // Get impressions text
   const impressionsText = ad.impressions_text || 'Unknown';

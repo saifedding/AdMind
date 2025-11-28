@@ -1980,6 +1980,388 @@ class GoogleAIService:
             "userPaygateTier": str(tier) if tier is not None else "",
         }
     
+    def generate_images_from_prompt(
+        self,
+        prompt: str,
+        aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT",
+        image_model_name: str = "GEM_PIX_2",
+        num_images: int = 2,
+        project_id: str = "be377fde-7c13-4b2a-84b7-54b28eb1fe13",
+        input_image_base64: Optional[str] = None,
+        reference_media_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate images from a text prompt using Google's Image Generation API.
+        
+        Args:
+            prompt: The text prompt to generate images from
+            aspect_ratio: Image aspect ratio (IMAGE_ASPECT_RATIO_PORTRAIT, IMAGE_ASPECT_RATIO_LANDSCAPE, IMAGE_ASPECT_RATIO_SQUARE)
+            image_model_name: Model to use (GEM_PIX_2, etc.)
+            num_images: Number of images to generate (1-4)
+            project_id: Project ID for the API
+            input_image_base64: Optional base64 encoded input image for image-to-image generation
+            
+        Returns:
+            Dictionary containing generated images with their encoded data
+        """
+        import random
+        
+        session_id = f";{int(time.time() * 1000)}"
+        
+        image_generation_image_inputs = []
+        if reference_media_id:
+            image_generation_image_inputs.append({
+                "mediaGenerationId": reference_media_id,
+                "imageInputType": "IMAGE_INPUT_TYPE_REFERENCE",
+            })
+        elif input_image_base64:
+            upload_res = self.upload_image_to_google(input_image_base64, aspect_ratio)
+            if not upload_res.get("success"):
+                raise RuntimeError("Failed to upload input image for generation")
+            image_generation_image_inputs.append({
+                "mediaGenerationId": upload_res["mediaId"],
+                "imageInputType": "IMAGE_INPUT_TYPE_REFERENCE",
+            })
+        
+        # Create requests for each image with different seeds
+        requests_list = []
+        for _ in range(num_images):
+            seed = random.randint(10000, 999999)
+            req = {
+                "clientContext": {"sessionId": session_id},
+                "seed": seed,
+                "imageModelName": image_model_name,
+                "imageAspectRatio": aspect_ratio,
+                "prompt": prompt,
+            }
+            
+            if image_generation_image_inputs:
+                req["imageInputs"] = [
+                    {
+                        "imageInputType": "IMAGE_INPUT_TYPE_REFERENCE",
+                        "name": image_generation_image_inputs[0]["mediaGenerationId"],
+                    }
+                ]
+            
+            requests_list.append(req)
+        
+        body = {
+            "requests": requests_list
+        }
+        
+        effective_project_id = project_id
+        try:
+            db = SessionLocal()
+            try:
+                setting = db.query(AppSetting).filter(AppSetting.key == "veo_project_id").first()
+                if setting and setting.value:
+                    val = setting.value
+                    try:
+                        data = json.loads(val) if isinstance(val, str) else val
+                        if isinstance(data, dict):
+                            cand = data.get("project_id") or data.get("value") or data.get("id")
+                            if isinstance(cand, str) and cand:
+                                effective_project_id = cand
+                        elif isinstance(data, str) and data:
+                            effective_project_id = data
+                    except Exception:
+                        if isinstance(val, str) and val:
+                            effective_project_id = val
+            finally:
+                db.close()
+        except Exception:
+            pass
+
+        url = f"https://aisandbox-pa.googleapis.com/v1/projects/{effective_project_id}/flowMedia:batchGenerateImages"
+        
+        headers = self._veo_auth_headers()
+        # Add additional headers to match the browser request pattern
+        headers.update({
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://labs.google",
+            "Referer": "https://labs.google/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Brave\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "sec-gpc": "1",
+            "Content-Type": "text/plain;charset=UTF-8"
+        })
+        
+        try:
+            resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=60)
+            resp.raise_for_status()
+            data = resp.json()
+            media = data.get("media", [])
+            if not media:
+                raise RuntimeError(f"No images returned from Image Generation API: {data}")
+            return {
+                "success": True,
+                "images": media,
+                "prompt": prompt,
+                "model": image_model_name,
+                "aspect_ratio": aspect_ratio,
+            }
+        except requests.exceptions.RequestException as e:
+            resp_text = None
+            try:
+                resp_text = getattr(e, "response", None).text if getattr(e, "response", None) is not None else None
+            except Exception:
+                resp_text = None
+            logger.error(f"Image generation failed: {e} | url={url} | resp_text={resp_text}")
+            raise RuntimeError(f"Image generation failed: {e} | body.requests.len={len(requests_list)} | resp_text={resp_text}")
+    
+    def upload_image_to_google(
+        self,
+        image_base64: str,
+        aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT",
+    ) -> Dict[str, Any]:
+        """
+        Upload an image to Google and get a mediaId for use in video generation.
+        
+        Args:
+            image_base64: Base64 encoded image (with or without data URI prefix)
+            aspect_ratio: Image aspect ratio
+            
+        Returns:
+            Dictionary containing mediaId, width, and height
+        """
+        session_id = f";{int(time.time() * 1000)}"
+
+        raw_input = image_base64
+        mime_type = "image/jpeg"
+        if raw_input.startswith("data:"):
+            try:
+                mime_type = raw_input.split(":", 1)[1].split(";", 1)[0]
+            except Exception:
+                mime_type = "image/jpeg"
+            image_base64 = raw_input.split(",", 1)[1]
+        elif "," in raw_input:
+            image_base64 = raw_input.split(",", 1)[1]
+
+        body = {
+            "clientContext": {
+                "sessionId": session_id,
+                "tool": "ASSET_MANAGER",
+            },
+            "imageInput": {
+                "aspectRatio": aspect_ratio,
+                "isUserUploaded": True,
+                "mimeType": mime_type,
+                "rawImageBytes": image_base64,
+            },
+        }
+
+        candidate_urls = [
+            "https://aisandbox-pa.googleapis.com/v1:uploadUserImage",
+            "https://aisandbox-pa.googleapis.com/v1:uploadUserImage?alt=json",
+            "https://content-aisandbox-pa.googleapis.com/v1:uploadUserImage?alt=json",
+        ]
+
+        headers = self._veo_auth_headers()
+        headers.update({
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://labs.google",
+            "Referer": "https://labs.google/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+            "Content-Type": "text/plain;charset=UTF-8",
+        })
+
+        last_error: Optional[str] = None
+        for url in candidate_urls:
+            try:
+                resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=60)
+                resp.raise_for_status()
+                data = resp.json()
+
+                media_field = data.get("mediaGenerationId")
+                media_id = None
+                if isinstance(media_field, dict):
+                    media_id = media_field.get("mediaGenerationId") or media_field.get("id")
+                else:
+                    media_id = media_field
+
+                if not media_id and "image" in data:
+                    img = data.get("image") or {}
+                    media_field = img.get("mediaGenerationId")
+                    if isinstance(media_field, dict):
+                        media_id = media_field.get("mediaGenerationId") or media_field.get("id")
+                    else:
+                        media_id = media_field
+
+                if not media_id:
+                    last_error = f"No mediaGenerationId in response from {url}: {data}"
+                    continue
+
+                width = data.get("width") or (data.get("image") or {}).get("width")
+                height = data.get("height") or (data.get("image") or {}).get("height")
+
+                return {
+                    "success": True,
+                    "mediaId": str(media_id),
+                    "width": width,
+                    "height": height,
+                }
+            except requests.exceptions.RequestException as e:
+                text = None
+                try:
+                    text = getattr(e, "response", None).text if getattr(e, "response", None) is not None else None
+                except Exception:
+                    text = None
+                last_error = f"{e} | url={url} | body=imageInput.rawImageBytes(len={len(image_base64)}) | resp_text={text}"
+                logger.warning(f"UploadUserImage attempt failed: {last_error}")
+
+        logger.error(f"Image upload failed across all endpoints: {last_error}")
+        raise RuntimeError(f"Image upload failed: {last_error}")
+
+    def generate_video_from_two_images(
+        self,
+        start_image_media_id: str,
+        end_image_media_id: str,
+        prompt: str,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        video_model_key: str = "veo_3_1_i2v_s_fast_portrait_ultra_fl",
+        seed: Optional[int] = None,
+        project_id: str = "117a4f2e-fdcc-47c3-949c-f95019ebc384",
+        timeout_sec: int = 600,
+        poll_interval_sec: int = 5,
+    ) -> Dict[str, Any]:
+        """
+        Generate a video from two images (start and end frames).
+        
+        Args:
+            start_image_media_id: Media ID of the starting frame image
+            end_image_media_id: Media ID of the ending frame image
+            prompt: Text prompt to guide the video generation
+            aspect_ratio: Video aspect ratio
+            video_model_key: Video model to use
+            seed: Random seed for generation (random if not provided)
+            project_id: Project ID for the API
+            timeout_sec: Maximum time to wait for video generation
+            poll_interval_sec: How often to poll for completion
+            
+        Returns:
+            Dictionary containing the generated video URL and metadata
+        """
+        import random
+        
+        if seed is None:
+            seed = random.randint(10000, 99999)
+        
+        session_id = f";{int(time.time() * 1000)}"
+        scene_id = str(uuid.uuid4())
+        
+        body = {
+            "clientContext": {
+                "sessionId": session_id,
+                "projectId": project_id,
+                "tool": "PINHOLE",
+                "userPaygateTier": "PAYGATE_TIER_TWO"
+            },
+            "requests": [{
+                "aspectRatio": aspect_ratio,
+                "seed": seed,
+                "textInput": {
+                    "prompt": prompt
+                },
+                "videoModelKey": video_model_key,
+                "startImage": {
+                    "mediaId": start_image_media_id
+                },
+                "endImage": {
+                    "mediaId": end_image_media_id
+                },
+                "metadata": {
+                    "sceneId": scene_id
+                }
+            }]
+        }
+        
+        url = "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoStartAndEndImage"
+        
+        headers = self._veo_auth_headers()
+        headers.update({
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://labs.google",
+            "Referer": "https://labs.google/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+            "Content-Type": "text/plain;charset=UTF-8"
+        })
+        
+        try:
+            # Start video generation
+            logger.info(f"Starting image-to-video generation with prompt: {prompt}")
+            resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=60)
+            resp.raise_for_status()
+            data = resp.json()
+            
+            operations = data.get("operations", [])
+            if not operations:
+                raise RuntimeError(f"No operations returned from video generation API: {data}")
+            
+            operation = operations[0]
+            operation_name = operation.get("operation", {}).get("name")
+            
+            if not operation_name:
+                raise RuntimeError(f"No operation name in response: {data}")
+            
+            logger.info(f"Video generation started with operation: {operation_name}")
+            
+            # Poll for completion
+            start_time = time.time()
+            while True:
+                elapsed = time.time() - start_time
+                if elapsed > timeout_sec:
+                    raise RuntimeError(f"Video generation timed out after {timeout_sec} seconds")
+                
+                # Check status
+                status_url = f"https://aisandbox-pa.googleapis.com/v1/operations/{operation_name}"
+                status_resp = requests.get(status_url, headers=headers, timeout=30)
+                status_resp.raise_for_status()
+                status_data = status_resp.json()
+                
+                if status_data.get("done"):
+                    # Check for errors
+                    if "error" in status_data:
+                        error = status_data["error"]
+                        raise RuntimeError(f"Video generation failed: {error}")
+                    
+                    # Extract video metadata
+                    metadata = status_data.get("metadata", {})
+                    video_data = metadata.get("video", {})
+                    
+                    video_url = video_data.get("fifeUrl")
+                    if not video_url:
+                        raise RuntimeError(f"No video URL in completed operation: {status_data}")
+                    
+                    logger.info(f"Video generation completed in {elapsed:.1f}s")
+                    
+                    return {
+                        "success": True,
+                        "video_url": video_url,
+                        "media_generation_id": video_data.get("mediaGenerationId"),
+                        "seed": seed,
+                        "prompt": prompt,
+                        "aspect_ratio": aspect_ratio,
+                        "model": video_model_key,
+                        "generation_time_seconds": int(elapsed),
+                        "serving_base_uri": video_data.get("servingBaseUri"),
+                        "is_looped": video_data.get("isLooped", False)
+                    }
+                
+                logger.info(f"Video generation in progress... ({elapsed:.1f}s elapsed)")
+                time.sleep(poll_interval_sec)
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Video generation from images failed: {e}")
+            raise RuntimeError(f"Video generation from images failed: {str(e)}")
+    
     def generate_creative_brief_variations(
         self,
         script: str,

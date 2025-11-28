@@ -1506,4 +1506,128 @@ export async function getCompetitorAds(competitorId: number, params: {
   }
 
   return response.json();
-} 
+}
+
+// Image Generation Types
+
+export interface GeneratedImage {
+  name: string;
+  workflowId: string;
+  image: {
+    generatedImage: {
+      encodedImage: string;
+    };
+  };
+}
+
+export interface ImageGenerateRequest {
+  prompt: string;
+  aspect_ratio?: 'IMAGE_ASPECT_RATIO_PORTRAIT' | 'IMAGE_ASPECT_RATIO_LANDSCAPE' | 'IMAGE_ASPECT_RATIO_SQUARE';
+  image_model_name?: string;
+  num_images?: number;
+  input_image_base64?: string;
+  reference_media_id?: string;
+  project_id?: string;
+}
+
+export interface ImageGenerateResponse {
+  success: boolean;
+  images?: any[];
+  prompt?: string;
+  model?: string;
+  aspect_ratio?: string;
+  error?: string;
+}
+
+// Image Generation API Methods
+
+export async function generateImages(request: ImageGenerateRequest): Promise<ImageGenerateResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/imagen/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to generate images: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Image-to-Video Generation API Types and Methods
+
+export interface ImageUploadRequest {
+  image_base64: string;
+  aspect_ratio?: 'IMAGE_ASPECT_RATIO_PORTRAIT' | 'IMAGE_ASPECT_RATIO_LANDSCAPE' | 'IMAGE_ASPECT_RATIO_SQUARE';
+}
+
+export interface ImageUploadResponse {
+  success: boolean;
+  media_id?: string;
+  width?: number;
+  height?: number;
+  error?: string;
+}
+
+export interface VideoFromImagesRequest {
+  start_image_media_id: string;
+  end_image_media_id: string;
+  prompt: string;
+  aspect_ratio?: 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_SQUARE';
+  video_model_key?: string;
+  seed?: number;
+  timeout_sec?: number;
+  poll_interval_sec?: number;
+}
+
+export interface VideoFromImagesResponse {
+  success: boolean;
+  video_url?: string;
+  media_generation_id?: string;
+  seed?: number;
+  prompt?: string;
+  aspect_ratio?: string;
+  model?: string;
+  generation_time_seconds?: number;
+  serving_base_uri?: string;
+  is_looped?: boolean;
+  error?: string;
+}
+
+export async function uploadImageForVideo(request: ImageUploadRequest): Promise<ImageUploadResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/upload-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to upload image: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function generateVideoFromImages(request: VideoFromImagesRequest): Promise<VideoFromImagesResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/generate-from-images`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to generate video from images: ${response.statusText}`);
+  }
+
+  return response.json();
+}

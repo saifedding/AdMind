@@ -2713,3 +2713,218 @@ async def generate_video_for_segment(
         db.rollback()
         logger.error(f"Failed to generate video for segment: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate video for segment: {e}")
+
+
+# Image Generation Models and Endpoints
+
+class ImageGenerateRequest(BaseModel):
+    """Request model for generating images."""
+    prompt: str
+    aspect_ratio: Optional[str] = "IMAGE_ASPECT_RATIO_PORTRAIT"
+    image_model_name: Optional[str] = "GEM_PIX_2"
+    num_images: Optional[int] = 2
+    input_image_base64: Optional[str] = None
+    reference_media_id: Optional[str] = None
+    project_id: Optional[str] = None
+
+
+class GeneratedImage(BaseModel):
+    """Model for a single generated image."""
+    name: str
+    workflow_id: str
+    encoded_image: str
+
+
+class ImageGenerateResponse(BaseModel):
+    """Response model for image generation."""
+    success: bool
+    images: Optional[List[Dict[str, Any]]] = None
+    prompt: Optional[str] = None
+    model: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.post("/ai/imagen/generate", response_model=ImageGenerateResponse)
+async def generate_images(payload: ImageGenerateRequest) -> ImageGenerateResponse:
+    """
+    Generate images from a text prompt using Google's Image Generation API.
+    
+    This endpoint uses the Google Imagen model to generate images based on text prompts.
+    You can specify the number of images, aspect ratio, and model to use.
+    
+    Args:
+        payload: ImageGenerateRequest containing:
+            - prompt: Text prompt describing the image to generate
+            - aspect_ratio: One of IMAGE_ASPECT_RATIO_PORTRAIT, IMAGE_ASPECT_RATIO_LANDSCAPE, IMAGE_ASPECT_RATIO_SQUARE
+            - image_model_name: Model to use (default: GEM_PIX_2)
+            - num_images: Number of images to generate (1-4, default: 2)
+    
+    Returns:
+        ImageGenerateResponse containing generated images with base64 encoded data
+    """
+    try:
+        service = GoogleAIService()
+        result = service.generate_images_from_prompt(
+            prompt=payload.prompt,
+            aspect_ratio=payload.aspect_ratio or "IMAGE_ASPECT_RATIO_PORTRAIT",
+            image_model_name=payload.image_model_name or "GEM_PIX_2",
+            num_images=payload.num_images or 2,
+            input_image_base64=payload.input_image_base64,
+            reference_media_id=payload.reference_media_id,
+            project_id=payload.project_id or "be377fde-7c13-4b2a-84b7-54b28eb1fe13",
+        )
+        
+        return ImageGenerateResponse(
+            success=result.get("success", True),
+            images=result.get("images", []),
+            prompt=result.get("prompt"),
+            model=result.get("model"),
+            aspect_ratio=result.get("aspect_ratio")
+        )
+        
+    except Exception as e:
+        logger.error(f"Image generation failed: {e}")
+        return ImageGenerateResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+# Image-to-Video Generation Models and Endpoints
+
+class ImageUploadRequest(BaseModel):
+    """Request model for uploading an image to get mediaId."""
+    image_base64: str
+    aspect_ratio: Optional[str] = "IMAGE_ASPECT_RATIO_PORTRAIT"
+
+
+class ImageUploadResponse(BaseModel):
+    """Response model for image upload."""
+    success: bool
+    media_id: Optional[str] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    error: Optional[str] = None
+
+
+class VideoFromImagesRequest(BaseModel):
+    """Request model for generating video from two images."""
+    start_image_media_id: str
+    end_image_media_id: str
+    prompt: str
+    aspect_ratio: Optional[str] = "VIDEO_ASPECT_RATIO_PORTRAIT"
+    video_model_key: Optional[str] = "veo_3_1_i2v_s_fast_portrait_ultra_fl"
+    seed: Optional[int] = None
+    timeout_sec: Optional[int] = 600
+    poll_interval_sec: Optional[int] = 5
+
+
+class VideoFromImagesResponse(BaseModel):
+    """Response model for video generation from images."""
+    success: bool
+    video_url: Optional[str] = None
+    media_generation_id: Optional[str] = None
+    seed: Optional[int] = None
+    prompt: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    model: Optional[str] = None
+    generation_time_seconds: Optional[int] = None
+    serving_base_uri: Optional[str] = None
+    is_looped: Optional[bool] = None
+    error: Optional[str] = None
+
+
+@router.post("/ai/veo/upload-image", response_model=ImageUploadResponse)
+async def upload_image_for_video(payload: ImageUploadRequest) -> ImageUploadResponse:
+    """
+    Upload an image to Google and get a mediaId for video generation.
+    
+    This endpoint uploads an image and returns a mediaId that can be used
+    as a start or end frame for image-to-video generation.
+    
+    Args:
+        payload: ImageUploadRequest containing:
+            - image_base64: Base64 encoded image (with or without data URI prefix)
+            - aspect_ratio: Image aspect ratio (default: IMAGE_ASPECT_RATIO_PORTRAIT)
+    
+    Returns:
+        ImageUploadResponse containing the mediaId and image dimensions
+    """
+    try:
+        service = GoogleAIService()
+        result = service.upload_image_to_google(
+            image_base64=payload.image_base64,
+            aspect_ratio=payload.aspect_ratio or "IMAGE_ASPECT_RATIO_PORTRAIT"
+        )
+        
+        return ImageUploadResponse(
+            success=result.get("success", True),
+            media_id=result.get("mediaId"),
+            width=result.get("width"),
+            height=result.get("height")
+        )
+        
+    except Exception as e:
+        logger.error(f"Image upload failed: {e}")
+        return ImageUploadResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+@router.post("/ai/veo/generate-from-images", response_model=VideoFromImagesResponse)
+async def generate_video_from_images(payload: VideoFromImagesRequest) -> VideoFromImagesResponse:
+    """
+    Generate a video from two images (start and end frames).
+    
+    This endpoint generates a video that transitions from the start image to the end image,
+    guided by a text prompt. Both images must first be uploaded using the upload-image endpoint
+    to obtain their mediaIds.
+    
+    Args:
+        payload: VideoFromImagesRequest containing:
+            - start_image_media_id: Media ID of the starting frame
+            - end_image_media_id: Media ID of the ending frame
+            - prompt: Text prompt to guide the video generation
+            - aspect_ratio: Video aspect ratio (default: VIDEO_ASPECT_RATIO_PORTRAIT)
+            - video_model_key: Model to use (default: veo_3_1_i2v_s_fast_portrait_ultra_fl)
+            - seed: Random seed for reproducibility (optional)
+            - timeout_sec: Maximum wait time in seconds (default: 600)
+            - poll_interval_sec: Polling interval in seconds (default: 5)
+    
+    Returns:
+        VideoFromImagesResponse containing the generated video URL and metadata
+    """
+    try:
+        service = GoogleAIService()
+        result = service.generate_video_from_two_images(
+            start_image_media_id=payload.start_image_media_id,
+            end_image_media_id=payload.end_image_media_id,
+            prompt=payload.prompt,
+            aspect_ratio=payload.aspect_ratio or "VIDEO_ASPECT_RATIO_PORTRAIT",
+            video_model_key=payload.video_model_key or "veo_3_1_i2v_s_fast_portrait_ultra_fl",
+            seed=payload.seed,
+            timeout_sec=payload.timeout_sec or 600,
+            poll_interval_sec=payload.poll_interval_sec or 5
+        )
+        
+        return VideoFromImagesResponse(
+            success=result.get("success", True),
+            video_url=result.get("video_url"),
+            media_generation_id=result.get("media_generation_id"),
+            seed=result.get("seed"),
+            prompt=result.get("prompt"),
+            aspect_ratio=result.get("aspect_ratio"),
+            model=result.get("model"),
+            generation_time_seconds=result.get("generation_time_seconds"),
+            serving_base_uri=result.get("serving_base_uri"),
+            is_looped=result.get("is_looped")
+        )
+        
+    except Exception as e:
+        logger.error(f"Video generation from images failed: {e}")
+        return VideoFromImagesResponse(
+            success=False,
+            error=str(e)
+        )
