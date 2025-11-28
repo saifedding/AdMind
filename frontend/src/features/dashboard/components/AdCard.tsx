@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useEffect, useState } from 'react';
-import { AdWithAnalysis } from '@/types/ad';
+import { AdWithAnalysis, type Creative } from '@/types/ad';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,9 +21,15 @@ interface AdCardProps {
 }
 
 // Helper function to get main ad content for display
-const getMainAdContent = (ad: AdWithAnalysis): string => {
-  // Use the main body text, title, or caption from the individual fields
-  return ad.main_body_text || ad.main_title || ad.main_caption || ad.ad_copy || 'No content available';
+const getMainAdContent = (ad: AdWithAnalysis, creative?: Creative): string => {
+  return (
+    // Prefer current creative text if available
+    creative?.body || creative?.title || creative?.caption ||
+    // Fall back to ad-level extracted fields
+    ad.main_body_text || ad.main_title || ad.main_caption || ad.ad_copy ||
+    // Last resort
+    'No content available'
+  );
 };
 
 export function AdCard({ 
@@ -104,7 +110,7 @@ export function AdCard({
   const { url: primaryMediaUrl, isVideo } = getPrimaryMedia();
   
   // Get main content for display
-  const displayContent = getMainAdContent(ad);
+  const displayContent = getMainAdContent(ad, currentCreative);
   
   // Format score for display
   const scoreText = ad.analysis?.overall_score 

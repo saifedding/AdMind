@@ -6,7 +6,7 @@ import { BulkActionToolbar } from '@/features/dashboard/components/BulkActionToo
 import { AdWithAnalysis } from '@/types/ad';
 import { adsApi, ApiError } from '@/lib/api';
 import { transformAdsWithAnalysis } from '@/lib/transformers';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { DashboardLayout } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ import { ActiveFilterBadges } from '@/features/dashboard/components/ActiveFilter
 import { AdFilterParams } from '@/lib/api';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-export default function AdIntelligencePage() {
+function AdsPageInner() {
   const [ads, setAds] = useState<AdWithAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -682,4 +682,12 @@ export default function AdIntelligencePage() {
       </div>
     </DashboardLayout>
   );
-} 
+}
+
+export default function AdIntelligencePage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <AdsPageInner />
+    </Suspense>
+  );
+}

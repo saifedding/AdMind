@@ -220,9 +220,17 @@ export default function FavoriteListsPage() {
             {showListDropdown && (
               <div className="absolute top-full left-0 right-0 sm:right-auto sm:min-w-[300px] mt-2 bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                 {lists.map((list) => (
-                  <button
+                  <div
                     key={list.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleListSelect(list.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleListSelect(list.id);
+                      }
+                    }}
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent transition-colors text-left"
                   >
                     <div className="flex items-center gap-3 flex-1">
@@ -249,7 +257,7 @@ export default function FavoriteListsPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
