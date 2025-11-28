@@ -1539,6 +1539,28 @@ export interface ImageGenerateResponse {
   error?: string;
 }
 
+export interface SavedImageItem {
+  id: number;
+  media_id: string;
+  name?: string;
+  prompt?: string;
+  model?: string;
+  aspect_ratio?: string;
+  encoded_image?: string;
+  fife_url?: string;
+  created_at?: string;
+}
+
+export interface SaveImageRequest {
+  media_id: string;
+  name?: string;
+  prompt?: string;
+  model?: string;
+  aspect_ratio?: string;
+  encoded_image?: string;
+  fife_url?: string;
+}
+
 // Image Generation API Methods
 
 export async function generateImages(request: ImageGenerateRequest): Promise<ImageGenerateResponse> {
@@ -1555,6 +1577,30 @@ export async function generateImages(request: ImageGenerateRequest): Promise<Ima
     throw new Error(error.detail || `Failed to generate images: ${response.statusText}`);
   }
 
+  return response.json();
+}
+
+export async function listSavedImages(limit = 50): Promise<SavedImageItem[]> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/images/saved?limit=${limit}`, {
+    method: 'GET',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to fetch saved images: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function saveImage(request: SaveImageRequest): Promise<SavedImageItem> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/images/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to save image: ${response.statusText}`);
+  }
   return response.json();
 }
 

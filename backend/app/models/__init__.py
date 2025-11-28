@@ -12,9 +12,10 @@ from .veo_script_session import VeoScriptSession
 from .veo_creative_brief import VeoCreativeBrief
 from .veo_prompt_segment import VeoPromptSegment
 from .veo_video_generation import VeoVideoGeneration
+from .saved_image import SavedImage
 
 __all__ = [
     "Competitor", "Ad", "AdAnalysis", "TaskStatus", "AdSet", "AppSetting", 
     "VeoGeneration", "MergedVideo", "ApiUsage", "VideoStyleTemplate",
-    "VeoScriptSession", "VeoCreativeBrief", "VeoPromptSegment", "VeoVideoGeneration"
+    "VeoScriptSession", "VeoCreativeBrief", "VeoPromptSegment", "VeoVideoGeneration", "SavedImage"
 ]

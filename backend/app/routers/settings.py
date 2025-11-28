@@ -12,7 +12,8 @@ from app.database import get_db
 from app.models import (
     AppSetting, VeoGeneration, MergedVideo, AdAnalysis, ApiUsage, 
     VideoStyleTemplate as DBVideoStyleTemplate,
-    VeoScriptSession, VeoCreativeBrief, VeoPromptSegment, VeoVideoGeneration
+    VeoScriptSession, VeoCreativeBrief, VeoPromptSegment, VeoVideoGeneration,
+    SavedImage,
 )
 from app.services.google_ai_service import get_default_system_instruction, GoogleAIService
 from sqlalchemy import func
@@ -2745,6 +2746,27 @@ class ImageGenerateResponse(BaseModel):
     error: Optional[str] = None
 
 
+class SavedImageItem(BaseModel):
+    id: int
+    media_id: str
+    name: Optional[str] = None
+    prompt: Optional[str] = None
+    model: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    encoded_image: Optional[str] = None
+    fife_url: Optional[str] = None
+    created_at: Optional[str] = None
+
+class SaveImageRequest(BaseModel):
+    media_id: str
+    name: Optional[str] = None
+    prompt: Optional[str] = None
+    model: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    encoded_image: Optional[str] = None
+    fife_url: Optional[str] = None
+
+
 @router.post("/ai/imagen/generate", response_model=ImageGenerateResponse)
 async def generate_images(payload: ImageGenerateRequest) -> ImageGenerateResponse:
     """
@@ -2789,6 +2811,74 @@ async def generate_images(payload: ImageGenerateRequest) -> ImageGenerateRespons
             success=False,
             error=str(e)
         )
+
+
+@router.get("/ai/images/saved", response_model=List[SavedImageItem])
+async def list_saved_images(limit: int = 50, db: Session = Depends(get_db)) -> List[SavedImageItem]:
+    try:
+        rows = (
+            db.query(SavedImage)
+            .order_by(SavedImage.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        out: List[SavedImageItem] = []
+        for r in rows:
+            out.append(SavedImageItem(
+                id=r.id,
+                media_id=r.media_id,
+                name=r.name,
+                prompt=r.prompt,
+                model=r.model,
+                aspect_ratio=r.aspect_ratio,
+                encoded_image=r.encoded_image,
+                fife_url=r.fife_url,
+                created_at=r.created_at.isoformat() if r.created_at else None,
+            ))
+        return out
+    except Exception as e:
+        logger.error(f"Failed to list saved images: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list saved images: {e}")
+
+
+@router.post("/ai/images/save", response_model=SavedImageItem)
+async def save_image(payload: SaveImageRequest, db: Session = Depends(get_db)) -> SavedImageItem:
+    try:
+        existing = db.query(SavedImage).filter(SavedImage.media_id == payload.media_id).first()
+        if existing:
+            existing.name = payload.name or existing.name
+            existing.prompt = payload.prompt or existing.prompt
+            existing.model = payload.model or existing.model
+            existing.aspect_ratio = payload.aspect_ratio or existing.aspect_ratio
+            existing.encoded_image = payload.encoded_image or existing.encoded_image
+            existing.fife_url = payload.fife_url or existing.fife_url
+        else:
+            row = SavedImage(
+                media_id=payload.media_id,
+                name=payload.name,
+                prompt=payload.prompt,
+                model=payload.model,
+                aspect_ratio=payload.aspect_ratio,
+                encoded_image=payload.encoded_image,
+                fife_url=payload.fife_url,
+            )
+            db.add(row)
+        db.commit()
+        out = db.query(SavedImage).filter(SavedImage.media_id == payload.media_id).first()
+        return SavedImageItem(
+            id=out.id,
+            media_id=out.media_id,
+            name=out.name,
+            prompt=out.prompt,
+            model=out.model,
+            aspect_ratio=out.aspect_ratio,
+            encoded_image=out.encoded_image,
+            fife_url=out.fife_url,
+            created_at=out.created_at.isoformat() if out.created_at else None,
+        )
+    except Exception as e:
+        logger.error(f"Failed to save image: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
 
 
 # Image-to-Video Generation Models and Endpoints

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Upload, X, Loader2, Play, Image as ImageIcon } from 'lucide-react';
-import { uploadImageForVideo, generateVideoFromImages } from '@/lib/api';
+import { uploadImageForVideo, generateVideoFromImages, listSavedImages, SavedImageItem } from '@/lib/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface VeoImageToVideoProps {
@@ -24,6 +24,9 @@ export function VeoImageToVideo({ aspectRatio }: VeoImageToVideoProps) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationTime, setGenerationTime] = useState<number | null>(null);
+  const [savedImages, setSavedImages] = useState<SavedImageItem[]>([]);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   const startInputRef = useRef<HTMLInputElement>(null);
   const endInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +83,31 @@ export function VeoImageToVideo({ aspectRatio }: VeoImageToVideoProps) {
       }
       handleImageUpload(file, isStart);
     }
+  };
+
+  const openPicker = async (isStart: boolean) => {
+    setError(null);
+    try {
+      const images = await listSavedImages(100);
+      setSavedImages(images);
+      if (isStart) setShowStartPicker(true); else setShowEndPicker(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load saved images');
+    }
+  };
+
+  const selectSavedImage = (item: SavedImageItem, isStart: boolean) => {
+    const preview = item.encoded_image ? `data:image/jpeg;base64,${item.encoded_image}` : (item.fife_url || null);
+    if (isStart) {
+      if (preview) setStartImage(preview);
+      setStartMediaId(item.media_id);
+      setShowStartPicker(false);
+    } else {
+      if (preview) setEndImage(preview);
+      setEndMediaId(item.media_id);
+      setShowEndPicker(false);
+    }
+    setError(null);
   };
 
   const handleGenerateVideo = async () => {
@@ -186,6 +214,11 @@ export function VeoImageToVideo({ aspectRatio }: VeoImageToVideoProps) {
                 onChange={(e) => handleFileChange(e, true)}
                 disabled={isUploading}
               />
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" className="border-slate-700" onClick={() => openPicker(true)}>
+                  Pick Saved Image
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -231,6 +264,11 @@ export function VeoImageToVideo({ aspectRatio }: VeoImageToVideoProps) {
                 onChange={(e) => handleFileChange(e, false)}
                 disabled={isUploading}
               />
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" className="border-slate-700" onClick={() => openPicker(false)}>
+                  Pick Saved Image
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -252,6 +290,49 @@ export function VeoImageToVideo({ aspectRatio }: VeoImageToVideoProps) {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {/* Saved Images Pickers */}
+        {showStartPicker && (
+          <div className="space-y-2">
+            <Label className="text-slate-300">Select Start Image</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {savedImages.map((item) => (
+                <button key={item.id} onClick={() => selectSavedImage(item, true)} className="group border border-slate-700 rounded-lg overflow-hidden">
+                  {item.encoded_image ? (
+                    <img src={`data:image/jpeg;base64,${item.encoded_image}`} className="w-full h-32 object-cover" />
+                  ) : (
+                    <div className="w-full h-32 bg-slate-800 flex items-center justify-center text-slate-400 text-xs p-2">No preview</div>
+                  )}
+                  <div className="p-2 text-xs text-slate-400 truncate">{item.prompt || item.name || item.media_id}</div>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowStartPicker(false)}>Close</Button>
+            </div>
+          </div>
+        )}
+
+        {showEndPicker && (
+          <div className="space-y-2">
+            <Label className="text-slate-300">Select End Image</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {savedImages.map((item) => (
+                <button key={item.id} onClick={() => selectSavedImage(item, false)} className="group border border-slate-700 rounded-lg overflow-hidden">
+                  {item.encoded_image ? (
+                    <img src={`data:image/jpeg;base64,${item.encoded_image}`} className="w-full h-32 object-cover" />
+                  ) : (
+                    <div className="w-full h-32 bg-slate-800 flex items-center justify-center text-slate-400 text-xs p-2">No preview</div>
+                  )}
+                  <div className="p-2 text-xs text-slate-400 truncate">{item.prompt || item.name || item.media_id}</div>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowEndPicker(false)}>Close</Button>
+            </div>
+          </div>
         )}
 
         {/* Generate Button */}

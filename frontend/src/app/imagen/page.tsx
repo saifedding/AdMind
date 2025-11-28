@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ImageIcon, Download, Copy, Sparkles, Upload, X } from 'lucide-react';
-import { generateImages, ImageGenerateRequest, ImageGenerateResponse, uploadImageForVideo, ImageUploadRequest, ImageUploadResponse } from '@/lib/api';
+import { generateImages, ImageGenerateRequest, ImageGenerateResponse, uploadImageForVideo, ImageUploadRequest, ImageUploadResponse, saveImage, SaveImageRequest } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface GeneratedImageData {
@@ -17,6 +17,9 @@ interface GeneratedImageData {
   prompt: string;
   aspectRatio: string;
   model: string;
+  mediaId?: string;
+  fifeUrl?: string;
+  saved?: boolean;
 }
 
 export default function ImagenPage() {
@@ -29,6 +32,7 @@ export default function ImagenPage() {
   const [inputImageFile, setInputImageFile] = useState<File | null>(null);
   const [referenceMediaId, setReferenceMediaId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,13 +99,25 @@ export default function ImagenPage() {
       const response: ImageGenerateResponse = await generateImages(request);
 
       if (response.success && response.images) {
-        const newImages: GeneratedImageData[] = response.images.map((img: any, index: number) => ({
-          id: img.name || `${Date.now()}-${index}`,
-          encodedImage: img.image?.generatedImage?.encodedImage || '',
-          prompt: response.prompt || prompt,
-          aspectRatio: response.aspect_ratio || aspectRatio,
-          model: response.model || 'GEM_PIX_2',
-        }));
+        const newImages: GeneratedImageData[] = response.images.map((img: any, index: number) => {
+          const id = img.name || `${Date.now()}-${index}`;
+          const encoded = img.image?.generatedImage?.encodedImage || '';
+          const mediaId = img.mediaGenerationId 
+            || img.name 
+            || img.image?.mediaGenerationId 
+            || img.image?.generatedImage?.mediaGenerationId 
+            || undefined;
+          return {
+            id,
+            encodedImage: encoded,
+            prompt: response.prompt || prompt,
+            aspectRatio: response.aspect_ratio || aspectRatio,
+            model: response.model || 'GEM_PIX_2',
+            mediaId,
+            fifeUrl: img.fifeUrl || undefined,
+            saved: false,
+          };
+        });
 
         setGeneratedImages([...newImages, ...generatedImages]);
         toast.success(`Generated ${newImages.length} images successfully!`);
@@ -127,6 +143,37 @@ export default function ImagenPage() {
       toast.success('Image downloaded!');
     } catch (error) {
       toast.error('Failed to download image');
+    }
+  };
+
+  const handleSave = async (image: GeneratedImageData) => {
+    if (!image.mediaId) {
+      toast.error('Missing media id');
+      return;
+    }
+    const idKey = image.id;
+    setSavingIds((prev) => new Set(prev).add(idKey));
+    try {
+      const req: SaveImageRequest = {
+        media_id: image.mediaId,
+        name: image.id,
+        prompt: image.prompt,
+        model: image.model,
+        aspect_ratio: image.aspectRatio,
+        encoded_image: image.encodedImage,
+        fife_url: image.fifeUrl,
+      };
+      await saveImage(req);
+      setGeneratedImages((prev) => prev.map((i) => (i.id === image.id ? { ...i, saved: true } : i)));
+      toast.success('Saved to library');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save');
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(idKey);
+        return next;
+      });
     }
   };
 
@@ -358,6 +405,26 @@ export default function ImagenPage() {
                               >
                                 <Download className="w-4 h-4 mr-1" />
                                 Download
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleSave(image)}
+                                disabled={!!image.saved || savingIds.has(image.id)}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                {savingIds.has(image.id) ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                    Saving
+                                  </>
+                                ) : image.saved ? (
+                                  <>Saved</>
+                                ) : (
+                                  <>
+                                    <Upload className="w-4 h-4 mr-1" />
+                                    Save
+                                  </>
+                                )}
                               </Button>
                               <Button
                                 size="sm"
