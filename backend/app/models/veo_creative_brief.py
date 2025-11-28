@@ -21,4 +21,9 @@ class VeoCreativeBrief(Base):
     
     # Relationships
     session = relationship("VeoScriptSession", back_populates="creative_briefs")
-    segments = relationship("VeoPromptSegment", back_populates="brief", cascade="all, delete-orphan")
+    segments = relationship(
+        "VeoPromptSegment",
+        back_populates="brief",
+        cascade="all, delete-orphan",
+        order_by="VeoPromptSegment.segment_index"
+    )

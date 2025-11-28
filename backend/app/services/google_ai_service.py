@@ -443,6 +443,120 @@ class GoogleAIService:
             logger.error(f"HTTP download fallback failed: {e}")
             raise
 
+    def _download_facebook_http(self, video_url: str) -> str:
+        """Download a video via HTTP streaming with sane headers.
+        Works for Facebook Ad Library resolved mp4 URLs and generic HTTP mp4 links.
+        Returns path to a local MP4 file.
+        """
+        tmp_dir = tempfile.gettempdir()
+        out_path = os.path.join(tmp_dir, f"fb_{uuid.uuid4().hex}.mp4")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+            "Accept": "video/mp4,application/octet-stream,*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        try:
+            with requests.get(video_url, stream=True, timeout=600, headers=headers) as r:
+                r.raise_for_status()
+                with open(out_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            f.write(chunk)
+            if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+                return out_path
+            raise RuntimeError("Downloaded file is empty")
+        except Exception as e:
+            logger.error(f"HTTP download failed: {e}")
+            raise
+
+    def _normalize_gemini_model_name(self, name: str) -> str:
+        try:
+            n = (name or "").strip()
+            if not n:
+                return n
+            if n.startswith("gemini-2.5-flash"):
+                return "gemini-2.5-flash" if "flash-lite" not in n else "gemini-2.5-flash-lite"
+            return n
+        except Exception:
+            return name
+
+    def _safe_parse_json(self, text: str):
+        s = text.strip()
+        if s.startswith("```json"):
+            s = s[7:]
+        elif s.startswith("```"):
+            s = s[3:]
+        if s.endswith("```"):
+            s = s[:-3]
+        s = s.strip()
+        s = re.sub(r'\n```json\n', '\n', s)
+        s = re.sub(r'\n```\n', '\n', s)
+        s = re.sub(r'^```json\s*', '', s)
+        s = re.sub(r'\s*```$', '', s)
+        s = "".join(
+            ch if (ord(ch) >= 32 or ch in ("\n", "\t")) and ch not in ("\u2028", "\u2029") else " "
+            for ch in s
+        )
+        def esc(text: str) -> str:
+            result = []
+            in_string = False
+            escape_next = False
+            for ch in text:
+                if escape_next:
+                    result.append(ch)
+                    escape_next = False
+                elif ch == '\\':
+                    result.append(ch)
+                    escape_next = True
+                elif ch == '"':
+                    result.append(ch)
+                    in_string = not in_string
+                elif in_string:
+                    if ch == '\n':
+                        result.append('\\n')
+                    elif ch == '\t':
+                        result.append('\\t')
+                    elif ch == '\r':
+                        result.append('\\r')
+                    else:
+                        result.append(ch)
+                else:
+                    result.append(ch)
+            return ''.join(result)
+        s = esc(s)
+        try:
+            return json.loads(s)
+        except Exception:
+            try:
+                return json.loads(s, strict=False)
+            except Exception:
+                try:
+                    sanitized = re.sub(r"[\x00-\x1F]", " ", s)
+                    sanitized = re.sub(r"\\(?![\\\/bfnrt\"u])", r"\\\\", sanitized)
+                    return json.loads(sanitized, strict=False)
+                except Exception:
+                    try:
+                        start = s.find('{')
+                        if start != -1:
+                            depth = 0
+                            end = -1
+                            for i, ch in enumerate(s[start:], start=start):
+                                if ch == '{':
+                                    depth += 1
+                                elif ch == '}':
+                                    depth -= 1
+                                    if depth == 0:
+                                        end = i
+                                        break
+                            if end != -1:
+                                candidate = s[start:end+1]
+                                try:
+                                    return json.loads(candidate)
+                                except Exception:
+                                    return json.loads(candidate, strict=False)
+                    except Exception:
+                        return None
+
     def generate_transcript_and_analysis(self, file_path: str = None, file_uri: str = None, custom_instruction: str = None, video_url: str = None) -> Dict[str, Any]:
         """
         Try OpenRouter first; if that fails, fall back to direct Gemini multi-key.
@@ -1874,6 +1988,7 @@ class GoogleAIService:
         model: str = "gemini-2.0-flash",
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        custom_instruction: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate creative brief variations based on a script/VO with different styles.
@@ -1891,10 +2006,10 @@ class GoogleAIService:
         
         # Check if this is an OpenRouter model
         if model.startswith("openrouter:"):
-            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style, aspect_ratio)
+            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style, aspect_ratio, custom_instruction)
         
         # Otherwise use Gemini
-        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style, aspect_ratio)
+        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style, aspect_ratio, custom_instruction)
     
     def _build_veo_prompt(
         self,
@@ -1903,6 +2018,7 @@ class GoogleAIService:
         character: Optional[Dict[str, Any]] = None,
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        custom_instruction: Optional[str] = None,
     ) -> tuple:
         """
         Build the comprehensive VEO 3 creative brief prompt structure.
@@ -2091,10 +2207,11 @@ For segments 2+: COPY this exact description from segment 1 - word for word. The
 
 ## 5. THE PERFORMANCE
 
-### Dialogue & Script (EXACT SPOKEN WORDS ONLY)
-[For this segment, write ONLY the final spoken lines that the on-screen character will speak, in the exact order they will say them.
-Use ONLY words taken from the provided script for this segment. You may trim or split the script into shorter sentences, but you MUST NOT invent new phrases, greetings, filler words, or rephrasings that are not present in the original script.
-Do NOT include explanations, timestamps, brackets, bullet labels, or commentary here – just the clean sentences to be spoken on camera, exactly as they should be pronounced.]
+        ### Dialogue & Script (EXACT SPOKEN WORDS ONLY)
+        [Write ONLY the final spoken lines that are actually heard on camera in this segment, using EXACT words from the provided script.
+        If multiple speakers are present or requested (e.g., interviewer and protagonist), include BOTH speakers’ lines and clearly label them as "Interviewer:" and "Protagonist:" in the order they speak.
+        You may trim or split the script into shorter sentences, but you MUST NOT invent new phrases, greetings, filler words, or rephrasings that are not present in the original script.
+        Do NOT include explanations, timestamps, brackets, or commentary here – just clean, labeled sentences to be spoken on camera, exactly as they should be pronounced.]
 
 ### Vocal Delivery Specifications
 [Describe HOW the lines above should be delivered (tone, pace, emphasis, accent), but do NOT introduce any new dialogue text or additional words.]
@@ -2273,6 +2390,10 @@ Each segment brief MUST:
 ✅ **FULLY RE-DESCRIBE everything in EVERY segment** (the video AI can't see previous segments!)
 ✅ **ABSOLUTELY NO on-screen text, captions, or text overlays** (dialogue is spoken only!)
 
+JSON OUTPUT RULES:
+- Use single quotes inside segment strings; avoid double quotes characters.
+- Ensure JSON validity with proper escaping of special characters.
+
 CRITICAL REMINDERS:
 🚫 NO text overlays or on-screen text of any kind
 🚫 NO shortcuts like "same as before" - FULL re-descriptions required
@@ -2281,6 +2402,29 @@ CRITICAL REMINDERS:
 ✅ The segments will be stitched together, so they MUST merge seamlessly like a single continuous shot
 """
         
+        if custom_instruction:
+            priority_block = (
+                "PRIORITY CUSTOM INSTRUCTION (OVERRIDES ALL CONFLICTS):\n"
+                + str(custom_instruction)
+                + "\n\nMANDATE: Follow the above Custom Instruction strictly. If any default guidance conflicts, the Custom Instruction takes precedence."
+            )
+            system_instruction = priority_block + "\n\n" + system_instruction
+            variations_request = (
+                "PRIORITY CUSTOM INSTRUCTION (OVERRIDES ALL CONFLICTS):\n"
+                + str(custom_instruction)
+                + "\n\n"
+                + variations_request
+            )
+            enforcement = (
+                "HARD CONSTRAINT ENFORCEMENT:\n"
+                "- Treat each line of the Custom Instruction as a non-negotiable constraint.\n"
+                "- When the Custom Instruction specifies speaker presence, include ALL specified speakers with labeled dialogue (e.g., Interviewer:, Protagonist:).\n"
+                "- When the Custom Instruction specifies age or appearance, ensure those exact attributes appear in the Physical Appearance section and remain consistent across ALL segments.\n"
+                "- When the Custom Instruction specifies environment/background continuity, ensure identical environment descriptions and positions across ALL segments.\n"
+                "- If any analyzed style or default template conflicts, REWRITE those sections to match the Custom Instruction exactly.\n"
+            )
+            system_instruction = enforcement + "\n" + system_instruction
+            variations_request = enforcement + "\n" + variations_request
         return (system_instruction, variations_request)
     
     def _generate_briefs_via_gemini(
@@ -2291,11 +2435,12 @@ CRITICAL REMINDERS:
         model: str = "gemini-2.0-flash",
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        custom_instruction: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using Gemini API."""
         
         # Get the shared VEO prompt structure
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio, custom_instruction)
 
         # Use iterative generation to handle long responses (MAX_TOKENS truncation)
         full_response_text = ""
@@ -2329,7 +2474,7 @@ CRITICAL REMINDERS:
             }
     
             try:
-                resp = requests.post(url, params=self._auth_params(), json=body, timeout=120)
+                resp = requests.post(url, params=self._auth_params(), json=body, timeout=(30, 180))
                 resp.raise_for_status()
                 data = resp.json()
     
@@ -2378,7 +2523,8 @@ CRITICAL REMINDERS:
                     
             except Exception as e:
                 logger.error(f"API request failed on iteration {iteration}: {e}")
-                break
+                # Retry next iteration if available
+                continue
                 
         # Attempt to parse the accumulated JSON with robust fallbacks
         text_to_parse = full_response_text.strip()
@@ -2428,8 +2574,23 @@ CRITICAL REMINDERS:
                     result.append(ch)
                     escape_next = True
                 elif ch == '"':
-                    result.append(ch)
-                    in_string = not in_string
+                    # Decide whether this quote is closing the string or is interior content
+                    if in_string:
+                        j = i + 1
+                        while j < len(text) and text[j] in (' ', '\n', '\t', '\r'):
+                            j += 1
+                        next_ch = text[j] if j < len(text) else ''
+                        if next_ch and next_ch not in (',', '}', ']', ':'):
+                            result.append('\\"')
+                            continue
+                        else:
+                            result.append(ch)
+                            in_string = False
+                            continue
+                    else:
+                        result.append(ch)
+                        in_string = True
+                        continue
                 elif in_string:
                     # Inside a string - escape literal newlines and tabs
                     if ch == '\n':
@@ -2447,6 +2608,30 @@ CRITICAL REMINDERS:
         
         text_to_parse = escape_literals_in_strings(text_to_parse)
         
+        # Additional repair: Fix common JSON generation errors
+        def repair_json_structure(text: str) -> str:
+            """Repair common JSON structural errors from LLM generation."""
+            # Fix missing commas between JSON objects in arrays
+            # Pattern: "}{"  should be "},{"
+            text = re.sub(r'\}\s*\{', '},{', text)
+            
+            # Fix missing commas between array string elements
+            # Pattern: '"\n\s*"' should be '",\n"'
+            text = re.sub(r'"\s*\n\s*"', '",\n"', text)
+            
+            # Fix trailing commas before closing brackets (valid in some languages, not JSON)
+            text = re.sub(r',\s*\]', ']', text)
+            text = re.sub(r',\s*\}', '}', text)
+            
+            # Fix unescaped quotes within strings (heuristic: quotes followed by non-structural chars)
+            # This is tricky - we need to be careful not to break valid string boundaries
+            # Only fix obvious cases: quote followed by letter/number (not :, comma, brace, bracket)
+            # text = re.sub(r'(?<!\\)"(?=[a-zA-Z0-9])', r'\\"', text)
+            
+            return text
+        
+        text_to_parse = repair_json_structure(text_to_parse)
+        
         parsed_json = None
         parsing_error = None
 
@@ -2455,16 +2640,32 @@ CRITICAL REMINDERS:
             parsed_json = json.loads(text_to_parse)
         except json.JSONDecodeError as e:
             parsing_error = e
+            logger.warning(f"Strict JSON parsing failed: {e}. Trying fallback strategies...")
+            
             # Strategy 2: Lenient parsing
             try:
                 parsed_json = json.loads(text_to_parse, strict=False)
-            except Exception:
-                # Strategy 3: Sanitize control chars
+            except Exception as e2:
+                logger.warning(f"Lenient parsing failed: {e2}")
+                
+                # Strategy 3: Aggressive repair + sanitize control chars
                 try:
-                    sanitized = re.sub(r"[\x00-\x1F]", " ", text_to_parse)
+                    # More aggressive repairs
+                    sanitized = text_to_parse
+                    
+                    # Remove all non-printable control chars except \n \t \r
+                    sanitized = re.sub(r"[\x00-\x08\x0B-\x1F]", " ", sanitized)
+                    
+                    # Fix unescaped backslashes (but preserve valid escapes)
                     sanitized = re.sub(r"\\(?![\\\/bfnrt\"u])", r"\\\\", sanitized)
+                    
+                    # Try one more repair pass
+                    sanitized = repair_json_structure(sanitized)
+                    
                     parsed_json = json.loads(sanitized, strict=False)
-                except Exception:
+                except Exception as e3:
+                    logger.warning(f"Sanitized parsing failed: {e3}")
+                    
                     # Strategy 4: Extract first balanced JSON object
                     try:
                         start = text_to_parse.find('{')
@@ -2481,19 +2682,44 @@ CRITICAL REMINDERS:
                                         break
                             if end != -1:
                                 candidate = text_to_parse[start:end+1]
+                                # Apply repairs to extracted candidate too
+                                candidate = repair_json_structure(candidate)
                                 try:
                                     parsed_json = json.loads(candidate)
                                 except:
                                     parsed_json = json.loads(candidate, strict=False)
-                    except Exception:
+                    except Exception as e4:
+                        logger.warning(f"Balanced extraction failed: {e4}")
                         pass
 
         if parsed_json:
             return {"success": True, "variations": parsed_json.get("variations", [])}
         else:
+            # Enhanced error logging with context
             logger.error(f"Failed to parse JSON after {iteration} iterations. Error: {parsing_error}")
-            logger.error(f"Full response preview (first 1000 chars): {full_response_text[:1000]}")
             
+            # Show error context (50 chars before and after error position)
+            if parsing_error and hasattr(parsing_error, 'pos'):
+                error_pos = parsing_error.pos
+                context_start = max(0, error_pos - 50)
+                context_end = min(len(text_to_parse), error_pos + 50)
+                context = text_to_parse[context_start:context_end]
+                logger.error(f"Error context at position {error_pos}: ...{context}...")
+            
+            logger.error(f"Full response preview (first 1000 chars): {full_response_text[:1000]}")
+            logger.error(f"Response length: {len(full_response_text)} chars")
+
+            # Heuristic recovery: extract segments by markdown headers when JSON fails
+            try:
+                pattern = r"# VEO 3 CREATIVE BRIEF:[\s\S]*?(?=\n# VEO 3 CREATIVE BRIEF:|\Z)"
+                segments = re.findall(pattern, full_response_text)
+                segments = [s.strip() for s in segments if s and s.strip()]
+                if segments:
+                    style_name = styles[0] if styles and len(styles) > 0 else "replicated_style"
+                    return {"success": True, "variations": [{"style": style_name, "segments": segments}]}
+            except Exception as e:
+                logger.warning(f"Heuristic segment extraction failed: {e}")
+
             # Save the full unparseable response to a debug file
             try:
                 debug_path = tempfile.mktemp(suffix=".txt", prefix="veo_parse_error_")
@@ -2502,7 +2728,7 @@ CRITICAL REMINDERS:
                 logger.error(f"Full unparseable response saved to: {debug_path}")
             except Exception as e:
                 logger.error(f"Failed to save debug file: {e}")
-            
+
             return {"success": False, "error": "Failed to parse generated JSON", "raw_text": full_response_text[:2000]}
     
     def _generate_briefs_via_openrouter(
@@ -2513,6 +2739,7 @@ CRITICAL REMINDERS:
         model: str = "openrouter:google/gemini-2.0-flash-exp:free",
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        custom_instruction: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using OpenRouter API."""
         from app.services.openrouter_service import OpenRouterService
@@ -2537,7 +2764,7 @@ CRITICAL REMINDERS:
             db.close()
         
         # Get the shared VEO prompt structure (same as Gemini)
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio)
+        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio, custom_instruction)
         
         # Combine system instruction and user prompt
         full_prompt = system_instruction + "\n\n" + variations_request
@@ -2594,7 +2821,7 @@ CRITICAL REMINDERS:
         self,
         video_url: str,
         style_name: str,
-        model: str = "gemini-2.0-flash-lite"
+        model: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Analyze a video to extract comprehensive style characteristics that can be reused.
@@ -2609,6 +2836,27 @@ CRITICAL REMINDERS:
             Dict with extracted style characteristics in VEO-compatible format
         """
         try:
+            selected_model = None
+            try:
+                db = SessionLocal()
+                try:
+                    setting = db.query(AppSetting).filter(AppSetting.key == "ai_model").first()
+                    if setting and setting.value:
+                        raw = setting.value
+                        try:
+                            data = json.loads(raw) if isinstance(raw, str) else raw
+                        except Exception:
+                            data = raw
+                        if isinstance(data, dict):
+                            val = data.get("model_name") or data.get("model") or data.get("value")
+                            if isinstance(val, str) and val.strip():
+                                selected_model = val.strip()
+                finally:
+                    db.close()
+            except Exception:
+                selected_model = None
+            model_to_use = (model.strip() if isinstance(model, str) and model.strip() else selected_model) or "gemini-2.5-flash-lite"
+            model_to_use = self._normalize_gemini_model_name(model_to_use)
             # Download and upload video to Gemini (reusing existing logic)
             logger.info(f"Processing video for style analysis: {video_url}")
             
@@ -2797,7 +3045,7 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
 
             # Call Gemini using the same payload style as generate_transcript_and_analysis
             # (generation_config + response_mime_type), which we know works.
-            url = f"{GEMINI_API_BASE}/models/{model}:generateContent"
+            url = f"{GEMINI_API_BASE}/models/{model_to_use}:generateContent"
             payload = {
                 "contents": [{
                     "role": "user",
@@ -2806,10 +3054,19 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
                         {"text": analysis_prompt}
                     ]
                 }],
+                "systemInstruction": {
+                    "parts": [{
+                        "text": (
+                            "Return STRICT JSON only with no markdown or commentary. "
+                            "Output must be a single JSON object containing exactly the keys described in the prompt. "
+                            "Do not include backticks, code fences, or extra text outside the JSON."
+                        )
+                    }]
+                },
                 "generation_config": {
-                    "temperature": 0.3,  # Lower temp for more consistent analysis
+                    "temperature": 0.2,
                     "response_mime_type": "application/json",
-                    "max_output_tokens": 8192,
+                    "max_output_tokens": 1048576,
                 }
             }
 
@@ -2828,7 +3085,7 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
             
             # Log usage
             if "usageMetadata" in data:
-                self._log_usage(model, data["usageMetadata"], request_type="video_style_analysis")
+                self._log_usage(model_to_use, data["usageMetadata"], request_type="video_style_analysis")
             
             if "candidates" in data and len(data["candidates"]) > 0:
                 candidate = data["candidates"][0]
@@ -2837,21 +3094,19 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
                 
                 if parts and "text" in parts[0]:
                     analysis_text = parts[0]["text"]
-                    
-                    try:
-                        style_data = json.loads(analysis_text)
+                    parsed = self._safe_parse_json(analysis_text)
+                    if parsed:
                         return {
                             "success": True,
                             "style_name": style_name,
                             "video_url": video_url,
                             "gemini_file_uri": file_uri,
-                            "style_characteristics": style_data,
+                            "style_characteristics": parsed,
                             "analysis_metadata": data,
                             "thumbnail_url": self._generate_thumbnail(file_path) if file_path else None
                         }
-                    except json.JSONDecodeError as e:
-                        logger.error(f"Failed to parse style analysis JSON: {e}")
-                        return {"success": False, "error": "Failed to parse analysis JSON", "raw_text": analysis_text[:2000]}
+                    logger.error("Failed to parse style analysis JSON")
+                    return {"success": False, "error": "Failed to parse analysis JSON", "raw_text": analysis_text[:2000]}
             
             return {"success": False, "error": "No analysis generated"}
             
@@ -2926,4 +3181,3 @@ BE EXTREMELY DETAILED. Every field should have comprehensive descriptions that a
         except Exception as e:
             logger.error(f"Failed to generate thumbnail: {e}")
             return None
-

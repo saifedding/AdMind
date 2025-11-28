@@ -2177,6 +2177,7 @@ class VeoSessionCreate(BaseModel):
     aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT"
     video_model_key: str = "veo_3_1_t2v_portrait"
     style_template_id: Optional[int] = None
+    custom_instruction: Optional[str] = None
 
 
 class VeoVideoResponse(BaseModel):
@@ -2266,7 +2267,8 @@ async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(ge
             character=payload.character,
             model=payload.model,
             saved_style=saved_style,
-            aspect_ratio=payload.aspect_ratio
+            aspect_ratio=payload.aspect_ratio,
+            custom_instruction=payload.custom_instruction
         )
         
         if not result.get("success"):
@@ -2287,6 +2289,14 @@ async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(ge
             
             segments_response = []
             for idx, segment_text in enumerate(variation.get("segments", [])):
+                if isinstance(segment_text, dict):
+                    try:
+                        segment_text = json.dumps(segment_text, ensure_ascii=False)
+                    except Exception:
+                        segment_text = str(segment_text)
+                elif not isinstance(segment_text, str):
+                    segment_text = str(segment_text)
+
                 segment = VeoPromptSegment(
                     brief_id=brief.id,
                     segment_index=idx,
@@ -2351,7 +2361,7 @@ async def list_veo_sessions(
             briefs_response = []
             for brief in session.creative_briefs:
                 segments_response = []
-                for segment in brief.segments:
+                for segment in sorted(brief.segments, key=lambda s: s.segment_index):
                     videos_response = [
                         VeoVideoResponse(
                             id=v.id,
@@ -2410,7 +2420,7 @@ async def get_veo_session(session_id: int, db: Session = Depends(get_db)) -> Veo
         briefs_response = []
         for brief in session.creative_briefs:
             segments_response = []
-            for segment in brief.segments:
+            for segment in sorted(brief.segments, key=lambda s: s.segment_index):
                 videos_response = [
                     VeoVideoResponse(
                         id=v.id,
@@ -2595,3 +2605,111 @@ async def save_video_to_segment(
         "generation_time_seconds": video.generation_time_seconds,
         "created_at": video.created_at.isoformat()
     }
+
+
+class VeoSegmentGenerateRequest(BaseModel):
+    seed: Optional[int] = None
+    aspect_ratio: Optional[str] = None
+    video_model_key: Optional[str] = None
+    timeout_sec: Optional[int] = 600
+    poll_interval_sec: Optional[int] = 5
+
+
+@router.post("/ai/veo/segments/{segment_id}/generate-video", response_model=VeoVideoResponse)
+async def generate_video_for_segment(
+    segment_id: int,
+    payload: VeoSegmentGenerateRequest,
+    db: Session = Depends(get_db)
+) -> VeoVideoResponse:
+    """Generate a video for a specific segment using its current (edited) prompt.
+    Uses session defaults for aspect ratio and model unless overridden in payload.
+    Saves the resulting video to the segment.
+    """
+    try:
+        segment = db.query(VeoPromptSegment).filter(VeoPromptSegment.id == segment_id).first()
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+
+        # Resolve session defaults via brief -> session
+        brief = segment.brief
+        if not brief:
+            raise HTTPException(status_code=404, detail="Brief not found for segment")
+        session = brief.session
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found for brief")
+
+        prompt = segment.current_prompt
+        aspect_ratio = payload.aspect_ratio or session.aspect_ratio
+        video_model_key = payload.video_model_key or session.video_model_key
+        # Seed from payload or session metadata
+        seed = payload.seed
+        if seed is None:
+            try:
+                meta = session.session_metadata or {}
+                if isinstance(meta, dict):
+                    seed = meta.get("seed")
+            except Exception:
+                seed = None
+        if seed is None:
+            seed = 9831
+
+        service = GoogleAIService()
+        result = service.generate_video_from_prompt(
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            video_model_key=video_model_key,
+            seed=seed,
+            timeout_sec=payload.timeout_sec or 600,
+            poll_interval_sec=payload.poll_interval_sec or 5,
+        )
+
+        # Extract a video URL if present anywhere in result
+        def _find_first_url(obj: Any) -> Optional[str]:
+            if isinstance(obj, str) and obj.startswith("http"):
+                return obj
+            if isinstance(obj, dict):
+                for v in obj.values():
+                    found = _find_first_url(v)
+                    if found:
+                        return found
+            if isinstance(obj, list):
+                for item in obj:
+                    found = _find_first_url(item)
+                    if found:
+                        return found
+            return None
+
+        video_url = _find_first_url(result) if isinstance(result, dict) else None
+        if not video_url:
+            raise HTTPException(status_code=500, detail="Video URL not found in generation response")
+
+        # Persist video generation record
+        video = VeoVideoGeneration(
+            segment_id=segment.id,
+            video_url=video_url,
+            prompt_used=prompt,
+            model_key=video_model_key,
+            aspect_ratio=aspect_ratio,
+            seed=seed,
+            generation_time_seconds=None,
+        )
+        db.add(video)
+        db.commit()
+        db.refresh(video)
+
+        return VeoVideoResponse(
+            id=video.id,
+            prompt_used=video.prompt_used,
+            video_url=video.video_url,
+            model_key=video.model_key,
+            aspect_ratio=video.aspect_ratio,
+            seed=video.seed,
+            generation_time_seconds=video.generation_time_seconds,
+            created_at=video.created_at.isoformat() if video.created_at else ""
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate video for segment: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate video for segment: {e}")

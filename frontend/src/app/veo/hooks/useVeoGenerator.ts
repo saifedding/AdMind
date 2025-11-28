@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { adsApi, VeoModel, VeoSessionResponse, VeoBriefResponse, VeoSegmentResponse, type VideoStyleTemplate } from '@/lib/api';
+import { adsApi, VeoModel, VeoSessionResponse, VeoBriefResponse, VeoSegmentResponse, type VideoStyleTemplate, API_BASE_URL, API_PREFIX } from '@/lib/api';
 
 export interface Style {
     id: string;
@@ -35,8 +35,10 @@ export function useVeoGenerator() {
     const [availableStyles, setAvailableStyles] = useState<Style[]>([]);
     const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
     const [characterPresets, setCharacterPresets] = useState<CharacterPreset[]>([]);
-    const [selectedCharacter, setSelectedCharacter] = useState<string>('');
+    const [selectedCharacter, setSelectedCharacter] = useState<string>('none');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [useCustomInstruction, setUseCustomInstruction] = useState<boolean>(false);
+    const [customInstruction, setCustomInstruction] = useState<string>('');
     const [generatedVariations, setGeneratedVariations] = useState<CreativeBriefVariation[]>([]);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [veoGeneratingKeys, setVeoGeneratingKeys] = useState<Set<string>>(new Set());
@@ -74,7 +76,7 @@ export function useVeoGenerator() {
     const [analyzingVideo, setAnalyzingVideo] = useState(false);
     const [styleLibrary, setStyleLibrary] = useState<VideoStyleTemplate[]>([]);
     const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState<number | null>(null);
-    const [showStyleLibrary, setShowStyleLibrary] = useState(false);
+    const [showStyleLibrary, setShowStyleLibrary] = useState(true);
 
     // Load initial data
     useEffect(() => {
@@ -86,7 +88,7 @@ export function useVeoGenerator() {
 
     const loadAvailableStyles = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/v1/settings/ai/veo/available-styles');
+            const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/available-styles`);
             const data = await response.json();
             setAvailableStyles(data.styles || []);
         } catch (error) {
@@ -97,7 +99,7 @@ export function useVeoGenerator() {
 
     const loadCharacterPresets = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/v1/settings/ai/veo/character-presets');
+            const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/character-presets`);
             const data = await response.json();
             setCharacterPresets(data.presets || []);
         } catch (error) {
@@ -111,11 +113,9 @@ export function useVeoGenerator() {
             setVeoModelsLoading(true);
             const res = await adsApi.getVeoModels();
             const models = res?.result?.data?.json?.result?.videoModels || [];
-            // Filter out deprecated models
-            const activeModels = models.filter((m: VeoModel) => m.modelStatus !== "MODEL_STATUS_DEPRECATED");
-            setVeoModels(activeModels);
+            setVeoModels(models);
             // Auto-select best model for default aspect ratio
-            const bestModel = findBestModel(activeModels, aspectRatio);
+            const bestModel = findBestModel(models, aspectRatio);
             if (bestModel) setSelectedModel(bestModel.key);
         } catch (error) {
             console.error('Failed to load veo models:', error);
@@ -137,7 +137,15 @@ export function useVeoGenerator() {
     const loadStyleLibrary = async () => {
         try {
             const res = await adsApi.getStyleLibrary();
-            setStyleLibrary(res.templates || []);
+            const templates = (res.templates || []).map(t => ({
+                ...t,
+                thumbnail_url: t.thumbnail_url
+                    ? (t.thumbnail_url.startsWith('http://') || t.thumbnail_url.startsWith('https://')
+                        ? t.thumbnail_url
+                        : `${API_BASE_URL}${t.thumbnail_url}`)
+                    : t.thumbnail_url
+            }));
+            setStyleLibrary(templates);
         } catch (error) {
             console.error('Failed to load style library:', error);
         }
@@ -178,6 +186,28 @@ export function useVeoGenerator() {
         }
     };
 
+    const reanalyzeStyleTemplate = async (template: VideoStyleTemplate) => {
+        setAnalyzingVideo(true);
+        try {
+            const res = await adsApi.analyzeVideoStyle({
+                video_url: template.video_url,
+                style_name: template.name,
+                description: template.description || undefined,
+            });
+            if (res.success) {
+                toast.success(`Style "${template.name}" re-analyzed and saved`);
+                await loadStyleLibrary();
+            } else {
+                toast.error(res.error || 'Failed to re-analyze video');
+            }
+        } catch (error: any) {
+            console.error('Failed to re-analyze video:', error);
+            toast.error('Failed to re-analyze video: ' + error.message);
+        } finally {
+            setAnalyzingVideo(false);
+        }
+    };
+
     const handleDeleteStyleTemplate = async (templateId: number) => {
         if (!confirm('Are you sure you want to delete this style template?')) return;
 
@@ -195,7 +225,11 @@ export function useVeoGenerator() {
     };
 
     const handleStyleToggle = (style: string) => {
-        setSelectedStyles(prev => prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]);
+        if (style === 'none') {
+            setSelectedStyles([]);
+        } else {
+            setSelectedStyles([style]);
+        }
     };
 
     const handleGenerateBriefs = async () => {
@@ -234,6 +268,7 @@ export function useVeoGenerator() {
                 aspect_ratio: aspectRatio,
                 video_model_key: selectedModel,
                 style_template_id: selectedStyleTemplateId || undefined,
+                custom_instruction: useCustomInstruction && customInstruction.trim() ? customInstruction.trim() : undefined,
             });
 
             // Store session
@@ -289,6 +324,39 @@ export function useVeoGenerator() {
         const segmentId = segmentIdByKey[promptKey] || null;
         setCurrentPromptForModal({ text: promptText, key: promptKey, segmentId });
         setShowVeoModal(true);
+    };
+
+    const saveEditedPrompt = async (promptKey: string, newText: string) => {
+        try {
+            const segmentId = segmentIdByKey[promptKey];
+            if (!segmentId) {
+                toast.error('Segment ID not found for this prompt');
+                return false;
+            }
+            const res = await adsApi.updateSegmentPrompt(segmentId, newText);
+            // Update generatedVariations in place
+            setGeneratedVariations(prev => {
+                const next = prev.map(variation => {
+                    const styleId = variation.style;
+                    const matchPrefix = `${styleId}:prompt:`;
+                    if (promptKey.startsWith(matchPrefix)) {
+                        const idxStr = promptKey.slice(matchPrefix.length);
+                        const segIdx = Math.max(0, parseInt(idxStr) - 1);
+                        const segments = [...variation.segments];
+                        segments[segIdx] = res.current_prompt || newText;
+                        return { ...variation, segments };
+                    }
+                    return variation;
+                });
+                return next;
+            });
+            toast.success('Prompt updated');
+            return true;
+        } catch (error: any) {
+            console.error('Failed to update prompt:', error);
+            toast.error(error.message || 'Failed to update prompt');
+            return false;
+        }
     };
 
     const handleGenerateVideo = async () => {
@@ -406,8 +474,15 @@ export function useVeoGenerator() {
                         });
                         toast.error(msg);
                     }
-                } catch (pollErr) {
+                } catch (pollErr: any) {
                     console.error('Polling error:', pollErr);
+                    clearInterval(pollInterval);
+                    const msg = (pollErr && pollErr.status === 0)
+                        ? 'Network error while polling task status'
+                        : (pollErr?.message || 'Polling failed');
+                    setVeoErrorByPromptKey(prev => ({ ...prev, [promptKey]: msg }));
+                    setVeoGeneratingKeys(prev => { const next = new Set(prev); next.delete(promptKey); return next; });
+                    toast.error(msg);
                 }
             }, 3000);
 
@@ -420,6 +495,94 @@ export function useVeoGenerator() {
                 next.delete(promptKey);
                 return next;
             });
+        }
+    };
+
+    const generateVideoForPrompt = async (promptText: string, promptKey: string) => {
+        if (!selectedModel) return;
+        const segmentId = segmentIdByKey[promptKey] || null;
+
+        const selectedModelData = veoModels.find(m => m.key === selectedModel);
+        const estimatedSeconds = selectedModelData?.videoGenerationTimeSeconds || 120;
+
+        try {
+            setVeoGeneratingKeys(prev => new Set([...prev, promptKey]));
+            setVeoErrorByPromptKey(prev => ({ ...prev, [promptKey]: null }));
+
+            const startTime = Date.now();
+            setGenerationStartTime(prev => ({ ...prev, [promptKey]: startTime }));
+            setGenerationTimeRemaining(prev => ({ ...prev, [promptKey]: estimatedSeconds }));
+
+            const countdownInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const remaining = Math.max(0, estimatedSeconds - elapsed);
+                setGenerationTimeRemaining(prev => ({ ...prev, [promptKey]: remaining }));
+                if (remaining <= 0) clearInterval(countdownInterval);
+            }, 1000);
+            setGenerationIntervals(prev => ({ ...prev, [promptKey]: countdownInterval }));
+
+            const asyncRes = await adsApi.generateVeoVideoAsync({
+                prompt: promptText,
+                aspect_ratio: aspectRatio,
+                video_model_key: selectedModel,
+                seed: seed,
+            });
+
+            if (!asyncRes.success || !asyncRes.task_id) {
+                const msg = "Failed to start video generation";
+                setVeoErrorByPromptKey(prev => ({ ...prev, [promptKey]: msg }));
+                toast.error(msg);
+                return;
+            }
+
+            const pollInterval = setInterval(async () => {
+                try {
+                    const status = await adsApi.getVeoTaskStatus(asyncRes.task_id);
+                    if (status.state === 'SUCCESS' && status.result?.video_url) {
+                        clearInterval(pollInterval);
+                        setVeoVideoByPromptKey(prev => ({
+                            ...prev,
+                            [promptKey]: [...(prev[promptKey] || []), { url: status.result!.video_url!, prompt: promptText }]
+                        }));
+
+                        const actualTime = Math.floor((Date.now() - startTime) / 1000);
+                        setActualGenerationTime(prev => ({ ...prev, [promptKey]: actualTime }));
+
+                        if (segmentId) {
+                            try {
+                                await adsApi.saveVideoToSegment(segmentId, {
+                                    video_url: status.result!.video_url!,
+                                    prompt_used: promptText,
+                                    model_key: selectedModel,
+                                    aspect_ratio: aspectRatio,
+                                    seed: seed,
+                                    generation_time_seconds: actualTime
+                                });
+                            } catch (err) {
+                                console.error('Failed to save video to backend:', err);
+                            }
+                        }
+
+                        setGenerationIntervals(prev => { if (prev[promptKey]) clearInterval(prev[promptKey]); const next = { ...prev }; delete next[promptKey]; return next; });
+                        setGenerationTimeRemaining(prev => { const next = { ...prev }; delete next[promptKey]; return next; });
+                        setVeoGeneratingKeys(prev => { const next = new Set(prev); next.delete(promptKey); return next; });
+                        toast.success('Video generated successfully!');
+                    } else if (status.state === 'FAILURE') {
+                        clearInterval(pollInterval);
+                        const msg = (status.result as any)?.error || 'Video generation failed';
+                        setVeoErrorByPromptKey(prev => ({ ...prev, [promptKey]: msg }));
+                        setVeoGeneratingKeys(prev => { const next = new Set(prev); next.delete(promptKey); return next; });
+                        toast.error(msg);
+                    }
+                } catch (pollErr) {
+                    console.error('Polling error:', pollErr);
+                }
+            }, 3000);
+        } catch (err: any) {
+            const msg = err.message || 'Generation failed';
+            setVeoErrorByPromptKey(prev => ({ ...prev, [promptKey]: msg }));
+            toast.error(msg);
+            setVeoGeneratingKeys(prev => { const next = new Set(prev); next.delete(promptKey); return next; });
         }
     };
 
@@ -446,7 +609,7 @@ export function useVeoGenerator() {
 
         try {
             toast.info('Merging videos... this may take a minute');
-            const response = await fetch('http://localhost:8000/api/v1/settings/ai/veo/merge-videos', {
+            const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/merge-videos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -461,7 +624,10 @@ export function useVeoGenerator() {
                 throw new Error(data.error || 'Merge failed');
             }
 
-            setMergedVideoByStyle(prev => ({ ...prev, [style]: data.public_url }));
+            const fullUrl = data.public_url.startsWith('/media')
+                ? `${API_BASE_URL}${data.public_url}`
+                : data.public_url;
+            setMergedVideoByStyle(prev => ({ ...prev, [style]: fullUrl }));
             toast.success('Videos merged successfully!');
         } catch (error: any) {
             console.error('Merge error:', error);
@@ -541,6 +707,8 @@ export function useVeoGenerator() {
         showVeoModal, setShowVeoModal,
         currentPromptForModal,
         handleGenerateVideo,
+        generateVideoForPrompt,
+        saveEditedPrompt,
         veoModels,
         veoModelsLoading,
         selectedModel, setSelectedModel,
@@ -552,6 +720,7 @@ export function useVeoGenerator() {
         videoStyleDescription, setVideoStyleDescription,
         analyzingVideo,
         handleAnalyzeVideo,
+        reanalyzeStyleTemplate,
         styleLibrary,
         selectedStyleTemplateId, setSelectedStyleTemplateId,
         handleDeleteStyleTemplate,
@@ -559,5 +728,7 @@ export function useVeoGenerator() {
         currentSession,
         segmentIdByKey,
         loadSession,
+        useCustomInstruction, setUseCustomInstruction,
+        customInstruction, setCustomInstruction,
     };
 }

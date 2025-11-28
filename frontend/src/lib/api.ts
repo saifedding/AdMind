@@ -1,6 +1,6 @@
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_PREFIX = '/api/v1';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_PREFIX = '/api/v1';
 
 // API Response Types (matching backend DTOs)
 export interface ApiCompetitor {
@@ -1118,6 +1118,7 @@ export type VeoSessionCreate = {
   aspect_ratio?: string;
   video_model_key?: string;
   style_template_id?: number;
+  custom_instruction?: string;
 };
 
 export type VeoVideoResponse = {
