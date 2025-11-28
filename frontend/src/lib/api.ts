@@ -325,6 +325,16 @@ class ApiClient {
         );
       }
 
+      if (response.status === 204 || response.status === 205) {
+        return undefined as unknown as T;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        return (text ? JSON.parse(text) : undefined) as unknown as T;
+      }
+
       return await response.json();
     } catch (error) {
       if (error instanceof ApiError) {

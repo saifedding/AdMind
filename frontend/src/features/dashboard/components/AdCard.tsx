@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatAdDuration, formatAdSetDuration } from '@/lib/utils';
-import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, RefreshCw, FolderPlus, Plus, Check, Save } from 'lucide-react';
+import { Play, Image, Star, TrendingUp, Eye, DollarSign, Globe2, Loader2, ChevronLeft, ChevronRight, FileText, Calendar, Info, Clock, ChevronDown, Layers, Power, RefreshCw, FolderPlus, Plus, Check, Save, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { adsApi, type ApiFavoriteList } from '@/lib/api';
 
@@ -53,7 +53,13 @@ export function AdCard({
   const [adListIds, setAdListIds] = useState<number[]>([]);
   const [loadingLists, setLoadingLists] = useState(false);
   const [addingToList, setAddingToList] = useState<number | null>(null);
+  const [newListName, setNewListName] = useState('');
+  const [newListColor, setNewListColor] = useState<string>('blue');
+  const [isCreatingList, setIsCreatingList] = useState(false);
+  const [listsQuery, setListsQuery] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listsLoadedOnceRef = useRef(false);
   const hasHighScore = ad.analysis?.overall_score && ad.analysis.overall_score > 8;
   
   // Sync isSaved state when ad prop changes
@@ -280,12 +286,33 @@ export function AdCard({
   const loadFavoriteLists = async () => {
     setLoadingLists(true);
     try {
-      const [listsResponse, adListsResponse] = await Promise.all([
-        adsApi.getFavoriteLists(),
-        adsApi.getAdFavoriteLists(ad.id),
-      ]);
+      if (listsLoadedOnceRef.current && favoriteLists.length > 0) {
+        setLoadingLists(false);
+        return;
+      }
+      const listsResponse = await adsApi.getFavoriteLists();
       setFavoriteLists(listsResponse.lists);
-      setAdListIds(adListsResponse.list_ids);
+
+      if (listsResponse.lists.length === 0) {
+        try {
+          const created = await adsApi.ensureDefaultFavoriteList();
+          const refreshed = await adsApi.getFavoriteLists();
+          setFavoriteLists(refreshed.lists);
+          alert(`Created default list: ${created.name}`);
+        } catch (_) {}
+      }
+
+      if (ad.id) {
+        try {
+          const adListsResponse = await adsApi.getAdFavoriteLists(ad.id);
+          setAdListIds(adListsResponse.list_ids);
+        } catch (_) {
+          setAdListIds([]);
+        }
+      } else {
+        setAdListIds([]);
+      }
+      listsLoadedOnceRef.current = true;
     } catch (error) {
       console.error('Error loading lists:', error);
     } finally {
@@ -295,15 +322,50 @@ export function AdCard({
 
   const handleAddToListClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const wasOpen = showListsDropdown;
     setShowListsDropdown(!showListsDropdown);
-    if (!showListsDropdown && favoriteLists.length === 0) {
+    if (!wasOpen) {
       loadFavoriteLists();
+      setShowCreateForm(false);
+    } else {
+      setShowCreateForm(false);
+    }
+  };
+
+  const handleCreateList = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCreatingList) return;
+    const name = newListName.trim();
+    if (!name) return;
+    setIsCreatingList(true);
+    try {
+      const created = await adsApi.createFavoriteList({ name, color: newListColor });
+      let createdWithCount = created;
+      if (ad.id) {
+        try {
+          await adsApi.addAdToFavoriteList(created.id, ad.id);
+          setAdListIds(prev => [...prev, created.id]);
+          createdWithCount = { ...created, item_count: (created.item_count ?? 0) + 1 };
+        } catch (_) {}
+      }
+      setFavoriteLists(prev => [createdWithCount, ...prev]);
+      setNewListName('');
+      alert(`Created list: ${created.name}`);
+    } catch (error) {
+      console.error('Error creating list:', error);
+      alert('Failed to create list');
+    } finally {
+      setIsCreatingList(false);
     }
   };
 
   const handleToggleList = async (e: React.MouseEvent, listId: number) => {
     e.stopPropagation();
     if (addingToList === listId) return;
+    if (!ad.id) {
+      alert('This ad has no ID and cannot be added to a list.');
+      return;
+    }
 
     setAddingToList(listId);
     try {
@@ -311,12 +373,17 @@ export function AdCard({
       if (isInList) {
         await adsApi.removeAdFromFavoriteList(listId, ad.id);
         setAdListIds(prev => prev.filter(id => id !== listId));
+        setFavoriteLists(prev => prev.map(l => l.id === listId ? { ...l, item_count: Math.max(0, (l.item_count ?? 0) - 1) } : l));
+        alert('Removed from list');
       } else {
         await adsApi.addAdToFavoriteList(listId, ad.id);
         setAdListIds(prev => [...prev, listId]);
+        setFavoriteLists(prev => prev.map(l => l.id === listId ? { ...l, item_count: (l.item_count ?? 0) + 1 } : l));
+        alert('Added to list');
       }
     } catch (error) {
       console.error('Error toggling list:', error);
+      alert('Failed to update favorite list');
     } finally {
       setAddingToList(null);
     }
@@ -411,7 +478,76 @@ export function AdCard({
 
           {/* Dropdown Menu */}
           {showListsDropdown && (
-            <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50">
+            <div className="absolute bottom-full right-0 mb-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-50">
+              <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs text-muted-foreground flex items-center justify-between">
+                <span>Favorite Lists ({favoriteLists.length})</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowCreateForm(v => !v); }}
+                  className={cn(
+                    "px-2 py-1 rounded-md text-[11px] font-medium",
+                    "bg-yellow-500/90 text-white hover:bg-yellow-600/90"
+                  )}
+                >
+                  {showCreateForm ? 'Close' : 'New'}
+                </button>
+              </div>
+              {showCreateForm && (
+                <div className="px-4 pt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newListName}
+                      onChange={(e) => { e.stopPropagation(); setNewListName(e.target.value); }}
+                      placeholder="New list name"
+                      className="flex-1 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                    />
+                    <button
+                      onClick={handleCreateList}
+                      disabled={!newListName.trim() || isCreatingList}
+                      className={cn(
+                        "px-2 py-1 rounded-md text-xs font-medium",
+                        "bg-photon-500/90 text-white hover:bg-photon-600/90",
+                        isCreatingList && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {isCreatingList ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Create & Add'
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {['blue','green','yellow','red','purple','indigo'].map((c) => (
+                      <button
+                        key={c}
+                        onClick={(e) => { e.stopPropagation(); setNewListColor(c); }}
+                        className={cn(
+                          "w-4 h-4 rounded-full border border-transparent",
+                          c === 'blue' && "bg-blue-500",
+                          c === 'green' && "bg-green-500",
+                          c === 'yellow' && "bg-yellow-500",
+                          c === 'red' && "bg-red-500",
+                          c === 'purple' && "bg-purple-500",
+                          c === 'indigo' && "bg-indigo-500",
+                          newListColor === c ? "ring-2 ring-offset-2 ring-photon-500" : ""
+                        )}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="px-4 pt-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={listsQuery}
+                    onChange={(e) => { e.stopPropagation(); setListsQuery(e.target.value); }}
+                    placeholder="Search lists"
+                    className="w-full pl-7 pr-2 py-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                  />
+                </div>
+              </div>
               {loadingLists ? (
                 <div className="p-4 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
@@ -422,7 +558,7 @@ export function AdCard({
                 </div>
               ) : (
                 <div className="py-2">
-                  {favoriteLists.map((list) => {
+                  {(listsQuery ? favoriteLists.filter(l => l.name.toLowerCase().includes(listsQuery.toLowerCase())) : favoriteLists).map((list) => {
                     const isInList = adListIds.includes(list.id);
                     const isLoading = addingToList === list.id;
                     return (
@@ -430,12 +566,18 @@ export function AdCard({
                         key={list.id}
                         onClick={(e) => handleToggleList(e, list.id)}
                         disabled={isLoading}
-                        className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left disabled:opacity-50"
+                        className={cn(
+                          "w-full px-4 py-2 flex items-center gap-3 transition-colors text-left disabled:opacity-50",
+                          isInList ? "bg-green-50 dark:bg-green-900/20" : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                        )}
                       >
                         <div className={`w-3 h-3 rounded-full bg-${list.color || 'blue'}-500 flex-shrink-0`} />
                         <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">
                           {list.name}
                         </span>
+                        {typeof list.item_count === 'number' && (
+                          <Badge variant="secondary" className="text-[10px]">{list.item_count}</Badge>
+                        )}
                         {isLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                         ) : isInList ? (
