@@ -22,12 +22,18 @@ import {
   scrapeCompetitorAds,
   getCompetitorAds,
   clearCompetitorAds,
+  getScrapingStatus,
+  bulkScrapeCompetitors,
+  getBulkScrapingStatus,
   type Competitor, 
   type CompetitorStats,
   type CompetitorCreate,
   type CompetitorUpdate,
   type PaginatedCompetitors,
-  type CompetitorScrapeRequest 
+  type CompetitorScrapeRequest,
+  type BulkScrapeRequest,
+  type BulkTaskResponse,
+  type BulkScrapingStatus
 } from '@/lib/api';
 import { adsApi } from '@/lib/api';
 import { Label } from '@/components/ui/label';
@@ -47,6 +53,7 @@ interface ScrapeConfig {
   active_status: 'active' | 'inactive' | 'all';
   date_from?: string;
   date_to?: string;
+  min_duration_days?: number;
 }
 
 const COUNTRY_OPTIONS = [
@@ -125,6 +132,22 @@ export default function CompetitorsPage() {
   const [clearLoading, setClearLoading] = useState(false);
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const [clearAllLoading, setClearAllLoading] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<any>(null);
+  
+  // Bulk scraping state
+  const [showBulkScrapeDialog, setShowBulkScrapeDialog] = useState(false);
+  const [bulkScrapeConfig, setBulkScrapeConfig] = useState<ScrapeConfig>({
+    countries: ['AE', 'US', 'GB'],
+    max_pages: 10,
+    delay_between_requests: 2,
+    active_status: 'all',
+  });
+  const [bulkScrapeLoading, setBulkScrapeLoading] = useState(false);
+  const [activeBulkTaskIds, setActiveBulkTaskIds] = useState<string[]>([]);
+  const [showBulkStatusDialog, setShowBulkStatusDialog] = useState(false);
+  const [bulkTaskStatus, setBulkTaskStatus] = useState<BulkScrapingStatus | null>(null);
 
   const visibleCompetitorIds = useMemo(() => competitors.data.map(c => c.id), [competitors.data]);
   const isAllVisibleSelected = useMemo(() => selectedIds.length > 0 && visibleCompetitorIds.every(id => selectedIds.includes(id)), [selectedIds, visibleCompetitorIds]);
@@ -133,6 +156,47 @@ export default function CompetitorsPage() {
   useEffect(() => {
     loadData();
   }, [currentPage, pageSize, searchTerm, statusFilter, sortBy, sortOrder]);
+
+  useEffect(() => {
+    let timer: any;
+    const poll = async () => {
+      if (!activeTaskId) return;
+      try {
+        const s = await getScrapingStatus(activeTaskId);
+        setTaskStatus(s);
+        if (s.state !== 'PENDING' && s.state !== 'PROGRESS') {
+          clearInterval(timer);
+        }
+      } catch {}
+    };
+    if (activeTaskId) {
+      poll();
+      timer = setInterval(poll, 2000);
+    }
+    return () => { if (timer) clearInterval(timer); };
+  }, [activeTaskId]);
+
+  // Bulk scraping status polling
+  useEffect(() => {
+    let timer: any;
+    const pollBulk = async () => {
+      if (!activeBulkTaskIds.length) return;
+      try {
+        const status = await getBulkScrapingStatus(activeBulkTaskIds);
+        setBulkTaskStatus(status);
+        if (status.summary.overall_status === 'completed' || status.summary.overall_status === 'failed') {
+          clearInterval(timer);
+        }
+      } catch (error) {
+        console.error('Error polling bulk status:', error);
+      }
+    };
+    if (activeBulkTaskIds.length > 0) {
+      pollBulk();
+      timer = setInterval(pollBulk, 3000); // Poll every 3 seconds for bulk tasks
+    }
+    return () => { if (timer) clearInterval(timer); };
+  }, [activeBulkTaskIds]);
 
   const loadData = async () => {
     try {
@@ -297,6 +361,7 @@ export default function CompetitorsPage() {
         active_status: scrapeConfig.active_status,
         date_from: scrapeConfig.date_from,
         date_to: scrapeConfig.date_to,
+        min_duration_days: scrapeConfig.min_duration_days,
       };
       
       const result = await scrapeCompetitorAds(scrapingCompetitor.id, payload);
@@ -330,7 +395,8 @@ export default function CompetitorsPage() {
       // Save back to localStorage
       localStorage.setItem('scrapingTasks', JSON.stringify(tasks));
       
-      alert(`Scraping started successfully!\n\nTask ID: ${result.task_id}\nStatus: ${result.status}\n\nThis will take a few minutes. You can check the progress in the Tasks page.`);
+      setActiveTaskId(result.task_id);
+      setShowStatusDialog(true);
       
       setShowScrapeDialog(false);
       setScrapingCompetitor(null);
@@ -367,6 +433,105 @@ export default function CompetitorsPage() {
       }
       return { ...prev, countries };
     });
+  };
+
+  const toggleBulkCountry = (country: string) => {
+    setBulkScrapeConfig(prev => {
+      let countries = [...prev.countries];
+      if (country === 'ALL') {
+        countries = countries.includes('ALL') ? [] : ['ALL'];
+      } else {
+        countries = countries.filter(c => c !== 'ALL');
+        if (countries.includes(country)) {
+          countries = countries.filter(c => c !== country);
+        } else {
+          countries.push(country);
+        }
+      }
+      if (countries.length === 0) {
+        countries = ['ALL'];
+      }
+      return { ...prev, countries };
+    });
+  };
+
+  const handleBulkScrape = () => {
+    if (selectedIds.length === 0) {
+      alert('Please select competitors to scrape');
+      return;
+    }
+    setShowBulkScrapeDialog(true);
+  };
+
+  const startBulkScrape = async () => {
+    if (selectedIds.length === 0) return;
+    
+    try {
+      setBulkScrapeLoading(true);
+      
+      const payload: BulkScrapeRequest = {
+        competitor_ids: selectedIds,
+        countries: bulkScrapeConfig.countries,
+        max_pages: bulkScrapeConfig.max_pages,
+        delay_between_requests: bulkScrapeConfig.delay_between_requests,
+        active_status: bulkScrapeConfig.active_status,
+        date_from: bulkScrapeConfig.date_from,
+        date_to: bulkScrapeConfig.date_to,
+        min_duration_days: bulkScrapeConfig.min_duration_days,
+      };
+      
+      const result: BulkTaskResponse = await bulkScrapeCompetitors(payload);
+      
+      // Store bulk task in localStorage for tracking
+      const bulkTaskItem = {
+        id: `bulk_${Date.now()}`,
+        task_ids: result.task_ids,
+        competitor_ids: selectedIds,
+        competitor_names: competitors.data
+          .filter(c => selectedIds.includes(c.id))
+          .map(c => c.name),
+        status: {
+          successful_starts: result.successful_starts,
+          failed_starts: result.failed_starts,
+          message: result.message,
+          details: result.details
+        },
+        created_at: new Date().toISOString(),
+        config: bulkScrapeConfig,
+      };
+      
+      // Get existing bulk tasks from localStorage
+      const existingBulkTasks = localStorage.getItem('bulkScrapingTasks');
+      const bulkTasks = existingBulkTasks ? JSON.parse(existingBulkTasks) : [];
+      
+      // Add new bulk task to the beginning of the array
+      bulkTasks.unshift(bulkTaskItem);
+      
+      // Keep only the last 20 bulk tasks
+      if (bulkTasks.length > 20) {
+        bulkTasks.splice(20);
+      }
+      
+      // Save back to localStorage
+      localStorage.setItem('bulkScrapingTasks', JSON.stringify(bulkTasks));
+      
+      setActiveBulkTaskIds(result.task_ids);
+      setShowBulkStatusDialog(true);
+      
+      setShowBulkScrapeDialog(false);
+      setSelectedIds([]); // Clear selection after starting bulk scrape
+      
+      alert(`Bulk scraping started: ${result.successful_starts} tasks started, ${result.failed_starts} failed`);
+      
+      // Reload data after a short delay
+      setTimeout(() => {
+        loadData();
+      }, 3000);
+    } catch (err) {
+      alert(`Failed to start bulk scraping: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setBulkScrapeLoading(false);
+    }
   };
 
   const handleViewCompetitor = (competitor: Competitor) => {
@@ -457,8 +622,61 @@ export default function CompetitorsPage() {
               <Plus className="h-4 w-4 mr-2" />
               Add Competitor
             </Button>
-          </div>
         </div>
+        </div>
+
+        {activeTaskId && (
+          <Card className="border-border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RefreshCw className={`h-4 w-4 ${taskStatus?.state==='SUCCESS' ? '' : 'animate-spin'}`} />
+                <div>
+                  <div className="text-sm font-semibold">Scraping task</div>
+                  <div className="text-xs text-muted-foreground">{taskStatus?.state || 'PENDING'}{taskStatus?.status ? ` • ${taskStatus.status}` : ''}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="border-border" onClick={() => setShowStatusDialog(true)}>View Progress</Button>
+                {taskStatus?.state==='SUCCESS' && (
+                  <Badge variant="default" className="bg-green-500/20 text-green-400">Completed</Badge>
+                )}
+                {taskStatus?.state==='FAILURE' && (
+                  <Badge variant="destructive">Failed</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeBulkTaskIds.length > 0 && (
+          <Card className="border-border">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RefreshCw className={`h-4 w-4 ${bulkTaskStatus?.summary.overall_status === 'completed' ? '' : 'animate-spin'}`} />
+                <div>
+                  <div className="text-sm font-semibold">Bulk scraping ({activeBulkTaskIds.length} tasks)</div>
+                  <div className="text-xs text-muted-foreground">
+                    {bulkTaskStatus ? (
+                      `${bulkTaskStatus.summary.success} completed, ${bulkTaskStatus.summary.progress + bulkTaskStatus.summary.pending} in progress, ${bulkTaskStatus.summary.failure} failed`
+                    ) : 'Starting...'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="border-border" onClick={() => setShowBulkStatusDialog(true)}>View Progress</Button>
+                {bulkTaskStatus?.summary.overall_status === 'completed' && (
+                  <Badge variant="default" className="bg-green-500/20 text-green-400">All Completed</Badge>
+                )}
+                {bulkTaskStatus?.summary.overall_status === 'failed' && (
+                  <Badge variant="destructive">All Failed</Badge>
+                )}
+                {bulkTaskStatus?.summary.overall_status === 'mixed' && (
+                  <Badge variant="secondary">Mixed Results</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <Card className="bg-red-900/20 border-red-500">
@@ -582,10 +800,16 @@ export default function CompetitorsPage() {
           {selectedIds.length > 0 && (
             <div className="bg-muted p-2 rounded-md mb-4 flex justify-between items-center">
               <span className="text-sm font-medium">{selectedIds.length} competitor(s) selected</span>
-              <Button variant="destructive" size="sm" onClick={() => setIsConfirmDialogOpen(true)}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Selected
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleBulkScrape} className="border-photon-500 text-photon-400 hover:bg-photon-500/20">
+                  <Download className="mr-2 h-4 w-4" />
+                  Scrape Selected ({selectedIds.length})
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setIsConfirmDialogOpen(true)}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Selected
+                </Button>
+              </div>
             </div>
           )}
           <div className="overflow-x-auto">
@@ -786,6 +1010,20 @@ export default function CompetitorsPage() {
                 </Select>
               </div>
               <div>
+                <Label htmlFor="min_days">Minimum Days Running</Label>
+                <Input 
+                  id="min_days" 
+                  type="number" 
+                  min={1}
+                  placeholder="e.g., 15 (optional)"
+                  value={scrapeConfig.min_duration_days ?? ''} 
+                  onChange={(e) => setScrapeConfig(s => ({...s, min_duration_days: e.target.value ? parseInt(e.target.value, 10) : undefined}))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Only scrape ads that have been running for at least this many days. Leave empty to include all ads.
+                </p>
+              </div>
+              <div>
                 <Label>Date Range</Label>
                 <div className="flex gap-2">
                   <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(s=>({...s, date_from: e.target.value}))} className="bg-card border-border flex-1" />
@@ -845,6 +1083,196 @@ export default function CompetitorsPage() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowClearAllDialog(false)}>Cancel</Button>
               <Button variant="destructive" onClick={performClearAllAds} disabled={clearAllLoading}>{clearAllLoading ? 'Clearing...' : 'Clear ALL Ads'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Scrape Task Progress</DialogTitle>
+              <DialogDescription>Task ID: {activeTaskId}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{taskStatus?.state || 'PENDING'}</Badge>
+                <span className="text-sm text-muted-foreground">{taskStatus?.status || ''}</span>
+              </div>
+              {taskStatus?.result && (
+                <div className="text-sm">
+                  <div>Total ads scraped: {taskStatus.result.total_ads_scraped ?? taskStatus.result?.database_stats?.total_processed ?? 0}</div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Scrape Dialog */}
+        <Dialog open={showBulkScrapeDialog} onOpenChange={setShowBulkScrapeDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Bulk Scrape Competitors ({selectedIds.length} selected)</DialogTitle>
+              <DialogDescription>
+                Configure scraping parameters for all selected competitors. Each competitor will be scraped with the same settings.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                  <Label>Countries</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                      {COUNTRY_OPTIONS.map(country => (
+                          <div key={country.value} className="flex items-center space-x-2">
+                              <Checkbox
+                                  id={`bulk-country-${country.value}`}
+                                  checked={bulkScrapeConfig.countries.includes(country.value)}
+                                  onCheckedChange={() => toggleBulkCountry(country.value)}
+                              />
+                              <Label htmlFor={`bulk-country-${country.value}`}>{country.label}</Label>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="bulk_max_pages">Max Pages per Competitor</Label>
+                  <Input 
+                    id="bulk_max_pages" 
+                    type="number" 
+                    value={bulkScrapeConfig.max_pages} 
+                    onChange={(e) => setBulkScrapeConfig(s => ({...s, max_pages: parseInt(e.target.value, 10) || 1}))} 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bulk_delay">Delay Between Requests (seconds)</Label>
+                  <Input 
+                    id="bulk_delay" 
+                    type="number" 
+                    value={bulkScrapeConfig.delay_between_requests} 
+                    onChange={(e) => setBulkScrapeConfig(s => ({...s, delay_between_requests: parseInt(e.target.value, 10) || 1}))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="bulk_status">Ad Status</Label>
+                <Select value={bulkScrapeConfig.active_status} onValueChange={(v)=> setBulkScrapeConfig(s=>({...s, active_status: v as 'active' | 'inactive' | 'all'}))}>
+                  <SelectTrigger id="bulk_status" className="bg-card border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="bulk_min_days">Minimum Days Running</Label>
+                <Input 
+                  id="bulk_min_days" 
+                  type="number" 
+                  min={1}
+                  placeholder="e.g., 15 (optional)"
+                  value={bulkScrapeConfig.min_duration_days ?? ''} 
+                  onChange={(e) => setBulkScrapeConfig(s => ({...s, min_duration_days: e.target.value ? parseInt(e.target.value, 10) : undefined}))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Only scrape ads that have been running for at least this many days. Leave empty to include all ads.
+                </p>
+              </div>
+              <div>
+                <Label>Date Range (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input type="date" value={bulkScrapeConfig.date_from || ''} onChange={(e)=> setBulkScrapeConfig(s=>({...s, date_from: e.target.value}))} className="bg-card border-border flex-1" />
+                  <span className="self-center">-</span>
+                  <Input type="date" value={bulkScrapeConfig.date_to || ''} onChange={(e)=> setBulkScrapeConfig(s=>({...s, date_to: e.target.value}))} className="bg-card border-border flex-1" />
+                </div>
+              </div>
+              <div className="bg-muted p-3 rounded-lg">
+                <p className="text-sm font-medium mb-2">Selected Competitors:</p>
+                <div className="text-xs text-muted-foreground">
+                  {competitors.data
+                    .filter(c => selectedIds.includes(c.id))
+                    .map(c => c.name)
+                    .join(', ')}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkScrapeDialog(false)}>Cancel</Button>
+              <Button onClick={startBulkScrape} disabled={bulkScrapeLoading} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
+                {bulkScrapeLoading ? 'Starting...' : `Start Bulk Scraping (${selectedIds.length})`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Status Dialog */}
+        <Dialog open={showBulkStatusDialog} onOpenChange={setShowBulkStatusDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Bulk Scraping Progress</DialogTitle>
+              <DialogDescription>
+                {activeBulkTaskIds.length} tasks running
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {bulkTaskStatus && (
+                <>
+                  <div className="grid grid-cols-5 gap-4 text-center">
+                    <div className="bg-muted p-3 rounded">
+                      <div className="text-2xl font-bold">{bulkTaskStatus.summary.total_tasks}</div>
+                      <div className="text-xs text-muted-foreground">Total</div>
+                    </div>
+                    <div className="bg-blue-500/20 p-3 rounded">
+                      <div className="text-2xl font-bold text-blue-400">{bulkTaskStatus.summary.pending}</div>
+                      <div className="text-xs text-muted-foreground">Pending</div>
+                    </div>
+                    <div className="bg-yellow-500/20 p-3 rounded">
+                      <div className="text-2xl font-bold text-yellow-400">{bulkTaskStatus.summary.progress}</div>
+                      <div className="text-xs text-muted-foreground">In Progress</div>
+                    </div>
+                    <div className="bg-green-500/20 p-3 rounded">
+                      <div className="text-2xl font-bold text-green-400">{bulkTaskStatus.summary.success}</div>
+                      <div className="text-xs text-muted-foreground">Completed</div>
+                    </div>
+                    <div className="bg-red-500/20 p-3 rounded">
+                      <div className="text-2xl font-bold text-red-400">{bulkTaskStatus.summary.failure}</div>
+                      <div className="text-xs text-muted-foreground">Failed</div>
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Task ID</th>
+                          <th className="text-left p-2">Status</th>
+                          <th className="text-left p-2">Progress</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bulkTaskStatus.tasks.map((task, index) => (
+                          <tr key={task.task_id} className="border-b">
+                            <td className="p-2 font-mono text-xs">{task.task_id.substring(0, 8)}...</td>
+                            <td className="p-2">
+                              <Badge variant={
+                                task.state === 'SUCCESS' ? 'default' : 
+                                task.state === 'FAILURE' ? 'destructive' : 
+                                'secondary'
+                              }>
+                                {task.state}
+                              </Badge>
+                            </td>
+                            <td className="p-2 text-xs text-muted-foreground">{task.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkStatusDialog(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

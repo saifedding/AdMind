@@ -30,6 +30,7 @@ import {
   Type,
   Clock
 } from "lucide-react";
+import { UnifiedAnalysisPanel } from "@/components/unified-analysis";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -548,71 +549,62 @@ export default function AdIntelligencePage() {
                         </TabsList>
 
                         <TabsContent value="analysis" className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            {analysis ? (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="md:col-span-2 space-y-6">
-                                            {/* Executive Summary */}
-                                            <Card className="border-neutral-800 bg-gradient-to-br from-neutral-900/50 to-neutral-900/20">
-                                                <CardHeader className="flex flex-row items-center justify-between">
-                                                    <CardTitle className="text-lg flex items-center">
-                                                        <RefreshCw className="w-4 h-4 mr-2 text-primary" /> 
-                                                        AI Summary
-                                                    </CardTitle>
-                                                    <Button variant="ghost" size="sm" onClick={handleRegenerate} className="text-xs text-neutral-500 hover:text-white">
-                                                        Regenerate
-                                                    </Button>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <p className="text-neutral-300 leading-relaxed text-base">{analysis.summary || "No summary available."}</p>
-                                                </CardContent>
-                                            </Card>
-                                            
-                                            {/* Scores */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Card className="border-neutral-800 bg-neutral-900/30">
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-sm font-medium text-neutral-400">Hook Score</CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <div className="flex items-baseline gap-2">
-                                                            <span className="text-4xl font-bold text-white">8.5</span>
-                                                            <span className="text-sm text-neutral-500">/ 10</span>
-                                                        </div>
-                                                        <div className="w-full bg-neutral-800 h-1.5 rounded-full mt-3 overflow-hidden">
-                                                            <div className="bg-primary h-full w-[85%]" />
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                                <Card className="border-neutral-800 bg-neutral-900/30">
-                                                    <CardHeader className="pb-2">
-                                                        <CardTitle className="text-sm font-medium text-neutral-400">Retention Score</CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <div className="flex items-baseline gap-2">
-                                                            <span className="text-4xl font-bold text-white">9.2</span>
-                                                            <span className="text-sm text-neutral-500">/ 10</span>
-                                                        </div>
-                                                        <div className="w-full bg-neutral-800 h-1.5 rounded-full mt-3 overflow-hidden">
-                                                            <div className="bg-green-500 h-full w-[92%]" />
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            </div>
+                            {adResult?.ad_id ? (
+                                <UnifiedAnalysisPanel 
+                                    adId={adResult.ad_id}
+                                    onAnalysisComplete={(analysisResult) => {
+                                        setAnalysis(analysisResult);
+                                        setActiveTab("analysis");
+                                    }}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 border-2 border-dashed border-neutral-800 rounded-xl bg-neutral-900/20">
+                                    <div className="w-16 h-16 bg-neutral-800/50 rounded-full flex items-center justify-center mb-4">
+                                        <Wand2 className="w-8 h-8 text-neutral-500" />
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-2 text-white">Analysis Not Available</h3>
+                                    <p className="text-neutral-400 max-w-md mb-6">
+                                        Please process an ad first to enable AI analysis.
+                                    </p>
+                                </div>
+                            )}
+                        </TabsContent>
 
-                                            {/* Transcript & VO */}
-                                            <Card className="border-neutral-800 bg-neutral-900/30">
-                                                <CardHeader>
-                                                    <CardTitle className="text-base flex items-center">
-                                                        <Mic className="w-4 h-4 mr-2 text-blue-400" /> 
-                                                        Audio Analysis
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="space-y-4">
-                                                    {analysis.transcript && (
-                                                        <div className="space-y-2">
-                                                            <h4 className="text-xs font-semibold text-neutral-500 uppercase">Transcript</h4>
-                                                            <div className="p-3 rounded-lg bg-neutral-950/50 border border-neutral-800 text-sm text-neutral-300 font-mono leading-relaxed max-h-32 overflow-y-auto">
+                        <TabsContent value="prompts" className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {analysis?.generation_prompts && analysis.generation_prompts.length > 0 ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold">Creative Prompts</h3>
+                                        <Badge variant="outline" className="border-neutral-700 text-neutral-300">
+                                            {analysis.generation_prompts.length} prompts
+                                        </Badge>
+                                    </div>
+                                    {analysis.generation_prompts.map((prompt, index) => (
+                                        <Card key={index} className="border-neutral-800 bg-neutral-900/30">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-sm font-medium text-neutral-400">
+                                                    Prompt {index + 1}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <p className="text-neutral-300 text-sm leading-relaxed">{prompt}</p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <Type className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+                                    <p className="text-neutral-500">No creative prompts available. Run analysis first.</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="veo" className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="text-center py-8">
+                                <Film className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+                                <p className="text-neutral-500">Veo video generation coming soon...</p>
+                            </div>
                                                                 {analysis.transcript}
                                                             </div>
                                                         </div>

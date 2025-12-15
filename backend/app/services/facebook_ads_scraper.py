@@ -141,9 +141,9 @@ class FacebookAdsScraperConfig:
 class FacebookAdsScraperService:
     """Service for scraping Facebook Ads Library data"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, min_duration_days: Optional[int] = None):
         self.db = db
-        self.enhanced_extractor = EnhancedAdExtractionService(db)
+        self.enhanced_extractor = EnhancedAdExtractionService(db, min_duration_days)
 
     def build_variables(self, config: FacebookAdsScraperConfig) -> str:
         """Build the variables JSON object from config"""

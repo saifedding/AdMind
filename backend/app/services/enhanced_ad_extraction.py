@@ -19,10 +19,11 @@ class EnhancedAdExtractionService:
     
     EXTRACTION_VERSION = "1.0.0"
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, min_duration_days: Optional[int] = None):
         self.db = db
         self.logger = logging.getLogger(__name__)
         self.creative_comparison_service = CreativeComparisonService(db)
+        self.min_duration_days = min_duration_days
     
     def convert_timestamp_to_date(self, ts: Any) -> Optional[str]:
         """Converts a UNIX timestamp to a 'YYYY-MM-DD' formatted string."""
@@ -53,6 +54,17 @@ class EnhancedAdExtractionService:
         except (ValueError, TypeError) as e:
             logger.warning(f"Error calculating duration: start={start_date_str}, end={end_date_str}, error={e}")
             return None
+    
+    def meets_duration_requirement(self, start_date_str: Optional[str], end_date_str: Optional[str], is_active: bool = False) -> bool:
+        """Check if an ad meets the minimum duration requirement"""
+        if self.min_duration_days is None:
+            return True  # No duration filter applied
+        
+        duration = self.calculate_duration_days(start_date_str, end_date_str, is_active)
+        if duration is None:
+            return False  # Can't calculate duration, exclude ad
+        
+        return duration >= self.min_duration_days
     
     def _generate_content_signature(self, ad_data: Dict) -> str:
         """
@@ -1061,7 +1073,8 @@ class EnhancedAdExtractionService:
             "new_ads_created": 0,
             "existing_ads_updated": 0,
             "errors": 0,
-            "competitors_processed": 0
+            "competitors_processed": 0,
+            "ads_filtered_by_duration": 0
         }
         
         try:
@@ -1082,6 +1095,27 @@ class EnhancedAdExtractionService:
                     for ad_data in ads_list:
                         try:
                             stats["total_ads_processed"] += 1
+                            
+                            # Check if ad meets duration requirement
+                            # Dates are stored in the meta section after processing
+                            meta = ad_data.get('meta', {})
+                            start_date = meta.get('start_date')
+                            end_date = meta.get('end_date')
+                            is_active = meta.get('is_active', False)
+                            ad_id = ad_data.get('ad_archive_id', 'unknown')
+                            
+                            if self.min_duration_days is not None:
+                                duration = self.calculate_duration_days(start_date, end_date, is_active)
+                                meets_req = self.meets_duration_requirement(start_date, end_date, is_active)
+                                
+                                self.logger.debug(f"Ad {ad_id}: start_date={start_date}, end_date={end_date}, is_active={is_active}, duration={duration}, min_required={self.min_duration_days}, meets_req={meets_req}")
+                                
+                                if not meets_req:
+                                    self.logger.debug(f"Ad {ad_id} filtered out: duration {duration} days < required {self.min_duration_days} days")
+                                    stats["ads_filtered_by_duration"] += 1
+                                    continue
+                                else:
+                                    self.logger.debug(f"Ad {ad_id} passed filter: duration {duration} days >= required {self.min_duration_days} days")
                             
                             # Create or update the ad
                             ad_obj, is_new = self._create_or_update_enhanced_ad(
@@ -1109,7 +1143,13 @@ class EnhancedAdExtractionService:
             
             # Commit all changes
             self.db.commit()
-            self.logger.info(f"Database save completed: {stats}")
+            
+            # Log summary including duration filtering
+            if self.min_duration_days is not None:
+                self.logger.info(f"Database save completed with duration filter ({self.min_duration_days} days): {stats}")
+                self.logger.info(f"Duration filtering: {stats['ads_filtered_by_duration']} ads filtered out, {stats['new_ads_created'] + stats['existing_ads_updated']} ads saved")
+            else:
+                self.logger.info(f"Database save completed: {stats}")
             
         except Exception as e:
             self.logger.error(f"Error saving to database: {e}")

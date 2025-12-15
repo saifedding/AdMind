@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        API_URL: http://api:8000
+    container_name: ads_frontend
+    environment:
+      - API_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=http://api:8000
+    ports:
+      - "3001:3000"
+    depends_on:
+      - api
+    networks:
+      - ads_network
+    restart: unless-stopped
+
+networks:
+  ads_network:
+    external: true

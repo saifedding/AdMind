@@ -13,12 +13,15 @@ from app.models.dto.ad_dto import (
     AdDetailResponseDTO,
     AdFilterParams,
     AdStatsResponseDTO,
-    AdResponseDTO
+    AdResponseDTO,
+    AnalyzeVideoRequest,
+    AnalyzeVideoResponse
 )
 from app.models import Ad, TaskStatus, Competitor
 from app.services.facebook_ads_scraper import FacebookAdsScraperService, FacebookAdsScraperConfig
 from app.services.ingestion_service import DataIngestionService
 from app.services.enhanced_ad_extraction import EnhancedAdExtractionService
+from app.services.unified_analysis_service import UnifiedAnalysisService
 
 # Import Celery tasks
 from app.tasks.basic_tasks import add_together, test_task, long_running_task
@@ -166,6 +169,45 @@ async def get_ads(
     except Exception as e:
         logger.error(f"Error fetching ads: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching ads: {str(e)}")
+
+@router.get("/ads/analysis-status")
+async def get_analysis_status(
+    ad_ids: Optional[str] = Query(None, description="Comma-separated list of ad IDs"),
+    ad_set_id: Optional[int] = Query(None, description="Ad set ID to check all ads in set"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get analysis status for multiple ads using the unified analysis system.
+    
+    Args:
+        ad_ids: Comma-separated list of ad IDs
+        ad_set_id: Ad set ID to check all ads in set
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        parsed_ad_ids = None
+        if ad_ids:
+            try:
+                parsed_ad_ids = [int(id.strip()) for id in ad_ids.split(',') if id.strip()]
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid ad_ids format")
+        
+        status = analysis_service.get_ads_with_analysis_status(
+            ad_ids=parsed_ad_ids,
+            ad_set_id=ad_set_id
+        )
+        
+        return {
+            "success": True,
+            "analysis_status": status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting analysis status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting analysis status: {str(e)}")
 
 @router.get("/ads/{ad_id}", response_model=AdDetailResponseDTO)
 async def get_ad(
@@ -747,6 +789,10 @@ async def download_from_ad_library(
         try:
             existing_ad = db.query(Ad).filter(Ad.ad_archive_id == ad_archive_id).first()
             if existing_ad:
+                # content_modification: Ensure existing downloaded ads are marked as favorite
+                if not existing_ad.is_favorite:
+                    existing_ad.is_favorite = True
+                    db.commit()
                 ad_id = existing_ad.id
             elif comp:
                 from datetime import datetime
@@ -755,6 +801,7 @@ async def download_from_ad_library(
                     ad_archive_id=ad_archive_id,
                     date_found=datetime.utcnow(),
                     raw_data=ad_data,
+                    is_favorite=True, # Mark as favorite by default for downloaded ads
                 )
                 db.add(new_ad)
                 db.commit()
@@ -851,33 +898,6 @@ async def download_from_ad_library(
 # Analyze a video via Google Gemini
 # ========================================
 
-class AnalyzeVideoRequest(BaseModel):
-    ad_library_url: Optional[str] = None
-    ad_archive_id: Optional[str] = None
-    video_url: Optional[str] = None
-    prefer_hd: Optional[bool] = True
-    cache: Optional[bool] = True
-    ad_id: Optional[int] = None
-    persist: Optional[bool] = False
-
-class AnalyzeVideoResponse(BaseModel):
-    success: bool
-    used_video_url: str
-    transcript: Optional[str] = None
-    beats: Optional[List[Dict[str, Any]]] = None
-    summary: Optional[str] = None
-    text_on_video: Optional[str] = None
-    voice_over: Optional[str] = None
-    storyboard: Optional[List[str]] = None
-    generation_prompts: Optional[List[str]] = None
-    strengths: Optional[List[str]] = None
-    recommendations: Optional[List[str]] = None
-    raw: Optional[Dict[str, Any]] = None
-    message: str
-    generated_at: Optional[str] = None
-    source: Optional[str] = None
-    token_usage: Optional[Dict[str, Any]] = None
-    cost: Optional[Dict[str, Any]] = None
 
 class AnalysisHistoryItem(BaseModel):
     """Single analysis history item"""
@@ -1164,6 +1184,7 @@ class FollowupQuestionRequest(BaseModel):
 class RegenerateAnalysisRequest(BaseModel):
     instruction: str
     version_number: Optional[int] = None
+    generate_prompts: Optional[bool] = True
 
 
 class FollowupAnswerResponse(BaseModel):
@@ -1257,14 +1278,21 @@ async def regenerate_ad_analysis(
                 "text_on_video": {"type": "string"},
                 "voice_over": {"type": "string"},
                 "storyboard": {"type": "array", "items": {"type": "string"}},
-                "generation_prompts": {"type": "array", "items": {"type": "string"}},
                 "strengths": {"type": "array", "items": {"type": "string"}},
                 "recommendations": {"type": "array", "items": {"type": "string"}}
             }
         }
+        
+        # Add generation_prompts only if requested
+        if request.generate_prompts:
+             response_schema["properties"]["generation_prompts"] = {"type": "array", "items": {"type": "string"}}
 
         # Build regeneration prompt with custom instruction
-        prompt = f"{request.instruction}\n\nOutput JSON only matching this JSON Schema:\n{json.dumps(response_schema)}"
+        prompt_text = request.instruction
+        if request.generate_prompts is False:
+             prompt_text += "\n\nCRITICAL INSTRUCTION: DO NOT GENERATE ANY PROMPTS. Focus ONLY on the analysis (transcript, beats, summary, etc.). Do NOT include 'generation_prompts' in the JSON output."
+        
+        prompt = f"{prompt_text}\n\nOutput JSON only matching this JSON Schema:\n{json.dumps(response_schema)}"
 
         # Call Gemini with cached content
         import requests
@@ -1295,6 +1323,9 @@ async def regenerate_ad_analysis(
         # Parse JSON response
         try:
             new_analysis = json.loads(text_part)
+            # Failsafe: remove generation_prompts if not requested
+            if request.generate_prompts is False and isinstance(new_analysis, dict):
+                 new_analysis.pop("generation_prompts", None)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="Failed to parse Gemini response as JSON")
         
@@ -1607,7 +1638,7 @@ async def analyze_video_from_library(
                 text_on_video=cached_obj.get('text_on_video'),
                 voice_over=cached_obj.get('voice_over'),
                 storyboard=cached_obj.get('storyboard'),
-                generation_prompts=cached_obj.get('generation_prompts'),
+                generation_prompts=(cached_obj.get('generation_prompts') if (request.generate_prompts is True) else []),
                 strengths=cached_obj.get('strengths'),
                 recommendations=cached_obj.get('recommendations'),
                 raw=cached_obj.get('raw'),
@@ -1625,6 +1656,7 @@ async def analyze_video_from_library(
             logger.info("Gemini-first: analyzing via URL (no upload for Facebook; Instagram handled inside service)")
             analysis = ai.generate_transcript_and_analysis(
                 video_url=video_url,
+                generate_prompts=request.generate_prompts,
             )
 
             from datetime import datetime
@@ -1671,6 +1703,20 @@ async def analyze_video_from_library(
                     
                     db.commit()
                     logger.info(f"Persisted analysis with cache metadata for ad {request.ad_id}")
+
+                    # Link DownloadHistory to this ad if a matching archive exists
+                    try:
+                        from app.models.download_history import DownloadHistory
+                        from app.models import Ad
+                        ad_obj = db.query(Ad).filter(Ad.id == request.ad_id).first()
+                        if ad_obj and ad_obj.ad_archive_id:
+                            dh = db.query(DownloadHistory).filter(DownloadHistory.ad_archive_id == ad_obj.ad_archive_id).first()
+                            if dh:
+                                dh.ad_id = request.ad_id
+                                db.commit()
+                                logger.info(f"Linked DownloadHistory {dh.id} to ad {request.ad_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to link DownloadHistory to ad {request.ad_id}: {e}")
                 except Exception as e:
                     logger.error(f"Failed to persist analysis for ad {request.ad_id}: {e}")
                     db.rollback()
@@ -1684,7 +1730,7 @@ async def analyze_video_from_library(
                 text_on_video=analysis.get('text_on_video') if isinstance(analysis, dict) else None,
                 voice_over=analysis.get('voice_over') if isinstance(analysis, dict) else None,
                 storyboard=analysis.get('storyboard') if isinstance(analysis, dict) else None,
-                generation_prompts=analysis.get('generation_prompts') if isinstance(analysis, dict) else None,
+                generation_prompts=(analysis.get('generation_prompts') if (isinstance(analysis, dict) and (request.generate_prompts is True)) else []),
                 strengths=analysis.get('strengths') if isinstance(analysis, dict) else None,
                 recommendations=analysis.get('recommendations') if isinstance(analysis, dict) else None,
                 raw=analysis if isinstance(analysis, dict) else None,
@@ -1694,6 +1740,8 @@ async def analyze_video_from_library(
                 token_usage=analysis.get('token_usage') if isinstance(analysis, dict) else None,
                 cost=analysis.get('cost') if isinstance(analysis, dict) else None,
             )
+        except RuntimeError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             logger.warning(f"Gemini URL analysis failed, will download and use Gemini upload path: {e}")
 
@@ -1791,7 +1839,10 @@ async def analyze_video_from_library(
             # Upload and analyze with Google (Gemini upload path)
             from app.services.google_ai_service import GoogleAIService
             import time
-            ai = GoogleAIService()
+            try:
+                ai = GoogleAIService()
+            except RuntimeError as e:
+                raise HTTPException(status_code=400, detail=str(e))
             
             # Upload and analyze with automatic key rotation
             start_analysis = time.time()
@@ -1799,6 +1850,7 @@ async def analyze_video_from_library(
             analysis = ai.generate_transcript_and_analysis(
                 file_path=tmp_path,
                 video_url=video_url,
+                generate_prompts=request.generate_prompts,
             )
             analysis_time = time.time() - start_analysis
             logger.info(f"✓ Gemini analysis completed in {analysis_time:.2f}s")
@@ -2029,20 +2081,23 @@ async def trigger_ad_analysis(
     try:
         video_url = payload.get('video_url')
         custom_instruction = payload.get('custom_instruction')
+        generate_prompts = payload.get('generate_prompts', True)
+        use_task = payload.get('use_task', False)
+        instagram_url = payload.get('instagram_url')
         
         # If video_url provided, analyze directly (for Instagram or custom analysis)
         # Otherwise check if ad exists in database
         
         # If custom instruction provided, analyze directly (synchronous)
-        if custom_instruction and video_url:
+        if custom_instruction and video_url and not use_task:
             from app.services.google_ai_service import GoogleAIService
             import tempfile
             import os
             import requests as httpx
-            from datetime import datetime
             
             logger.info(f"Analyzing video with custom instruction for ad {ad_id}")
             logger.info(f"Video URL: {video_url}")
+            logger.info(f"Generate Prompts: {generate_prompts}")
             
             # First: try OpenRouter primary directly with the original video_url (no download)
             try:
@@ -2051,6 +2106,7 @@ async def trigger_ad_analysis(
                 analysis = ai.generate_transcript_and_analysis(
                     video_url=video_url,
                     custom_instruction=custom_instruction,
+                    generate_prompts=generate_prompts,
                 )
 
                 generated_at_val = datetime.utcnow().isoformat()
@@ -2070,7 +2126,7 @@ async def trigger_ad_analysis(
                     text_on_video=parsed_analysis.get('text_on_video'),
                     voice_over=parsed_analysis.get('voice_over'),
                     storyboard=parsed_analysis.get('storyboard'),
-                    generation_prompts=parsed_analysis.get('generation_prompts', []),
+                    generation_prompts=(parsed_analysis.get('generation_prompts', []) if (generate_prompts is True) else []),
                     strengths=parsed_analysis.get('strengths'),
                     recommendations=parsed_analysis.get('recommendations'),
                     raw=analysis.get('raw') if isinstance(analysis, dict) else None,
@@ -2078,6 +2134,8 @@ async def trigger_ad_analysis(
                     generated_at=generated_at_val,
                     source="openrouter"
                 )
+            except RuntimeError as e:
+                raise HTTPException(status_code=400, detail=str(e))
             except Exception as e:
                 logger.warning(f"OpenRouter primary (custom) failed, will download and use Gemini fallback: {e}")
 
@@ -2114,7 +2172,7 @@ async def trigger_ad_analysis(
                     download_time = time.time() - start_download
                     if result.returncode != 0:
                         logger.error(f"yt-dlp failed: {result.stderr}")
-                        raise Exception(f"Failed to download Instagram video: {result.stderr}")
+                        raise HTTPException(status_code=502, detail=f"Failed to download Instagram video: {result.stderr}")
                     
                     # Check if file was actually downloaded and has content
                     if not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
@@ -2136,7 +2194,12 @@ async def trigger_ad_analysis(
                 
                 # Upload and analyze with custom instruction (with automatic key rotation)
                 import time
-                ai = GoogleAIService()
+                try:
+                    ai = GoogleAIService()
+                except RuntimeError as e:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.unlink(tmp_path)
+                    raise HTTPException(status_code=400, detail=str(e))
                 
                 # Analyze with custom instruction (will upload with each key automatically).
                 # Pass video_url so OpenRouter fallback can fetch the video by URL.
@@ -2165,7 +2228,7 @@ async def trigger_ad_analysis(
                     text_on_video=analysis.get('text_on_video'),
                     voice_over=analysis.get('voice_over'),
                     storyboard=analysis.get('storyboard'),
-                    generation_prompts=analysis.get('generation_prompts', []),
+                    generation_prompts=(analysis.get('generation_prompts', []) if (generate_prompts is True) else []),
                     strengths=analysis.get('strengths'),
                     recommendations=analysis.get('recommendations'),
                     raw=analysis if isinstance(analysis, dict) else None,
@@ -2175,6 +2238,10 @@ async def trigger_ad_analysis(
                     token_usage=analysis.get('token_usage'),
                     cost=analysis.get('cost'),
                 )
+            except httpx.exceptions.RequestException as e:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                raise HTTPException(status_code=502, detail=str(e))
             except Exception as e:
                 if tmp_path and os.path.exists(tmp_path):
                     os.unlink(tmp_path)
@@ -2184,16 +2251,105 @@ async def trigger_ad_analysis(
 
 
         if video_url:
-            # Use the analyze_video_from_library endpoint logic, but force persist=True
-            # so that the analysis (including gemini_file_uri and chat history) is
-            # saved into AdAnalysis and can be reused for follow-up chat.
+            if use_task:
+                try:
+                    task = celery_app.send_task(
+                        'app.tasks.ai_analysis_tasks.analyze_ad_video_task',
+                        args=[ad_id, video_url, custom_instruction, instagram_url, generate_prompts]
+                    )
+                    return AnalyzeVideoResponse(
+                        success=True,
+                        used_video_url=video_url,
+                        transcript="Task queued",
+                        beats=[],
+                        summary=None,
+                        text_on_video=None,
+                        voice_over=None,
+                        storyboard=[],
+                        generation_prompts=[],
+                        strengths=[],
+                        recommendations=[],
+                        raw={"task_id": task.id},
+                        message=f"Analysis queued as task {task.id}",
+                        generated_at=datetime.utcnow().isoformat(),
+                        source="celery-task",
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to queue analysis task: {e}")
+                    raise HTTPException(status_code=500, detail=f"Failed to queue analysis task: {e}")
+            # Resolve proper ad_id if provided ID is an archive ID
+            real_ad_id = ad_id
+            ad_obj = db.query(Ad).filter(Ad.id == ad_id).first()
+            if not ad_obj:
+                # Try finding by archive ID
+                ad_obj_by_archive = db.query(Ad).filter(Ad.ad_archive_id == str(ad_id)).first()
+                if ad_obj_by_archive:
+                    real_ad_id = ad_obj_by_archive.id
+                else:
+                    # If we can't find the ad, we should try to create it if it looks like an archive ID
+                    # or handle it gracefully. For now, if we can't find it, we pass ad_id=None
+                    # implies we won't persist to a non-existent ID.
+                    # But the code below sets persist=True. 
+                    
+                    # Attempt to fetch/create if it looks like a valid archive ID (digits only, length > 10)
+                    if str(ad_id).isdigit() and len(str(ad_id)) > 10:
+                        try:
+                            # Try to fetch from FB library to create the ad
+                            from app.services.media_refresh_service import MediaRefreshService
+                            refresh_service = MediaRefreshService(db)
+                            ad_data = refresh_service.fetch_ad_from_facebook(str(ad_id))
+                            if ad_data:
+                                # Create/Ensure ad exists
+                                # Re-use the logic from download_from_ad_library or similar
+                                # For brevity, we'll just check if we can create a basic placeholder
+                                pass 
+                        except Exception as e:
+                            logger.warning(f"Failed to auto-resolve ad data for {ad_id}: {e}")
+
+                    # Fallback: if we still don't have a valid real_ad_id in DB, ensure we don't crash on FK
+
+                    # Fallback: if we still don't have a valid real_ad_id in DB, ensure we don't crash on FK
+                    # We will set persist=False if we can't resolve to a valid local ID
+                    logger.warning(f"Could not resolve valid local Ad ID for {ad_id}. Analysis will not be persisted to Ad table.")
+                    real_ad_id = None
+
+            # Use the analyze_video_from_library endpoint logic
+            # Use the analyze_video_from_library endpoint logic
             from app.routers.ads import AnalyzeVideoRequest
             request = AnalyzeVideoRequest(
                 video_url=video_url,
-                ad_id=ad_id,
+                ad_id=real_ad_id,
                 cache=False,   # Don't use cache for direct analysis
-                persist=True,  # Persist analysis so /ads/{ad_id}/analysis/followup works
+                persist=True if real_ad_id else False,  # Only persist if we have a valid attached ad
+                generate_prompts=generate_prompts,
             )
+
+            # Check for async mode
+            async_mode = payload.get('async', False) or payload.get('async_mode', False)
+            if async_mode:
+                from app.database import SessionLocal
+                
+                async def background_analyze_wrapper(req: AnalyzeVideoRequest):
+                    # specific session for background task
+                    bg_db = SessionLocal()
+                    try:
+                        logger.info(f"Starting background analysis for ad {req.ad_id} / {req.video_url}")
+                        await analyze_video_from_library(req, bg_db)
+                        logger.info(f"Background analysis completed for ad {req.ad_id}")
+                    except Exception as e:
+                        logger.error(f"Background analysis failed: {e}")
+                    finally:
+                        bg_db.close()
+
+                background_tasks.add_task(background_analyze_wrapper, request)
+                return AnalyzeVideoResponse(
+                    success=True,
+                    used_video_url=video_url,
+                    message="Analysis started in background. Please check history later.",
+                    source="background-task",
+                    transcript="Analysis running in background..."
+                )
+
             # Call the existing analyze function
             return await analyze_video_from_library(request, db)
         
@@ -2601,33 +2757,39 @@ async def get_task_status(task_id: str):
         from app.celery_worker import celery_app
         
         task_result = AsyncResult(task_id, app=celery_app)
-        
-        if task_result.state == 'PENDING':
+        # Safely retrieve state
+        try:
+            state = task_result.state
+        except Exception as e:
+            logger.warning(f"Failed to read state for task {task_id}: {e}")
+            state = 'FAILURE'
+
+        if state == 'PENDING':
             response = {
                 'task_id': task_id,
-                'state': task_result.state,
+                'state': state,
                 'status': 'Task is pending...'
             }
-        elif task_result.state == 'SUCCESS':
+        elif state == 'SUCCESS':
             response = {
                 'task_id': task_id,
-                'state': task_result.state,
+                'state': state,
                 'result': task_result.result,
                 'status': 'Task completed successfully'
             }
-        elif task_result.state == 'FAILURE':
+        elif state == 'FAILURE':
             response = {
                 'task_id': task_id,
-                'state': task_result.state,
+                'state': state,
                 'error': str(task_result.info),
                 'status': 'Task failed'
             }
         else:
             response = {
                 'task_id': task_id,
-                'state': task_result.state,
-                'info': task_result.info,
-                'status': f'Task is {task_result.state.lower()}'
+                'state': state,
+                'info': str(task_result.info) if task_result.info is not None else None,
+                'status': f'Task is {str(state).lower()}'
             }
         
         return response
@@ -2635,6 +2797,39 @@ async def get_task_status(task_id: str):
     except Exception as e:
         logger.error(f"Error fetching task status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching task status: {str(e)}") 
+
+@router.get("/ads/analysis/tasks/{task_id}/status")
+async def get_ad_analysis_task_status(task_id: str):
+    try:
+        from celery.result import AsyncResult
+        from app.celery_worker import celery_app
+
+        task_result = AsyncResult(task_id, app=celery_app)
+        # Safely read state
+        try:
+            state = task_result.state
+        except Exception as e:
+            logger.warning(f"Failed to read state for analysis task {task_id}: {e}")
+            state = 'FAILURE'
+        
+        response = {
+            "task_id": task_id,
+            "state": state,
+        }
+        
+        if state == 'SUCCESS':
+            response['result'] = task_result.result
+        elif state == 'FAILURE':
+            response['error'] = str(task_result.info)
+        else:
+            # PENDING, STARTED, RETRY, etc.
+            # info might be exception or progress dict
+            response['info'] = str(task_result.info) if task_result.info is not None else None
+                
+        return response
+    except Exception as e:
+        logger.error(f"Error fetching ad analysis task status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching task status: {str(e)}")
 
 def _run_facebook_ads_scraper_task(
     task_id: str,
@@ -2890,6 +3085,7 @@ class DownloadHistoryItem(BaseModel):
     prompt_count: int = 0
     veo_video_count: int = 0
     merge_count: int = 0
+    has_analysis: bool = False
 
 class DownloadHistoryResponse(BaseModel):
     """Paginated download history response"""
@@ -3062,6 +3258,14 @@ async def get_download_history(
                     MergedVideo.ad_id == item.ad_id
                 ).count()
             
+            has_analysis_flag = False
+            if item.ad_id:
+                current_exists = db.query(AdAnalysis).filter(
+                    AdAnalysis.ad_id == item.ad_id,
+                    AdAnalysis.is_current == 1
+                ).first()
+                has_analysis_flag = current_exists is not None
+
             history_items.append(DownloadHistoryItem(
                 id=item.id,
                 ad_id=item.ad_id,
@@ -3080,7 +3284,8 @@ async def get_download_history(
                 analysis_count=analysis_count,
                 prompt_count=prompt_count,
                 veo_video_count=veo_video_count,
-                merge_count=merge_count
+                merge_count=merge_count,
+                has_analysis=has_analysis_flag
             ))
         
         return DownloadHistoryResponse(
@@ -3118,3 +3323,499 @@ async def delete_download_history(
         logger.error(f"Error deleting download history: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting download history: {str(e)}")
+
+# ========================================
+# Unified Analysis System Endpoints
+# ========================================
+
+class UnifiedAnalysisRequest(BaseModel):
+    """Request model for unified analysis"""
+    video_url: Optional[str] = None
+    custom_instruction: Optional[str] = None
+    generate_prompts: bool = True
+    force_reanalyze: bool = False
+
+class UnifiedAnalysisResponse(BaseModel):
+    """Response model for unified analysis"""
+    success: bool
+    analysis_id: Optional[int] = None
+    ad_id: int
+    transcript: Optional[str] = None
+    summary: Optional[str] = None
+    beats: List[Dict[str, Any]] = Field(default_factory=list)
+    storyboard: List[Any] = Field(default_factory=list)  # Can be strings or dicts
+    generation_prompts: List[str] = Field(default_factory=list)
+    strengths: List[str] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+    hook_score: Optional[float] = None
+    overall_score: Optional[float] = None
+    target_audience: Optional[str] = None
+    content_themes: List[str] = Field(default_factory=list)
+    text_on_video: Optional[str] = None
+    voice_over: Optional[str] = None
+    custom_instruction: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    cost: Optional[Any] = None  # Can be float or dict
+    raw: Optional[Dict[str, Any]] = None
+    message: str
+    source: str = "unified_service"
+
+class AdSetAnalysisResponse(BaseModel):
+    """Response model for ad set analysis"""
+    success: bool
+    ad_set_id: int
+    representative_ad_id: int
+    analysis: UnifiedAnalysisResponse
+    applied_to_ads: List[int] = Field(default_factory=list)
+    message: str
+
+class AnalysisHistoryResponse(BaseModel):
+    """Response model for analysis history"""
+    success: bool
+    ad_id: int
+    history: List[Dict[str, Any]] = Field(default_factory=list)
+
+class AnalysisStatusResponse(BaseModel):
+    """Response model for analysis status"""
+    success: bool
+    analysis_status: Dict[int, bool] = Field(default_factory=dict)
+
+class UnifiedAnalysisTaskResponse(BaseModel):
+    """Response model for unified analysis task"""
+    success: bool
+    task_id: str
+    ad_id: int
+    message: str
+    source: str = "celery-task"
+    estimated_time: int = 60
+
+@router.post("/ads/{ad_id}/unified-analyze", response_model=UnifiedAnalysisTaskResponse)
+async def unified_analyze_ad(
+    ad_id: int,
+    request: UnifiedAnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Analyze an ad using the unified analysis system with Celery background task.
+    
+    This endpoint dispatches a background task and returns immediately with a task_id.
+    Use the task status endpoint to poll for completion.
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        result = analysis_service.analyze_ad(
+            ad_id=ad_id,
+            video_url=request.video_url,
+            custom_instruction=request.custom_instruction,
+            generate_prompts=request.generate_prompts,
+            force_reanalyze=request.force_reanalyze
+        )
+        
+        return UnifiedAnalysisTaskResponse(
+            success=result['success'],
+            task_id=result['task_id'],
+            ad_id=ad_id,
+            message=result['message'],
+            source=result['source'],
+            estimated_time=result.get('estimated_time', 60)
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error dispatching unified analysis for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start analysis: {str(e)}")
+
+class UnifiedAdSetAnalysisTaskResponse(BaseModel):
+    """Response model for unified ad set analysis task"""
+    success: bool
+    task_id: str
+    ad_set_id: int
+    representative_ad_id: int
+    message: str
+    source: str = "celery-task"
+    estimated_time: int = 60
+
+@router.post("/ad-sets/{ad_set_id}/unified-analyze", response_model=UnifiedAdSetAnalysisTaskResponse)
+async def unified_analyze_ad_set(
+    ad_set_id: int,
+    request: UnifiedAnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Analyze an entire ad set using the unified analysis system with Celery background task.
+    
+    This endpoint dispatches a background task and returns immediately with a task_id.
+    Use the task status endpoint to poll for completion.
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        result = analysis_service.analyze_ad_set(
+            ad_set_id=ad_set_id,
+            custom_instruction=request.custom_instruction,
+            generate_prompts=request.generate_prompts,
+            force_reanalyze=request.force_reanalyze
+        )
+        
+        return UnifiedAdSetAnalysisTaskResponse(
+            success=result['success'],
+            task_id=result['task_id'],
+            ad_set_id=ad_set_id,
+            representative_ad_id=result['representative_ad_id'],
+            message=result['message'],
+            source=result['source'],
+            estimated_time=result.get('estimated_time', 60)
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error dispatching unified analysis for ad set {ad_set_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start ad set analysis: {str(e)}")
+
+@router.get("/ads/{ad_id}/unified-analysis", response_model=UnifiedAnalysisResponse)
+async def get_unified_analysis(
+    ad_id: int,
+    version: Optional[int] = Query(None, description="Specific version number"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get analysis for an ad using the unified analysis system.
+    
+    Args:
+        ad_id: ID of the ad
+        version: Optional specific version number
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        result = analysis_service.get_ad_analysis(ad_id, version)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Analysis not found for this ad")
+        
+        return UnifiedAnalysisResponse(
+            success=result['success'],
+            analysis_id=result.get('analysis_id'),
+            ad_id=ad_id,
+            transcript=result.get('transcript'),
+            summary=result.get('summary'),
+            beats=result.get('beats', []),
+            storyboard=result.get('storyboard', []),
+            generation_prompts=result.get('generation_prompts', []),
+            strengths=result.get('strengths', []),
+            recommendations=result.get('recommendations', []),
+            hook_score=result.get('hook_score'),
+            overall_score=result.get('overall_score'),
+            target_audience=result.get('target_audience'),
+            content_themes=result.get('content_themes', []),
+            text_on_video=result.get('text_on_video'),
+            voice_over=result.get('voice_over'),
+            custom_instruction=result.get('custom_instruction'),
+            token_usage=result.get('token_usage'),
+            cost=result.get('cost'),
+            raw=result.get('raw'),
+            message=result.get('message', 'Analysis retrieved successfully'),
+            source=result.get('source', 'unified_service')
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting unified analysis for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving analysis: {str(e)}")
+
+@router.get("/ads/{ad_id}/analysis-history", response_model=AnalysisHistoryResponse)
+async def get_unified_analysis_history(
+    ad_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get analysis history for an ad using the unified analysis system.
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        history = analysis_service.get_analysis_history(ad_id)
+        
+        return AnalysisHistoryResponse(
+            success=True,
+            ad_id=ad_id,
+            history=history
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting analysis history for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving analysis history: {str(e)}")
+
+@router.post("/ads/{ad_id}/regenerate-analysis", response_model=UnifiedAnalysisTaskResponse)
+async def regenerate_unified_analysis(
+    ad_id: int,
+    request: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """
+    Regenerate analysis for an ad with custom instruction using the unified analysis system.
+    Returns a task ID for polling completion.
+    """
+    try:
+        instruction = request.get('instruction', '')
+        generate_prompts = request.get('generate_prompts', True)
+        
+        if not instruction:
+            raise HTTPException(status_code=400, detail="Instruction is required for regeneration")
+        
+        analysis_service = UnifiedAnalysisService(db)
+        
+        result = analysis_service.regenerate_analysis(
+            ad_id=ad_id,
+            instruction=instruction,
+            generate_prompts=generate_prompts
+        )
+        
+        return UnifiedAnalysisTaskResponse(
+            success=result['success'],
+            task_id=result['task_id'],
+            ad_id=ad_id,
+            message=result['message'],
+            source=result['source'],
+            estimated_time=result.get('estimated_time', 60)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error regenerating analysis for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error regenerating analysis: {str(e)}")
+
+@router.delete("/ads/{ad_id}/unified-analysis")
+async def delete_unified_analysis(
+    ad_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete all analysis for an ad using the unified analysis system.
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        success = analysis_service.delete_analysis(ad_id)
+        
+        if success:
+            return {
+                "success": True,
+                "ad_id": ad_id,
+                "message": "Analysis deleted successfully"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete analysis")
+            
+    except Exception as e:
+        logger.error(f"Error deleting unified analysis for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting analysis: {str(e)}")
+
+@router.get("/ads/{ad_id}/performance-insights")
+async def get_performance_insights(
+    ad_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get performance insights and recommendations for an ad.
+    
+    Returns enhanced analysis data including performance predictions,
+    competitive analysis, and optimization suggestions.
+    """
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        # Get the current analysis
+        analysis = analysis_service.get_ad_analysis(ad_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="No analysis found for this ad")
+        
+        # Get the ad details
+        ad = db.query(Ad).filter(Ad.id == ad_id).first()
+        if not ad:
+            raise HTTPException(status_code=404, detail="Ad not found")
+        
+        # Calculate performance insights
+        insights = {
+            "performance_score": analysis.get('overall_score', 0),
+            "hook_effectiveness": analysis.get('hook_score', 0),
+            "engagement_prediction": _calculate_engagement_prediction(analysis),
+            "optimization_potential": _calculate_optimization_potential(analysis),
+            "competitive_position": _assess_competitive_position(ad, analysis),
+            "recommendations": _generate_recommendations(analysis),
+            "performance_category": _categorize_performance(analysis.get('overall_score', 0)),
+            "strengths": analysis.get('strengths', []),
+            "improvement_areas": analysis.get('recommendations', [])
+        }
+        
+        return {
+            "success": True,
+            "ad_id": ad_id,
+            "insights": insights,
+            "analysis_date": analysis.get('created_at'),
+            "message": "Performance insights generated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting performance insights for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating insights: {str(e)}")
+
+def _calculate_engagement_prediction(analysis: Dict[str, Any]) -> float:
+    """Calculate predicted engagement score based on analysis data."""
+    base_score = analysis.get('overall_score', 0)
+    hook_score = analysis.get('hook_score', 0)
+    
+    # Simple algorithm - can be enhanced with ML models
+    engagement_score = (base_score * 0.6 + hook_score * 0.4)
+    
+    # Boost for strong content themes
+    themes = analysis.get('content_themes', [])
+    if len(themes) >= 3:
+        engagement_score += 0.5
+    
+    # Boost for clear target audience
+    if analysis.get('target_audience'):
+        engagement_score += 0.3
+    
+    return min(10.0, max(0.0, engagement_score))
+
+def _calculate_optimization_potential(analysis: Dict[str, Any]) -> float:
+    """Calculate how much the ad can be optimized."""
+    current_score = analysis.get('overall_score', 0)
+    recommendations_count = len(analysis.get('recommendations', []))
+    
+    # More recommendations = higher optimization potential
+    potential = min(10.0, (10 - current_score) + (recommendations_count * 0.5))
+    return max(0.0, potential)
+
+def _assess_competitive_position(ad: Ad, analysis: Dict[str, Any]) -> str:
+    """Assess competitive position based on scores."""
+    overall_score = analysis.get('overall_score', 0)
+    
+    if overall_score >= 8.5:
+        return "Market Leader"
+    elif overall_score >= 7.0:
+        return "Strong Performer"
+    elif overall_score >= 5.5:
+        return "Average Performer"
+    elif overall_score >= 4.0:
+        return "Below Average"
+    else:
+        return "Needs Improvement"
+
+def _generate_recommendations(analysis: Dict[str, Any]) -> List[str]:
+    """Generate smart recommendations based on analysis."""
+    recommendations = []
+    
+    hook_score = analysis.get('hook_score', 0)
+    overall_score = analysis.get('overall_score', 0)
+    
+    if hook_score < 6:
+        recommendations.append("Improve opening hook to capture attention faster")
+    
+    if overall_score < 7:
+        recommendations.append("Enhance overall creative quality and messaging clarity")
+    
+    if not analysis.get('target_audience'):
+        recommendations.append("Define clearer target audience for better relevance")
+    
+    themes = analysis.get('content_themes', [])
+    if len(themes) < 2:
+        recommendations.append("Incorporate more diverse content themes for broader appeal")
+    
+    return recommendations
+
+def _categorize_performance(score: float) -> str:
+    """Categorize performance based on overall score."""
+    if score >= 8.5:
+        return "Excellent"
+    elif score >= 7.0:
+        return "Good"
+    elif score >= 5.5:
+        return "Average"
+    elif score >= 4.0:
+        return "Poor"
+    else:
+        return "Very Poor"
+    try:
+        analysis_service = UnifiedAnalysisService(db)
+        
+        success = analysis_service.delete_analysis(ad_id)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete analysis")
+        
+        return {
+            "success": True,
+            "ad_id": ad_id,
+            "message": "Analysis deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting unified analysis for ad {ad_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting analysis: {str(e)}")
+
+
+
+class TaskStatusResponse(BaseModel):
+    """Response model for task status"""
+    task_id: str
+    state: str
+    status: Optional[str] = None
+    progress: Optional[int] = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+
+
+@router.get("/tasks/{task_id}/status", response_model=TaskStatusResponse)
+async def get_unified_task_status(
+    task_id: str
+):
+    """
+    Get the status of a unified analysis Celery task.
+    
+    This endpoint allows polling for task completion and retrieving results.
+    """
+    try:
+        from app.celery_worker import celery_app
+        
+        # Get task result from Celery
+        task_result = celery_app.AsyncResult(task_id)
+        
+        response = TaskStatusResponse(
+            task_id=task_id,
+            state=task_result.state,
+            status=task_result.status,
+            progress=None,
+            result=None,
+            error=None
+        )
+        
+        if task_result.state == 'PENDING':
+            response.status = 'Task is waiting to be processed'
+        elif task_result.state == 'PROGRESS':
+            response.status = 'Task is being processed'
+            if hasattr(task_result.info, 'get'):
+                response.progress = task_result.info.get('progress', 0)
+        elif task_result.state == 'SUCCESS':
+            response.status = 'Task completed successfully'
+            response.result = task_result.result
+        elif task_result.state == 'FAILURE':
+            response.status = 'Task failed'
+            response.error = str(task_result.info)
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error getting task status for {task_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting task status: {str(e)}")

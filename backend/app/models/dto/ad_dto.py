@@ -333,6 +333,9 @@ class AdResponseDTO(BaseModel):
     
     # AI Analysis (optional)
     analysis: Optional[AdAnalysisResponseDTO] = Field(None, description="AI analysis data")
+    # Convenience flags for UI
+    is_analyzed: Optional[bool] = Field(None, description="Whether this ad has current analysis")
+    analysis_summary: Optional[str] = Field(None, description="Short summary from current analysis")
     
     # New fields to match frontend_payload_final.json
     meta: Optional[AdMeta] = Field(None, description="Meta information about the ad")
@@ -539,4 +542,35 @@ class AdStatsResponseDTO(BaseModel):
                 "last_updated": "2023-09-01T10:15:00Z"
             }
         }
-    } 
+    }
+
+
+class AnalyzeVideoRequest(BaseModel):
+    ad_library_url: Optional[str] = None
+    ad_archive_id: Optional[str] = None
+    video_url: Optional[str] = None
+    prefer_hd: Optional[bool] = True
+    cache: Optional[bool] = True
+    ad_id: Optional[int] = None
+    persist: Optional[bool] = False
+    generate_prompts: Optional[bool] = True
+
+
+class AnalyzeVideoResponse(BaseModel):
+    success: bool
+    used_video_url: str
+    transcript: Optional[str] = None
+    beats: Optional[List[Dict[str, Any]]] = None
+    summary: Optional[str] = None
+    text_on_video: Optional[str] = None
+    voice_over: Optional[str] = None
+    storyboard: Optional[List[str]] = None
+    generation_prompts: Optional[List[str]] = None
+    strengths: Optional[List[str]] = None
+    recommendations: Optional[List[str]] = None
+    raw: Optional[Dict[str, Any]] = None
+    message: str
+    generated_at: Optional[str] = None
+    source: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    cost: Optional[Dict[str, Any]] = None

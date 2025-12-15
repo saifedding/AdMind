@@ -1,6 +1,28 @@
-// API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API Configuration with fallback options
+const getApiBaseUrl = (): string => {
+  // Priority order for API URL detection
+  const candidates = [
+    process.env.NEXT_PUBLIC_API_URL,
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://host.docker.internal:8000'
+  ].filter(Boolean);
+
+  return candidates[0] || 'http://localhost:8000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 export const API_PREFIX = '/api/v1';
+
+// Debug logging for API configuration
+if (typeof window !== 'undefined') {
+  console.log('🔗 API Configuration:', {
+    API_BASE_URL,
+    API_PREFIX,
+    fullURL: API_BASE_URL + API_PREFIX,
+    env: process.env.NEXT_PUBLIC_API_URL || 'not set'
+  });
+}
 
 // API Response Types (matching backend DTOs)
 export interface ApiCompetitor {
@@ -189,6 +211,9 @@ export interface ApiAd {
   created_at: string;
   updated_at: string;
   analysis?: ApiAdAnalysis;
+  // Convenience flags
+  is_analyzed?: boolean;
+  analysis_summary?: string;
 
   // New fields based on AdCreate model
   meta?: ApiAdMeta;
@@ -297,6 +322,34 @@ class ApiClient {
 
   constructor() {
     this.baseURL = API_BASE_URL + API_PREFIX;
+    
+    // Test connection on client side only
+    if (typeof window !== 'undefined') {
+      this.testConnection();
+    }
+  }
+
+  // Test API connection
+  private async testConnection(): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseURL}/ads?page=1&page_size=1`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        console.log('✅ API Connection successful');
+      } else {
+        console.warn('⚠️ API Connection issue:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ API Connection failed:', error);
+      console.log('💡 Troubleshooting tips:');
+      console.log('1. Check if backend is running: docker ps');
+      console.log('2. Test backend directly: curl http://localhost:8000/api/v1/ads');
+      console.log('3. Check CORS settings in backend');
+      console.log('4. Verify port mapping in docker-compose.yml');
+    }
   }
 
   private async request<T>(
@@ -341,12 +394,27 @@ class ApiClient {
         throw error;
       }
 
-      // Handle network errors
-      throw new ApiError(
-        0,
-        `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error
-      );
+      // Enhanced network error handling with debugging info
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('🚨 API Request Failed:', {
+        url,
+        method: config.method || 'GET',
+        error: errorMessage,
+        baseURL: this.baseURL
+      });
+
+      // Provide helpful error messages based on common issues
+      let helpfulMessage = `Network error: ${errorMessage}`;
+      
+      if (errorMessage.includes('Failed to fetch')) {
+        helpfulMessage += '\n\n💡 This usually means:\n' +
+          '• Backend server is not running\n' +
+          '• Wrong API URL (check console for current URL)\n' +
+          '• CORS issues\n' +
+          '• Network connectivity problems';
+      }
+
+      throw new ApiError(0, helpfulMessage, error);
     }
   }
 
@@ -485,6 +553,18 @@ class ApiClient {
   async deleteAdAnalysis(adId: number): Promise<{ success: boolean; ad_id: number; message: string }> {
     return this.request<{ success: boolean; ad_id: number; message: string }>(`/ads/${adId}/analysis`, {
       method: 'DELETE',
+    });
+  }
+
+  async getAdAnalysisTaskStatus(taskId: string): Promise<any> {
+    return this.request<any>(`/ads/analysis/tasks/${taskId}/status`);
+  }
+
+  async analyzeAd(adId: number, data: { video_url?: string; use_task?: boolean; custom_instruction?: string; instagram_url?: string; generate_prompts?: boolean }): Promise<AnalyzeVideoResponse> {
+    return this.request<AnalyzeVideoResponse>(`/ads/${adId}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
     });
   }
 
@@ -762,10 +842,74 @@ class ApiClient {
       }
     );
   }
+
+  // Unified Analysis API methods
+  async unifiedAnalyzeAd(adId: number, request: UnifiedAnalysisRequest): Promise<UnifiedAnalysisTaskResponse> {
+    return this.request<UnifiedAnalysisTaskResponse>(`/ads/${adId}/unified-analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  }
+
+  async unifiedAnalyzeAdSet(adSetId: number, request: UnifiedAnalysisRequest): Promise<UnifiedAdSetAnalysisTaskResponse> {
+    return this.request<UnifiedAdSetAnalysisTaskResponse>(`/ad-sets/${adSetId}/unified-analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getUnifiedAnalysis(adId: number, version?: number): Promise<UnifiedAnalysisResponse> {
+    const params = version ? `?version=${version}` : '';
+    return this.request<UnifiedAnalysisResponse>(`/ads/${adId}/unified-analysis${params}`);
+  }
+
+  async getUnifiedAnalysisHistory(adId: number): Promise<AnalysisHistoryResponse> {
+    return this.request<AnalysisHistoryResponse>(`/ads/${adId}/analysis-history`);
+  }
+
+  async regenerateUnifiedAnalysis(adId: number, instruction: string, generatePrompts: boolean = true): Promise<UnifiedAnalysisTaskResponse> {
+    return this.request<UnifiedAnalysisTaskResponse>(`/ads/${adId}/regenerate-analysis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instruction, generate_prompts: generatePrompts }),
+    });
+  }
+
+  async deleteUnifiedAnalysis(adId: number): Promise<{ success: boolean; ad_id: number; message: string }> {
+    return this.request<{ success: boolean; ad_id: number; message: string }>(`/ads/${adId}/unified-analysis`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAnalysisStatus(adIds: number[]): Promise<AnalysisStatusResponse> {
+    const params = new URLSearchParams({ ad_ids: adIds.join(',') });
+    return this.request<AnalysisStatusResponse>(`/ads/analysis-status?${params.toString()}`);
+  }
+
+  async getUnifiedTaskStatus(taskId: string): Promise<TaskStatusResponse> {
+    return this.request<TaskStatusResponse>(`/tasks/${taskId}/status`);
+  }
+
+  async getPerformanceInsights(adId: number): Promise<PerformanceInsightsResponse> {
+    return this.request<PerformanceInsightsResponse>(`/ads/${adId}/performance-insights`);
+  }
 }
 
 // Create and export API client instance
 export const apiClient = new ApiClient();
+
+// Utility function to test API connection
+export const testApiConnection = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/ads?page=1&page_size=1`);
+    return response.ok;
+  } catch (error) {
+    console.error('API connection test failed:', error);
+    return false;
+  }
+};
 
 // Ads API wrapper for backwards compatibility
 export const adsApi = {
@@ -858,8 +1002,10 @@ export const adsApi = {
     return response.json() as Promise<VeoSessionResponse>;
   },
 
-  listVeoSessions: async (skip: number = 0, limit: number = 20) => {
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions?skip=${skip}&limit=${limit}`);
+  listVeoSessions: async (skip: number = 0, limit: number = 20, workflowType?: string) => {
+    const params = new URLSearchParams({ skip: skip.toString(), limit: limit.toString() });
+    if (workflowType) params.append('workflow_type', workflowType);
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/sessions?${params.toString()}`);
     if (!response.ok) throw new Error('Failed to list Veo sessions');
     return response.json() as Promise<VeoSessionResponse[]>;
   },
@@ -910,9 +1056,129 @@ export const adsApi = {
     if (!response.ok) throw new Error('Failed to get segment videos');
     return response.json() as Promise<VeoVideoResponse[]>;
   },
+
+  // Generic Task Status
+  getTaskStatus: async (taskId: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/scraping/tasks/${taskId}/status`);
+    if (!response.ok) throw new Error('Failed to get task status');
+    return response.json();
+  },
+
+  getAdAnalysisTaskStatus: async (taskId: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/ads/analysis/tasks/${taskId}/status`);
+    if (!response.ok) throw new Error('Failed to get ad analysis task status');
+    return response.json();
+  },
+
+  // Unified Analysis API
+  unifiedAnalyzeAd: (adId: number, request: UnifiedAnalysisRequest) => apiClient.unifiedAnalyzeAd(adId, request),
+  unifiedAnalyzeAdSet: (adSetId: number, request: UnifiedAnalysisRequest) => apiClient.unifiedAnalyzeAdSet(adSetId, request),
+  getUnifiedAnalysis: (adId: number, version?: number) => apiClient.getUnifiedAnalysis(adId, version),
+  getUnifiedAnalysisHistory: (adId: number) => apiClient.getUnifiedAnalysisHistory(adId),
+  regenerateUnifiedAnalysis: (adId: number, instruction: string, generatePrompts?: boolean) => apiClient.regenerateUnifiedAnalysis(adId, instruction, generatePrompts),
+  deleteUnifiedAnalysis: (adId: number) => apiClient.deleteUnifiedAnalysis(adId),
+  getAnalysisStatus: (adIds: number[]) => apiClient.getAnalysisStatus(adIds),
+  getUnifiedTaskStatus: (taskId: string) => apiClient.getUnifiedTaskStatus(taskId),
+
+  // Image-to-Video API
+  uploadImageForVideo,
+  generateVideoFromImages,
 };
 
 export default apiClient;
+
+// Unified Analysis Types
+export type UnifiedAnalysisRequest = {
+  video_url?: string;
+  custom_instruction?: string;
+  generate_prompts?: boolean;
+  force_reanalyze?: boolean;
+};
+
+export type UnifiedAnalysisResponse = {
+  success: boolean;
+  analysis_id?: number;
+  ad_id: number;
+  transcript?: string;
+  summary?: string;
+  beats?: Array<{
+    start?: string;
+    end?: string;
+    summary: string;
+    why_it_works?: string;
+  }>;
+  storyboard?: Array<any>;
+  generation_prompts?: string[];
+  strengths?: string[];
+  recommendations?: string[];
+  hook_score?: number;
+  overall_score?: number;
+  target_audience?: string;
+  content_themes?: string[];
+  text_on_video?: string;
+  voice_over?: string;
+  custom_instruction?: string;
+  token_usage?: any;
+  cost?: number;
+  raw?: any;
+  message: string;
+  source?: string;
+};
+
+export type UnifiedAnalysisTaskResponse = {
+  success: boolean;
+  task_id: string;
+  ad_id: number;
+  message: string;
+  source?: string;
+  estimated_time?: number;
+};
+
+export type UnifiedAdSetAnalysisTaskResponse = {
+  success: boolean;
+  task_id: string;
+  ad_set_id: number;
+  representative_ad_id: number;
+  applied_to_ads: number[];
+  message: string;
+  source?: string;
+  estimated_time?: number;
+  analysis?: UnifiedAnalysisResponse;
+};
+
+export type AnalysisStatusResponse = {
+  success: boolean;
+  analysis_status: Record<number, boolean>;
+};
+
+export type TaskStatusResponse = {
+  task_id: string;
+  state: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE';
+  status?: string;
+  progress?: number;
+  result?: any;
+  error?: string;
+};
+
+export type PerformanceInsights = {
+  performance_score: number;
+  hook_effectiveness: number;
+  engagement_prediction: number;
+  optimization_potential: number;
+  competitive_position: string;
+  recommendations: string[];
+  performance_category: string;
+  strengths: string[];
+  improvement_areas: string[];
+};
+
+export type PerformanceInsightsResponse = {
+  success: boolean;
+  ad_id: number;
+  insights: PerformanceInsights;
+  analysis_date?: string;
+  message: string;
+};
 
 // Types for Download from Library
 export type DownloadFromLibraryRequest = {
@@ -1022,6 +1288,7 @@ export type FollowupAnswerResponse = {
 export type RegenerateAnalysisRequest = {
   instruction: string;
   version_number?: number;
+  generate_prompts?: boolean;
 };
 
 export type VeoGenerateResponse = {
@@ -1129,6 +1396,11 @@ export type VeoSessionCreate = {
   video_model_key?: string;
   style_template_id?: number;
   custom_instruction?: string;
+  image_path?: string;
+  voice_energy?: string;
+  language?: string;
+  accent?: string;
+  workflow_type?: string; // 'text-to-video' or 'image-to-video'
 };
 
 export type VeoVideoResponse = {
@@ -1279,6 +1551,7 @@ export interface CompetitorScrapeRequest {
   active_status?: 'active' | 'inactive' | 'all';
   date_from?: string; // YYYY-MM-DD
   date_to?: string;   // YYYY-MM-DD
+  min_duration_days?: number;
 }
 
 export interface TaskResponse {
@@ -1481,12 +1754,92 @@ export async function getScrapingStatus(taskId: string): Promise<any> {
   return response.json();
 }
 
+// Bulk scrape competitor ads
+export interface BulkScrapeRequest {
+  competitor_ids: number[];
+  countries?: string[];
+  max_pages?: number;
+  delay_between_requests?: number;
+  active_status?: 'active' | 'inactive' | 'all';
+  date_from?: string;
+  date_to?: string;
+  min_duration_days?: number;
+}
+
+export interface BulkTaskResponse {
+  task_ids: string[];
+  successful_starts: number;
+  failed_starts: number;
+  message: string;
+  details: Array<{
+    competitor_id: number;
+    competitor_name: string;
+    page_id?: string;
+    task_id?: string;
+    status: 'started' | 'failed' | 'skipped';
+    reason: string;
+  }>;
+}
+
+export async function bulkScrapeCompetitors(scrapeRequest: BulkScrapeRequest): Promise<BulkTaskResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/bulk/scrape`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(scrapeRequest),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to start bulk scraping: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get bulk scraping status
+export interface BulkScrapingStatus {
+  summary: {
+    total_tasks: number;
+    pending: number;
+    progress: number;
+    success: number;
+    failure: number;
+    overall_status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'mixed';
+  };
+  tasks: Array<{
+    task_id: string;
+    state: string;
+    status: string;
+    result?: any;
+    error?: string;
+    info?: any;
+  }>;
+}
+
+export async function getBulkScrapingStatus(taskIds: string[]): Promise<BulkScrapingStatus> {
+  const taskIdsParam = taskIds.join(',');
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/bulk/scrape/status?task_ids=${encodeURIComponent(taskIdsParam)}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bulk scraping status: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 // Get competitor ads
 export async function getCompetitorAds(competitorId: number, params: {
   page?: number;
   page_size?: number;
   is_active?: boolean;
   has_analysis?: boolean;
+  min_duration_days?: number;
 }) {
   const query = new URLSearchParams();
 
@@ -1494,6 +1847,7 @@ export async function getCompetitorAds(competitorId: number, params: {
   if (params.page_size) query.append('page_size', params.page_size.toString());
   if (params.is_active !== undefined) query.append('is_active', params.is_active.toString());
   if (params.has_analysis !== undefined) query.append('has_analysis', params.has_analysis.toString());
+  if (params.min_duration_days !== undefined) query.append('min_duration_days', params.min_duration_days.toString());
 
   const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/${competitorId}/ads?${query.toString()}`, {
     headers: {
@@ -1621,7 +1975,7 @@ export interface ImageUploadResponse {
 
 export interface VideoFromImagesRequest {
   start_image_media_id: string;
-  end_image_media_id: string;
+  end_image_media_id?: string;
   prompt: string;
   aspect_ratio?: 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_SQUARE';
   video_model_key?: string;
@@ -1642,6 +1996,32 @@ export interface VideoFromImagesResponse {
   serving_base_uri?: string;
   is_looped?: boolean;
   error?: string;
+}
+
+// VeoGeneration save/list (types defined above, using those)
+
+export async function saveVeoGeneration(request: VeoGenerationCreate): Promise<VeoGenerationResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/generations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to save Veo generation: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function listVeoGenerations(): Promise<VeoGenerationResponse[]> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/settings/ai/veo/generations`, {
+    method: 'GET',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to load Veo generations: ${response.statusText}`);
+  }
+  return response.json();
 }
 
 export async function uploadImageForVideo(request: ImageUploadRequest): Promise<ImageUploadResponse> {

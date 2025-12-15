@@ -55,6 +55,7 @@ class OpenRouterApiKey(BaseModel):
 
 class AiModelSetting(BaseModel):
     model_name: str
+    model_config = {"protected_namespaces": ()}
 
 
 class CacheEnabledSetting(BaseModel):
@@ -631,6 +632,10 @@ class CreativeBriefGenerateRequest(BaseModel):
     character: Optional[Dict[str, Any]] = None
     model: Optional[str] = "gemini-2.0-flash-exp"
     style_template_id: Optional[int] = None  # Apply saved video style
+    image_path: Optional[str] = None
+    voice_energy: Optional[str] = None
+    language: Optional[str] = None
+    accent: Optional[str] = None
 
 
 class CreativeBriefVariation(BaseModel):
@@ -873,7 +878,11 @@ async def generate_creative_briefs(payload: CreativeBriefGenerateRequest, db: Se
             styles=payload.styles,
             character=payload.character,
             model=payload.model or "gemini-2.0-flash-exp",
-            saved_style=saved_style
+            saved_style=saved_style,
+            image_path=payload.image_path,
+            voice_energy=payload.voice_energy,
+            language=payload.language,
+            accent=payload.accent
         )
         
         if result.get("success"):
@@ -2179,6 +2188,11 @@ class VeoSessionCreate(BaseModel):
     video_model_key: str = "veo_3_1_t2v_portrait"
     style_template_id: Optional[int] = None
     custom_instruction: Optional[str] = None
+    image_path: Optional[str] = None
+    voice_energy: Optional[str] = None
+    language: Optional[str] = None
+    accent: Optional[str] = None
+    workflow_type: Optional[str] = None
 
 
 class VeoVideoResponse(BaseModel):
@@ -2191,6 +2205,7 @@ class VeoVideoResponse(BaseModel):
     seed: Optional[int]
     generation_time_seconds: Optional[int]
     created_at: str
+    model_config = {"protected_namespaces": ()}
 
 
 class VeoSegmentResponse(BaseModel):
@@ -2248,6 +2263,7 @@ async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(ge
             aspect_ratio=payload.aspect_ratio,
             video_model_key=payload.video_model_key,
             style_template_id=payload.style_template_id,
+            workflow_type=payload.workflow_type,
             session_metadata={"character": payload.character} if payload.character else None
         )
         db.add(session)
@@ -2269,7 +2285,12 @@ async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(ge
             model=payload.model,
             saved_style=saved_style,
             aspect_ratio=payload.aspect_ratio,
-            custom_instruction=payload.custom_instruction
+            custom_instruction=payload.custom_instruction,
+            image_path=payload.image_path,
+            voice_energy=payload.voice_energy,
+            language=payload.language,
+            accent=payload.accent,
+            workflow_type=payload.workflow_type,
         )
         
         if not result.get("success"):
@@ -2349,11 +2370,18 @@ async def create_veo_session(payload: VeoSessionCreate, db: Session = Depends(ge
 async def list_veo_sessions(
     skip: int = 0,
     limit: int = 20,
+    workflow_type: Optional[str] = None,
     db: Session = Depends(get_db)
 ) -> List[VeoSessionResponse]:
-    """List all Veo script sessions with pagination."""
+    """List all Veo script sessions with pagination. Optionally filter by workflow_type."""
     try:
-        sessions = db.query(VeoScriptSession).order_by(
+        query = db.query(VeoScriptSession)
+        
+        # Filter by workflow_type if provided
+        if workflow_type:
+            query = query.filter(VeoScriptSession.workflow_type == workflow_type)
+        
+        sessions = query.order_by(
             VeoScriptSession.created_at.desc()
         ).offset(skip).limit(limit).all()
         
@@ -2901,7 +2929,7 @@ class ImageUploadResponse(BaseModel):
 class VideoFromImagesRequest(BaseModel):
     """Request model for generating video from two images."""
     start_image_media_id: str
-    end_image_media_id: str
+    end_image_media_id: Optional[str] = None
     prompt: str
     aspect_ratio: Optional[str] = "VIDEO_ASPECT_RATIO_PORTRAIT"
     video_model_key: Optional[str] = "veo_3_1_i2v_s_fast_portrait_ultra_fl"

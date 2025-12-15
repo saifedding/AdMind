@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/dashboard";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace("localhost", "127.0.0.1");
 const API_PREFIX = "/api/v1";
 
 interface AISystemInstruction {

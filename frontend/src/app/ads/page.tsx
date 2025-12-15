@@ -412,7 +412,7 @@ function AdsPageInner() {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.avgScore.toFixed(1)}</div>
+          <div className="text-2xl font-bold">{stats.avgScore?.toFixed(1) || '0.0'}</div>
           <p className="text-xs text-muted-foreground">Performance Rating</p>
         </CardContent>
       </Card>

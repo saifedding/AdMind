@@ -85,7 +85,14 @@ def scrape_facebook_ads_task(
         db.close()
 
 
-@celery_app.task(bind=True, name="facebook_ads_scraper.scrape_competitor_ads")
+@celery_app.task(
+    bind=True, 
+    name="facebook_ads_scraper.scrape_competitor_ads",
+    autoretry_for=(Exception,),
+    retry_kwargs={'max_retries': 3, 'countdown': 60},
+    retry_backoff=True,
+    retry_jitter=True
+)
 def scrape_competitor_ads_task(
     self,
     competitor_page_id: str,
@@ -95,7 +102,10 @@ def scrape_competitor_ads_task(
     active_status: str = "ALL",
     ad_type: str = "ALL",
     media_type: str = "ALL",
-    save_json: bool = False
+    save_json: bool = False,
+    date_from: str = None,
+    date_to: str = None,
+    min_duration_days: int = None
 ):
     """
     Celery task for scraping ads from a specific competitor page
@@ -109,6 +119,9 @@ def scrape_competitor_ads_task(
         ad_type: Filter by ad type (ALL, POLITICAL_AND_ISSUE_ADS, etc.)
         media_type: Filter by media type (ALL, VIDEO, IMAGE, etc.)
         save_json: Whether to save raw JSON responses to file
+        date_from: Start date for filtering ads (YYYY-MM-DD)
+        date_to: End date for filtering ads (YYYY-MM-DD)
+        min_duration_days: Minimum number of days an ad should be running
     """
     task_id = self.request.id
     logger.info(f"Starting competitor ads scraping task: {task_id} for page ID: {competitor_page_id}")
@@ -117,6 +130,17 @@ def scrape_competitor_ads_task(
     db = next(get_db())
     
     try:
+        # Update task state to show initialization
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Initializing',
+                'progress': 0,
+                'competitor_page_id': competitor_page_id,
+                'message': 'Checking competitor and setting up scraper...'
+            }
+        )
+        
         # Check if competitor exists in database
         from app.models.competitor import Competitor
         competitor = db.query(Competitor).filter_by(page_id=competitor_page_id).first()
@@ -130,8 +154,19 @@ def scrape_competitor_ads_task(
                 'completion_time': datetime.utcnow().isoformat()
             }
         
+        # Update progress
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Setting up scraper',
+                'progress': 10,
+                'competitor_page_id': competitor_page_id,
+                'message': f'Configuring scraper for {competitor.name}...'
+            }
+        )
+        
         # Create scraper service
-        scraper_service = FacebookAdsScraperService(db)
+        scraper_service = FacebookAdsScraperService(db, min_duration_days)
         
         # Create scraper configuration for specific competitor
         scraper_config = FacebookAdsScraperConfig(
@@ -143,11 +178,41 @@ def scrape_competitor_ads_task(
             active_status=active_status,
             ad_type=ad_type,
             media_type=media_type,
-            save_json=save_json
+            save_json=save_json,
+            start_date=date_from,
+            end_date=date_to
             )
+        
+        # Update progress before scraping
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Scraping ads',
+                'progress': 20,
+                'competitor_page_id': competitor_page_id,
+                'message': f'Starting to scrape ads from {competitor.name}...',
+                'config': {
+                    'countries': countries,
+                    'max_pages': max_pages,
+                    'active_status': active_status
+                }
+            }
+        )
             
         # Scrape ads
         all_ads_data, all_json_responses, enhanced_data, stats = scraper_service.scrape_ads(scraper_config)
+        
+        # Update progress after scraping
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Processing results',
+                'progress': 80,
+                'competitor_page_id': competitor_page_id,
+                'message': f'Processing {stats.get("total_processed", 0)} ads...',
+                'ads_found': stats.get("total_processed", 0)
+            }
+        )
             
         # Save raw JSON responses to file if requested
         if save_json and all_json_responses:
@@ -174,15 +239,36 @@ def scrape_competitor_ads_task(
         logger.info(f"Competitor ads scraping task completed successfully. Results: {results}")
         return results
     except Exception as e:
-        logger.error(f"Error in competitor ads scraping task: {str(e)}")
+        logger.error(f"Error in competitor ads scraping task (attempt {self.request.retries + 1}): {str(e)}")
         db.rollback()
-        return {
-            'success': False,
-            'error': str(e),
-            'competitor_page_id': competitor_page_id,
-            'task_id': task_id,
-            'completion_time': datetime.utcnow().isoformat()
-        }
+        
+        # Check if we should retry
+        if self.request.retries < self.max_retries:
+            logger.info(f"Retrying task in 60 seconds (attempt {self.request.retries + 1}/{self.max_retries})")
+            # Update task state to show retry information
+            self.update_state(
+                state='RETRY',
+                meta={
+                    'current_retry': self.request.retries + 1,
+                    'max_retries': self.max_retries,
+                    'error': str(e),
+                    'next_retry_in': 60,
+                    'competitor_page_id': competitor_page_id
+                }
+            )
+            raise self.retry(countdown=60, exc=e)
+        else:
+            # Max retries reached, return failure
+            logger.error(f"Max retries ({self.max_retries}) reached for competitor {competitor_page_id}")
+            return {
+                'success': False,
+                'error': str(e),
+                'competitor_page_id': competitor_page_id,
+                'task_id': task_id,
+                'completion_time': datetime.utcnow().isoformat(),
+                'retries_attempted': self.request.retries,
+                'max_retries': self.max_retries
+            }
     finally:
         db.commit()
         db.close()

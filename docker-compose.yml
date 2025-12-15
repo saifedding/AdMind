@@ -31,7 +31,7 @@ services:
 
   # FastAPI Backend
   api:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ads_api
@@ -43,7 +43,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=${DEBUG:-true}
       - DEBUG_INSTAGRAM=${DEBUG_INSTAGRAM:-false}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
     ports:
       - "8000:8000"
     depends_on:
@@ -59,7 +59,7 @@ services:
 
   # Celery Worker (for background tasks)
   worker:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ads_worker
@@ -81,7 +81,7 @@ services:
 
   # Celery Beat (for scheduled tasks)
   beat:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ads_beat
@@ -106,6 +106,7 @@ volumes:
   redis_data:
   backend_cache:
 
+
 networks:
   ads_network:
-    driver: bridge 
+    driver: bridge

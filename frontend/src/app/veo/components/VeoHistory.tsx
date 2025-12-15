@@ -11,9 +11,10 @@ import { toast } from 'sonner';
 interface VeoHistoryProps {
     onSelectSession: (session: VeoSessionResponse) => void;
     currentSessionId?: number;
+    workflowFilter?: 'text-to-video' | 'image-to-video' | 'all'; // Filter by workflow type
 }
 
-export function VeoHistory({ onSelectSession, currentSessionId }: VeoHistoryProps) {
+export function VeoHistory({ onSelectSession, currentSessionId, workflowFilter = 'all' }: VeoHistoryProps) {
     const [sessions, setSessions] = useState<VeoSessionResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -21,7 +22,9 @@ export function VeoHistory({ onSelectSession, currentSessionId }: VeoHistoryProp
     const loadSessions = async () => {
         try {
             setLoading(true);
-            const data = await adsApi.listVeoSessions(0, 50);
+            // Pass workflow filter to backend for server-side filtering
+            const filterParam = workflowFilter === 'all' ? undefined : workflowFilter;
+            const data = await adsApi.listVeoSessions(0, 50, filterParam);
             setSessions(data);
         } catch (error) {
             console.error('Failed to load sessions:', error);
@@ -33,7 +36,7 @@ export function VeoHistory({ onSelectSession, currentSessionId }: VeoHistoryProp
 
     useEffect(() => {
         loadSessions();
-    }, []);
+    }, [workflowFilter]); // Reload when filter changes
 
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation();

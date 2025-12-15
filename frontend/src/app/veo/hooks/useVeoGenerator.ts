@@ -78,6 +78,14 @@ export function useVeoGenerator() {
     const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState<number | null>(null);
     const [showStyleLibrary, setShowStyleLibrary] = useState(true);
 
+    // Image-to-Video state
+    const [uploadedImageFile, setUploadedImageFile] = useState<File | null>(null);
+    const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [voiceEnergy, setVoiceEnergy] = useState<string>('Professional');
+    const [language, setLanguage] = useState<string>('English');
+    const [accent, setAccent] = useState<string>('Neutral');
+
     // Load initial data
     useEffect(() => {
         loadAvailableStyles();
@@ -269,6 +277,10 @@ export function useVeoGenerator() {
                 video_model_key: selectedModel,
                 style_template_id: selectedStyleTemplateId || undefined,
                 custom_instruction: useCustomInstruction && customInstruction.trim() ? customInstruction.trim() : undefined,
+                image_path: uploadedImagePath || undefined,
+                voice_energy: voiceEnergy !== 'Professional' ? voiceEnergy : undefined,
+                language: language !== 'English' ? language : undefined,
+                accent: accent !== 'Neutral' ? accent : undefined,
             });
 
             // Store session
@@ -642,6 +654,45 @@ export function useVeoGenerator() {
         }
     };
 
+    // Image Upload Handler
+    const handleImageUpload = async (file: File) => {
+        setUploadingImage(true);
+        setUploadedImageFile(file);
+        try {
+            // Convert file to base64
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve, reject) => {
+                reader.onload = () => {
+                    const result = reader.result as string;
+                    resolve(result);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const base64 = await base64Promise;
+
+            // Upload to backend which will upload to Gemini
+            const response = await adsApi.uploadImageForVideo({ image_base64: base64, aspect_ratio: aspectRatio as any });
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to upload image');
+            }
+
+            // Store the file URI for use in generation
+            // Note: We're temporarily storing base64, but backend should return a path/URI
+            setUploadedImagePath(base64); // We'll use this in createVeoSession
+            toast.success('Image uploaded successfully!');
+        } catch (error: any) {
+            console.error('Image upload failed:', error);
+            toast.error('Image upload failed: ' + error.message);
+            setUploadedImageFile(null);
+            setUploadedImagePath(null);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const loadSession = (session: VeoSessionResponse) => {
         setScript(session.script);
         setSelectedStyles(session.selected_styles);
@@ -730,5 +781,13 @@ export function useVeoGenerator() {
         loadSession,
         useCustomInstruction, setUseCustomInstruction,
         customInstruction, setCustomInstruction,
+        // Image-to-Video state
+        uploadedImageFile, setUploadedImageFile,
+        uploadedImagePath,
+        uploadingImage,
+        handleImageUpload,
+        voiceEnergy, setVoiceEnergy,
+        language, setLanguage,
+        accent, setAccent,
     };
 }

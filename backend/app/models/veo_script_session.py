@@ -20,6 +20,7 @@ class VeoScriptSession(Base):
     aspect_ratio = Column(String, nullable=False)
     video_model_key = Column(String, nullable=False)  # Default video model for this session
     style_template_id = Column(Integer, nullable=True)
+    workflow_type = Column(String, nullable=True)  # "text-to-video" or "image-to-video"
     session_metadata = Column(JSON, nullable=True)  # Extra config like seed, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

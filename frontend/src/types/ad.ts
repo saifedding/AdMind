@@ -95,6 +95,9 @@ export interface Ad {
   // Relationships
   competitor?: Competitor;
   analysis?: AdAnalysis;
+  // Convenience flags
+  is_analyzed?: boolean;
+  analysis_summary?: string;
   
   // New fields for Ad Sets
   ad_set_id?: number;
@@ -112,6 +115,8 @@ export interface AdWithAnalysis extends Ad {
   ad_set_created_at?: string;
   ad_set_first_seen_date?: string;
   ad_set_last_seen_date?: string;
+  is_analyzed?: boolean;
+  analysis_summary?: string;
 }
 
 // Campaign type structure

@@ -19,10 +19,11 @@ export function VeoScriptInput({
     useCustomInstruction,
     setUseCustomInstruction,
     customInstruction,
-    setCustomInstruction
+    setCustomInstruction,
 }: VeoScriptInputProps) {
     return (
-        <div className="space-y-3 bg-slate-900/40 p-4 rounded-xl border border-slate-800/50 backdrop-blur-sm">
+        <div className="space-y-4 bg-slate-900/40 p-4 rounded-xl border border-slate-800/50 backdrop-blur-sm">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
                     <Settings2 className="w-4 h-4 text-purple-400" />
@@ -38,6 +39,8 @@ export function VeoScriptInput({
                     />
                 </div>
             </div>
+
+            {/* Script Input */}
             <div className={`grid grid-cols-1 ${useCustomInstruction ? 'lg:grid-cols-2' : ''} gap-4 transition-all duration-300`}>
                 <div className="space-y-3">
                     <Textarea

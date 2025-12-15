@@ -38,6 +38,7 @@ import {
   getCompetitorAds, 
   scrapeCompetitorAds,
   deleteCompetitor,
+  getScrapingStatus,
   type CompetitorDetail,
   type CompetitorScrapeRequest 
 } from '@/lib/api';
@@ -85,6 +86,7 @@ interface ScrapeConfig {
   active_status: 'active' | 'inactive' | 'all';
   date_from?: string; // YYYY-MM-DD
   date_to?: string;   // YYYY-MM-DD
+  min_duration_days?: number;
 }
 
 const COUNTRY_OPTIONS = [
@@ -118,6 +120,8 @@ export default function CompetitorDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [scrapeLoading, setScrapeLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [adsStatus, setAdsStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [minDurationDays, setMinDurationDays] = useState<number | undefined>(undefined);
   const [showScrapeDialog, setShowScrapeDialog] = useState(false);
   const [scrapeConfig, setScrapeConfig] = useState<ScrapeConfig>({
     countries: ['ALL'],
@@ -125,11 +129,33 @@ export default function CompetitorDetailPage() {
     delay_between_requests: 2,
     active_status: 'active',
   });
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<any>(null);
 
   useEffect(() => {
     loadCompetitor();
     loadAds();
   }, [competitorId, currentPage]);
+
+  useEffect(() => {
+    let timer: any;
+    const poll = async () => {
+      if (!activeTaskId) return;
+      try {
+        const s = await getScrapingStatus(activeTaskId);
+        setTaskStatus(s);
+        if (s.state !== 'PENDING' && s.state !== 'PROGRESS') {
+          clearInterval(timer);
+        }
+      } catch {}
+    };
+    if (activeTaskId) {
+      poll();
+      timer = setInterval(poll, 2000);
+    }
+    return () => { if (timer) clearInterval(timer); };
+  }, [activeTaskId]);
 
   const loadCompetitor = async () => {
     try {
@@ -149,7 +175,9 @@ export default function CompetitorDetailPage() {
       setAdsLoading(true);
       const data = await getCompetitorAds(competitorId, {
         page: currentPage,
-        page_size: 12
+        page_size: 12,
+        is_active: adsStatus === 'all' ? undefined : adsStatus === 'active',
+        min_duration_days: minDurationDays
       });
       setAds(data);
     } catch (err) {
@@ -172,6 +200,7 @@ export default function CompetitorDetailPage() {
         active_status: scrapeConfig.active_status,
         date_from: scrapeConfig.date_from,
         date_to: scrapeConfig.date_to,
+        min_duration_days: scrapeConfig.min_duration_days,
       };
       
       const result = await scrapeCompetitorAds(competitorId, scrapeRequest);
@@ -205,12 +234,17 @@ export default function CompetitorDetailPage() {
       // Save back to localStorage
       localStorage.setItem('scrapingTasks', JSON.stringify(tasks));
       
-      alert(`Scraping started successfully!\n\nTask ID: ${result.task_id}\nStatus: ${result.status}\n\nThis will take a few minutes. You can check the progress in the Tasks page.`);
+      setActiveTaskId(result.task_id);
+      setShowStatusDialog(true);
       
       setShowScrapeDialog(false);
       
       // Reload data after a short delay
       setTimeout(() => {
+        if (scrapeConfig.active_status === 'active') setAdsStatus('active');
+        else if (scrapeConfig.active_status === 'inactive') setAdsStatus('inactive');
+        else setAdsStatus('all');
+        setMinDurationDays(scrapeConfig.min_duration_days);
         loadCompetitor();
         loadAds();
       }, 3000);
@@ -329,8 +363,31 @@ export default function CompetitorDetailPage() {
               <p className="text-muted-foreground mt-1">
                 Competitor Analysis & Performance Insights
               </p>
+        </div>
+      </div>
+
+      {activeTaskId && (
+        <Card className="border-border">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RefreshCw className={`h-4 w-4 ${taskStatus?.state==='SUCCESS' ? '' : 'animate-spin'}`} />
+              <div>
+                <div className="text-sm font-semibold">Scraping task</div>
+                <div className="text-xs text-muted-foreground">{taskStatus?.state || 'PENDING'}{taskStatus?.status ? ` • ${taskStatus.status}` : ''}</div>
+              </div>
             </div>
-          </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="border-border" onClick={() => setShowStatusDialog(true)}>View Progress</Button>
+              {taskStatus?.state==='SUCCESS' && (
+                <Badge variant="default" className="bg-green-500/20 text-green-400">Completed</Badge>
+              )}
+              {taskStatus?.state==='FAILURE' && (
+                <Badge variant="destructive">Failed</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
           
           <div className="flex items-center gap-2">
             <Badge 
@@ -454,36 +511,51 @@ export default function CompetitorDetailPage() {
                       <Eye className="h-4 w-4 text-photon-400" />
                       <h3 className="text-lg font-semibold">Ad Status & Date Range</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Active Only Switch */}
-                      <div className="space-y-2 flex flex-col">
-                        <Label htmlFor="active_only">Active Ads Only</Label>
-                        <Select
-                          value={scrapeConfig.active_status}
-                          onValueChange={(value) => setScrapeConfig(prev => ({ ...prev, active_status: value as 'active' | 'inactive' | 'all'}))}
-                        >
-                          <SelectTrigger id="active_only" className="bg-card border-border">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active Only</SelectItem>
-                            <SelectItem value="inactive">Inactive Only</SelectItem>
-                            <SelectItem value="all">All</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">Choose which ads to scrape.</p>
-                      </div>
-                      {/* Date range inputs */}
-                      <div className="space-y-2">
-                        <Label>Date Range</Label>
-                        <div className="flex gap-2">
-                          <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_from: e.target.value}))} className="bg-card border-border flex-1" />
-                          <span className="self-center">-</span>
-                          <Input type="date" value={scrapeConfig.date_to || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_to: e.target.value}))} className="bg-card border-border flex-1" />
-                        </div>
-                        <p className="text-xs text-muted-foreground">Leave blank for no date filtering.</p>
-                      </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Active Only Switch */}
+                  <div className="space-y-2 flex flex-col">
+                    <Label htmlFor="active_only">Active Ads Only</Label>
+                    <Select
+                      value={scrapeConfig.active_status}
+                      onValueChange={(value) => setScrapeConfig(prev => ({ ...prev, active_status: value as 'active' | 'inactive' | 'all'}))}
+                    >
+                      <SelectTrigger id="active_only" className="bg-card border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active Only</SelectItem>
+                        <SelectItem value="inactive">Inactive Only</SelectItem>
+                        <SelectItem value="all">All</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Choose which ads to scrape.</p>
+                  </div>
+                  {/* Date range inputs */}
+                  <div className="space-y-2">
+                    <Label>Date Range</Label>
+                    <div className="flex gap-2">
+                      <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_from: e.target.value}))} className="bg-card border-border flex-1" />
+                      <span className="self-center">-</span>
+                      <Input type="date" value={scrapeConfig.date_to || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_to: e.target.value}))} className="bg-card border-border flex-1" />
                     </div>
+                    <p className="text-xs text-muted-foreground">Leave blank for no date filtering.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="min_duration_days">Minimum Days Running</Label>
+                    <Input
+                      id="min_duration_days"
+                      type="number"
+                      min="1"
+                      value={scrapeConfig.min_duration_days ?? ''}
+                      onChange={(e) => setScrapeConfig(prev => ({ ...prev, min_duration_days: e.target.value ? parseInt(e.target.value) : undefined }))}
+                      className="bg-card border-border"
+                    />
+                    <p className="text-xs text-muted-foreground">Show ads that ran at least this many days.</p>
+                  </div>
+                </div>
                   </div>
 
                   {/* Summary */}
@@ -598,13 +670,29 @@ export default function CompetitorDetailPage() {
           </TabsList>
           
           <TabsContent value="ads" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Ad Gallery</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Ad Gallery</h2>
+            <div className="flex items-center gap-2">
+              <Select value={adsStatus} onValueChange={(v)=> setAdsStatus(v as 'all'|'active'|'inactive')}>
+                <SelectTrigger className="w-40 bg-card border-border">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="min_days" className="text-sm">Min days</Label>
+                <Input id="min_days" type="number" min={1} value={minDurationDays ?? ''} onChange={(e)=> setMinDurationDays(e.target.value ? parseInt(e.target.value) : undefined)} className="w-24 bg-card border-border" />
+              </div>
               <Button variant="outline" onClick={loadAds} disabled={adsLoading} className="border-border">
                 <RefreshCw className={`h-4 w-4 mr-2 ${adsLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                Apply
               </Button>
             </div>
+          </div>
             
             {adsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -682,7 +770,7 @@ export default function CompetitorDetailPage() {
                           )}
                           {ad.analysis?.overall_score && (
                             <Badge variant={getScoreBadge(ad.analysis.overall_score)}>
-                              Score: {ad.analysis.overall_score.toFixed(1)}
+                              Score: {ad.analysis.overall_score?.toFixed(1) || '0.0'}
                             </Badge>
                           )}
                           {ad.impressions_text && (
@@ -819,6 +907,26 @@ export default function CompetitorDetailPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Scrape Task Progress</DialogTitle>
+              <DialogDescription>Task ID: {activeTaskId}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{taskStatus?.state || 'PENDING'}</Badge>
+                <span className="text-sm text-muted-foreground">{taskStatus?.status || ''}</span>
+              </div>
+              {taskStatus?.result && (
+                <div className="text-sm">
+                  <div>Total ads scraped: {taskStatus.result.total_ads_scraped ?? taskStatus.result?.database_stats?.total_processed ?? 0}</div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

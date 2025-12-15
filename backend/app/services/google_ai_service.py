@@ -21,29 +21,153 @@ logger = logging.getLogger(__name__)
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 
-def get_default_system_instruction() -> str:
-    return (
+def get_default_system_instruction(include_prompts: bool = True) -> str:
+    instruction = (
         "You are a performance marketing creative analyst. Given a video file: "
         "1) Transcribe the voiceover accurately. "
         "2) Extract on-screen text (text overlays/captions) separately as 'text_on_video'. "
         "3) Break the ad into chronological beats (segments) with timestamps and short summaries, using BOTH the video frames and audio to detect every meaningful change in scene, action, or pacing. "
         "4) Provide a storyboard (one line per shot/beat) that a video editor could follow. "
         "5) Explain why each beat works (or not) for direct-response marketing focusing on hook, offer clarity, benefits, proof, objections, and CTA. "
-        "6) Produce 'generation_prompts': an ordered list of LONG, HIGHLY DETAILED prompts to recreate the video as a sequence of clips. VIDEO DURATION GUIDANCE: Analyze the actual video duration from your transcript timestamps and beats analysis. The TOTAL of all prompt durations should generally match or be close to the actual video length, but you have flexibility to adjust if needed for better storytelling or smooth transitions. For example: A 6-second video might be ONE 6s prompt or TWO 3s prompts if there are distinct scenes. A 15-second video might be TWO 7.5s prompts or THREE 5s prompts depending on content structure. Use your judgment to balance matching the source video with creating optimal clip boundaries. IMPORTANT: You are analyzing the ENTIRE video at once and generating ALL prompts in a single batch. This means you have complete knowledge of the full timeline and can see exactly where words/sentences begin and end across the entire video. Use this full context to make optimal decisions about clip boundaries. BEFORE writing prompts, study the ENTIRE video carefully to build a precise mental model of what is actually visible and audible: the exact people (age, gender expression, hair, clothing), environments, props, camera behavior, visual style, energy level, and pacing. CRITICAL FOR CONTINUITY AND CONSISTENCY: Since you're generating all prompts at once, you MUST maintain IDENTICAL visual elements and CONSISTENT energy/tone across ALL prompts. This includes: the same person(s) with identical appearance (face, hair, clothing, accessories) in every single prompt, the same environment/location with identical layout and props in every prompt, the same camera position and framing style throughout, the same lighting setup and color palette throughout, and the same character energy and performance style throughout (if energetic in clip 1, stay energetic in all clips; if calm, stay calm). For each segment, re-watch that segment FRAME BY FRAME so that every meaningful visual/action change is captured. You must ONLY describe people, objects, environments, camera moves, lighting, and styles that are clearly present in the source footage. If you are uncertain about a detail, describe it generically (e.g. 'a person', 'a modern living room') rather than inventing a specific new element. For EACH prompt, output 400–900 words and strictly follow this MARKDOWN structure and headings (populate fully with concrete, specific guidance). The prompts should aim to faithfully replicate the original video's narrative, visuals, camera, lighting, movement, performance, energy, and timing as closely as possible (no creative paraphrasing or hallucinated details). Do not include on-screen text: \n"
-        "# VEO 3 CREATIVE BRIEF: <TITLE>\n\n"
-        "## TECHNICAL SPECIFICATIONS\n"
-        "**Duration:** <ACTUAL duration in seconds for this clip. TARGET: Aim for 7.0-8.0 seconds per clip (8.0 is ideal). HARD LIMIT: Never exceed 8.0 seconds. CRITICAL ENDING RULE: The clip's ending point is MORE IMPORTANT than hitting exactly 8.0 seconds. Each clip MUST end at a point that allows SMOOTH merging with the next clip, since the video generation AI cannot see previous clips and must rely on your descriptions for continuity. ACCEPTABLE ENDING POINTS (in priority order): (1) Complete sentence with natural pause/breath, (2) End of a complete thought or phrase, (3) Visual action completion (person finishes gesture, completes movement), (4) Moment of stillness or stable pose. UNACCEPTABLE ENDINGS: Mid-word, mid-sentence (unless sentence exceeds 8.0s), awkward body positions, mid-gesture, mid-movement, unstable poses, or any point where merging would look jarring. DURATION FLEXIBILITY: If the optimal smooth ending point is at 6.5 seconds, END THERE - do not force content to 8.0s if it creates a bad merge point. If the optimal point is at 7.8s, perfect. The goal is SEAMLESS MERGING when clips are stitched together, which requires: ending on complete dialogue, stable body position, consistent energy level that the next clip can match, and environment/lighting that stays constant. Examples: '8.0 seconds - ends mid-sentence' (BAD), '6.8 seconds - ends after complete sentence, person in stable pose' (GOOD), '7.5 seconds - ends mid-gesture' (BAD), '7.2 seconds - ends with natural pause, person smiling at camera' (PERFECT).>\n**Resolution:** 4K (3840×2160)\n**Frame Rate:** 24fps (cinematic) or 30fps\n**Aspect Ratio:** <DETECT and state the actual aspect ratio of the input video, e.g. '9:16 vertical' or '16:9 widescreen'>\n**Style:** Hyper-realistic, photorealistic commercial cinematography\n**Color Grading:** <describe palette>\n\n---\n\n"
-        "## 1. VISUAL NARRATIVE & ARTISTIC DIRECTION\n"
-        "**Core Concept:** <clear intent>\n\n**Artistic Mandate:**\n- <bullet>\n- <bullet>\n- <bullet>\n\n---\n\n"
-        "## 2. THE PROTAGONIST: <ROLE>\n\n### Physical Appearance & Ethnicity\n- <Exact description: age, gender, ethnicity, facial features, hair color/style/length, skin tone, body type, height. This MUST be identical in every single prompt.>\n\n### Wardrobe & Styling\n- <Complete outfit description: every garment, colors, patterns, accessories, jewelry, shoes. This MUST match exactly across all prompts - same clothes, same style, no changes.>\n\n### Character Energy (MUST BE CONSISTENT ACROSS ALL PROMPTS)\n- <Personality, demeanor, energy level. CRITICAL: Since you're generating all prompts at once, establish the character's energy level from the full video and maintain it consistently in EVERY prompt. If they're energetic and animated throughout the video, describe them as energetic in ALL prompts. If they're calm and professional, keep that tone in ALL prompts. Do NOT vary the energy between clips - it must feel like one continuous performance.>\n\n### Position & Spatial Reference (CRITICAL FOR CONTINUITY)\n- **Starting Position in Frame:** <Specify exact position: left/center/right third, foreground/midground/background, distance from camera>\n- **Body Orientation:** <Facing camera, 3/4 turn, profile, which direction they're looking>\n- **Ending Position in Frame:** <Where person ends up by end of this clip - this becomes starting position for next prompt>\n- **Movement Path:** <Describe any movement: static, walking left-to-right, approaching camera, etc.>\n\n---\n\n"
-        "## 3. THE ENVIRONMENT: <LOCATION>\n\n### Location & Setting\n- <Exact location type, architectural details, floor/wall/ceiling materials, colors, textures. MUST remain identical across all prompts>\n\n### Spatial Layout & Props (CRITICAL FOR CONTINUITY)\n- **Left Side of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Center of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Right Side of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Background Elements:** <Walls, windows, doors, artwork, shelving - exact positions and details>\n- **Foreground Elements:** <Any objects between camera and subject>\n\n### Lighting & Atmosphere\n- <Light sources (position, type, color temp), shadows, ambient light, time of day. MUST remain consistent across all prompts>\n\n---\n\n"
-        "## 4. CINEMATOGRAPHY: SOPHISTICATED TRACKING SHOT\n\n### Camera Movement & Technique\n- <details>\n\n### Framing & Composition\n- <details>\n\n### Focus & Depth of Field\n- <details>\n\n---\n\n"
-        "## 5. THE PERFORMANCE: AUTHENTIC STORYTELLING\n\n### Dialogue & Script (match lines and timing as heard)\n- <lines and timing>\n\n### Vocal Delivery Specifications\n- <accent, tone, pacing, aiming for slightly fast, natural, conversational human delivery (no robotic or monotone TTS cadence)>\n\n### Physical Performance & Body Language\n- <blocking>\n\n---\n\n"
-        "## 6. TIMELINE: BEAT-BY-BEAT BREAKDOWN\n\n🚨 CRITICAL: This timeline MUST cover EVERY SINGLE SECOND from 0.0 to the EXACT duration you specified in TECHNICAL SPECIFICATIONS. If you said Duration is 7.2 seconds, your timeline MUST go from 0.0 to 7.2 with NO GAPS. If you only describe 0.0-2.3 but the duration is 7.2, you are MISSING 4.9 SECONDS OF CONTENT which makes the prompt UNUSABLE. Every second must be accounted for with specific visual actions, body language, facial expressions, dialogue timing, and camera behavior. 🚨\n\n### SECONDS 0.0 - 1.5\n- Visual / Action / Audio\n\n### SECONDS 1.5 - 2.5\n- Visual / Action / Audio\n\n### SECONDS 2.5 - 4.5\n- Visual / Action / Audio\n\n### SECONDS 4.5 - 6.5\n- Visual / Action / Audio\n\n### SECONDS 6.5 - <END_TIME>\n- Visual / Action / Audio\n\n(Adjust timeline sections as needed based on actual clip duration. Do NOT describe or imply anything after the stated Duration in TECHNICAL SPECIFICATIONS.)\n\n---\n\n"
-        "## 7. BACKGROUND EXTRAS & ENVIRONMENTAL LIFE\n- <details>\n\n## 8. COLOR GRADING & VISUAL STYLE\n- <palette and references>\n\n## 9. AUDIO SPECIFICATIONS\n- <dialogue recording, ambient, foley, music>\n\n## 10. OPTIMIZATION & CHECKLIST\n- Avoid pitfalls, success criteria\n\n"
-        "🚨 SMOOTH MERGING PRIORITY 🚨\nBEFORE writing any prompts, analyze the FULL video timeline to identify optimal clip boundary points. Your #1 PRIORITY is SEAMLESS MERGING between clips - the video generation AI cannot see previous clips, so each clip must end at a point where the next can begin smoothly. TARGET 7.0-8.0 seconds per clip, but PRIORITIZE smooth merge points over hitting exactly 8.0s. ACCEPTABLE: A 6.5s clip that ends with complete sentence + stable pose. UNACCEPTABLE: An 8.0s clip that ends mid-gesture or mid-word. Calculate speech timing (3.0-3.5 words/sec), identify complete thoughts, and find moments of stability (finished gestures, neutral poses, natural pauses). When clips merge, the energy, environment, lighting, and body position must flow continuously as if it's one uninterrupted shot.\n\nCRITICAL RULES: DO NOT include or require any on-screen text overlays in these prompts. Be concrete and specific. Match the source content as closely as possible, based ONLY on what is clearly visible or audible in the actual video segment. Absolutely NO hallucinations: never invent new people, clothing styles, props, products, logos, locations, camera moves, or design elements that are not present in the footage. If the video does not show something, you must not describe it. If you are unsure about a detail, describe it in neutral, generic terms instead of guessing. CLIP BOUNDARY OPTIMIZATION: Since you can see the ENTIRE video and ALL dialogue at once, you know exactly where every word and sentence begins and ends. Use this knowledge to make intelligent decisions about clip boundaries. Each prompt must end at a natural pause or COMPLETE sentence so dialogue and action are never cut mid-word. When planning boundaries, look ahead at the full timeline to find the optimal break points. Each prompt must logically continue from where the previous one ended, with no overlap and no gaps in the sequence, forming one continuous timeline. NOTHING that happens after the stated Duration is allowed in a single prompt. Keep the scope to the clip duration while remaining richly detailed. DURATION MAXIMIZATION IS CRITICAL: Your DEFAULT target for every clip should be 8.0 seconds. Since you have the full timeline, calculate exactly how much content fits in 8.0 seconds and pack each clip maximally. Always aim for 7.5-8.0 seconds. ONLY use durations below 7.5 seconds if the dialogue timing literally requires it (e.g., a sentence ends at 7.2s and the next sentence would push past 8.0s). Even then, see if you can include the START of the next sentence to reach closer to 8.0 seconds. Since you see the full video, you can optimize: count the words, calculate timing (3.0-3.5 words/sec), and determine the exact best break point to maximize duration while maintaining natural breaks. Clips of 7.0 seconds or shorter should be RARE. Prefer fewer, maximally-packed 8-second prompts over many shorter ones.\n\n"
-        "CONTINUITY ENFORCEMENT (MANDATORY): Since you're generating ALL prompts in a single batch with full video context, you have the advantage of knowing the entire performance, visual style, and energy level from start to finish. Use this to ensure perfect consistency. When writing Prompt 2, 3, 4, etc., you MUST begin each prompt by explicitly stating 'CONTINUING FROM PREVIOUS CLIP' and then re-describe: (1) The EXACT same person with identical appearance (same face, hair, clothing, accessories, no changes whatsoever), (2) The EXACT same environment with identical layout (same room, same props in same positions, same background elements), (3) The EXACT same lighting setup (same light sources, same shadows, same color temperature), (4) The EXACT same camera framing style (same angles, same composition), and (5) The EXACT same character energy and performance tone (if energetic in earlier clips, stay energetic; if calm, stay calm - no energy shifts between clips). The person's STARTING position in each new prompt MUST match their ENDING position from the previous prompt. Every object, piece of furniture, wall decoration, and environmental detail MUST remain in the exact same position across all prompts unless the person physically moves it or the camera angle changes. This ensures that when the clips are merged, there will be perfect visual continuity with no jarring changes in appearance, location, spatial layout, or performance energy. Think of it as a single continuous shot split into 8-second chunks - everything must match perfectly at the cut points, including the character's energy and demeanor.\n\n"
-        "Return strict JSON only.\n"
+        "6) Rate the hook effectiveness with a 'hook_score' from 0-10 (0=terrible, 10=exceptional). Consider attention-grabbing power, relevance to target audience, and ability to stop scroll. "
+        "7) Provide an 'overall_score' from 0-10 rating the ad's overall marketing effectiveness. Consider clarity of offer, persuasiveness, production quality, and call-to-action strength. "
+        "8) Identify the 'target_audience' - the primary demographic this ad is designed to reach based on messaging, visuals, and offer. "
+        "9) List 'content_themes' - key topics, benefits, or messaging pillars covered in the ad (e.g., luxury, location, pricing, amenities). "
+    )
+
+    if include_prompts:
+        instruction += (
+            "6) Produce 'generation_prompts': an ordered list of LONG, HIGHLY DETAILED prompts to recreate the video as a sequence of clips. VIDEO DURATION GUIDANCE: Analyze the actual video duration from your transcript timestamps and beats analysis. The TOTAL of all prompt durations should generally match or be close to the actual video length, but you have flexibility to adjust if needed for better storytelling or smooth transitions. For example: A 6-second video might be ONE 6s prompt or TWO 3s prompts if there are distinct scenes. A 15-second video might be TWO 7.5s prompts or THREE 5s prompts depending on content structure. Use your judgment to balance matching the source video with creating optimal clip boundaries. IMPORTANT: You are analyzing the ENTIRE video at once and generating ALL prompts in a single batch. This means you have complete knowledge of the full timeline and can see exactly where words/sentences begin and end across the entire video. Use this full context to make optimal decisions about clip boundaries. BEFORE writing prompts, study the ENTIRE video carefully to build a precise mental model of what is actually visible and audible: the exact people (age, gender expression, hair, clothing), environments, props, camera behavior, visual style, energy level, and pacing. CRITICAL FOR CONTINUITY AND CONSISTENCY: Since you're generating all prompts at once, you MUST maintain IDENTICAL visual elements and CONSISTENT energy/tone across ALL prompts. This includes: the same person(s) with identical appearance (face, hair, clothing, accessories) in every single prompt, the same environment/location with identical layout and props in every prompt, the same camera position and framing style throughout, the same lighting setup and color palette throughout, and the same character energy and performance style throughout (if energetic in clip 1, stay energetic in all clips; if calm, stay calm). For each segment, re-watch that segment FRAME BY FRAME so that every meaningful visual/action change is captured. You must ONLY describe people, objects, environments, camera moves, lighting, and styles that are clearly present in the source footage. If you are uncertain about a detail, describe it generically (e.g. 'a person', 'a modern living room') rather than inventing a specific new element. For EACH prompt, output 400–900 words and strictly follow this MARKDOWN structure and headings (populate fully with concrete, specific guidance). The prompts should aim to faithfully replicate the original video's narrative, visuals, camera, lighting, movement, performance, energy, and timing as closely as possible (no creative paraphrasing or hallucinated details). Do not include on-screen text: \n"
+            "# VEO 3 CREATIVE BRIEF: <TITLE>\n\n"
+            "## TECHNICAL SPECIFICATIONS\n"
+            "**Duration:** <ACTUAL duration in seconds for this clip. TARGET: Aim for 7.0-8.0 seconds per clip (8.0 is ideal). HARD LIMIT: Never exceed 8.0 seconds. CRITICAL ENDING RULE: The clip's ending point is MORE IMPORTANT than hitting exactly 8.0 seconds. Each clip MUST end at a point that allows SMOOTH merging with the next clip, since the video generation AI cannot see previous clips and must rely on your descriptions for continuity. ACCEPTABLE ENDING POINTS (in priority order): (1) Complete sentence with natural pause/breath, (2) End of a complete thought or phrase, (3) Visual action completion (person finishes gesture, completes movement), (4) Moment of stillness or stable pose. UNACCEPTABLE ENDINGS: Mid-word, mid-sentence (unless sentence exceeds 8.0s), awkward body positions, mid-gesture, mid-movement, unstable poses, or any point where merging would look jarring. DURATION FLEXIBILITY: If the optimal smooth ending point is at 6.5 seconds, END THERE - do not force content to 8.0s if it creates a bad merge point. If the optimal point is at 7.8s, perfect. The goal is SEAMLESS MERGING when clips are stitched together, which requires: ending on complete dialogue, stable body position, consistent energy level that the next clip can match, and environment/lighting that stays constant. Examples: '8.0 seconds - ends mid-sentence' (BAD), '6.8 seconds - ends after complete sentence, person in stable pose' (GOOD), '7.5 seconds - ends mid-gesture' (BAD), '7.2 seconds - ends with natural pause, person smiling at camera' (PERFECT).>\n**Resolution:** 4K (3840×2160)\n**Frame Rate:** 24fps (cinematic) or 30fps\n**Aspect Ratio:** <DETECT and state the actual aspect ratio of the input video, e.g. '9:16 vertical' or '16:9 widescreen'>\n**Style:** Hyper-realistic, photorealistic commercial cinematography\n**Color Grading:** <describe palette>\n\n---\n\n"
+            "## 1. VISUAL NARRATIVE & ARTISTIC DIRECTION\n"
+            "**Core Concept:** <clear intent>\n\n**Artistic Mandate:**\n- <bullet>\n- <bullet>\n- <bullet>\n\n---\n\n"
+            "## 2. THE PROTAGONIST: <ROLE>\n\n### Physical Appearance & Ethnicity\n- <Exact description: age, gender, ethnicity, facial features, hair color/style/length, skin tone, body type, height. This MUST be identical in every single prompt.>\n\n### Wardrobe & Styling\n- <Complete outfit description: every garment, colors, patterns, accessories, jewelry, shoes. This MUST match exactly across all prompts - same clothes, same style, no changes.>\n\n### Character Energy (MUST BE CONSISTENT ACROSS ALL PROMPTS)\n- <Personality, demeanor, energy level. CRITICAL: Since you're generating all prompts at once, establish the character's energy level from the full video and maintain it consistently in EVERY prompt. If they're energetic and animated throughout the video, describe them as energetic in ALL prompts. If they're calm and professional, keep that tone in ALL prompts. Do NOT vary the energy between clips - it must feel like one continuous performance.>\n\n### Position & Spatial Reference (CRITICAL FOR CONTINUITY)\n- **Starting Position in Frame:** <Specify exact position: left/center/right third, foreground/midground/background, distance from camera>\n- **Body Orientation:** <Facing camera, 3/4 turn, profile, which direction they're looking>\n- **Ending Position in Frame:** <Where person ends up by end of this clip - this becomes starting position for next prompt>\n- **Movement Path:** <Describe any movement: static, walking left-to-right, approaching camera, etc.>\n\n---\n\n"
+            "## 3. THE ENVIRONMENT: <LOCATION>\n\n### Location & Setting\n- <Exact location type, architectural details, floor/wall/ceiling materials, colors, textures. MUST remain identical across all prompts>\n\n### Spatial Layout & Props (CRITICAL FOR CONTINUITY)\n- **Left Side of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Center of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Right Side of Frame:** <List every visible object, furniture, prop with exact position and appearance>\n- **Background Elements:** <Walls, windows, doors, artwork, shelving - exact positions and details>\n- **Foreground Elements:** <Any objects between camera and subject>\n\n### Lighting & Atmosphere\n- <Light sources (position, type, color temp), shadows, ambient light, time of day. MUST remain consistent across all prompts>\n\n---\n\n"
+            "## 4. CINEMATOGRAPHY: SOPHISTICATED TRACKING SHOT\n\n### Camera Movement & Technique\n- <details>\n\n### Framing & Composition\n- <details>\n\n### Focus & Depth of Field\n- <details>\n\n---\n\n"
+            "## 5. THE PERFORMANCE: AUTHENTIC STORYTELLING\n\n### Dialogue & Script (match lines and timing as heard)\n- <lines and timing>\n\n### Vocal Delivery Specifications\n- <accent, tone, pacing, aiming for slightly fast, natural, conversational human delivery (no robotic or monotone TTS cadence)>\n\n### Physical Performance & Body Language\n- <blocking>\n\n---\n\n"
+            "## 6. TIMELINE: BEAT-BY-BEAT BREAKDOWN\n\n🚨 CRITICAL: This timeline MUST cover EVERY SINGLE SECOND from 0.0 to the EXACT duration you specified in TECHNICAL SPECIFICATIONS. If you said Duration is 7.2 seconds, your timeline MUST go from 0.0 to 7.2 with NO GAPS. If you only describe 0.0-2.3 but the duration is 7.2, you are MISSING 4.9 SECONDS OF CONTENT which makes the prompt UNUSABLE. Every second must be accounted for with specific visual actions, body language, facial expressions, dialogue timing, and camera behavior. 🚨\n\n### SECONDS 0.0 - 1.5\n- Visual / Action / Audio\n\n### SECONDS 1.5 - 2.5\n- Visual / Action / Audio\n\n### SECONDS 2.5 - 4.5\n- Visual / Action / Audio\n\n### SECONDS 4.5 - 6.5\n- Visual / Action / Audio\n\n### SECONDS 6.5 - <END_TIME>\n- Visual / Action / Audio\n\n(Adjust timeline sections as needed based on actual clip duration. Do NOT describe or imply anything after the stated Duration in TECHNICAL SPECIFICATIONS.)\n\n---\n\n"
+            "## 7. BACKGROUND EXTRAS & ENVIRONMENTAL LIFE\n- <details>\n\n## 8. COLOR GRADING & VISUAL STYLE\n- <palette and references>\n\n## 9. AUDIO SPECIFICATIONS\n- <dialogue recording, ambient, foley, music>\n\n## 10. OPTIMIZATION & CHECKLIST\n- Avoid pitfalls, success criteria\n\n"
+            "🚨 SMOOTH MERGING PRIORITY 🚨\nBEFORE writing any prompts, analyze the FULL video timeline to identify optimal clip boundary points. Your #1 PRIORITY is SEAMLESS MERGING between clips - the video generation AI cannot see previous clips, so each clip must end at a point where the next can begin smoothly. TARGET 7.0-8.0 seconds per clip, but PRIORITIZE smooth merge points over hitting exactly 8.0s. ACCEPTABLE: A 6.5s clip that ends with complete sentence + stable pose. UNACCEPTABLE: An 8.0s clip that ends mid-gesture or mid-word. Calculate speech timing (3.0-3.5 words/sec), identify complete thoughts, and find moments of stability (finished gestures, neutral poses, natural pauses). When clips merge, the energy, environment, lighting, and body position must flow continuously as if it's one uninterrupted shot.\n\nCRITICAL RULES: DO NOT include or require any on-screen text overlays in these prompts. Be concrete and specific. Match the source content as closely as possible, based ONLY on what is clearly visible or audible in the actual video segment. Absolutely NO hallucinations: never invent new people, clothing styles, props, products, logos, locations, camera moves, or design elements that are not present in the footage. If the video does not show something, you must not describe it. If you are unsure about a detail, describe it in neutral, generic terms instead of guessing. CLIP BOUNDARY OPTIMIZATION: Since you can see the ENTIRE video and ALL dialogue at once, you know exactly where every word and sentence begins and ends. Use this knowledge to make intelligent decisions about clip boundaries. Each prompt must end at a natural pause or COMPLETE sentence so dialogue and action are never cut mid-word. When planning boundaries, look ahead at the full timeline to find the optimal break points. Each prompt must logically continue from where the previous one ended, with no overlap and no gaps in the sequence, forming one continuous timeline. NOTHING that happens after the stated Duration is allowed in a single prompt. Keep the scope to the clip duration while remaining richly detailed. DURATION MAXIMIZATION IS CRITICAL: Your DEFAULT target for every clip should be 8.0 seconds. Since you have the full timeline, calculate exactly how much content fits in 8.0 seconds and pack each clip maximally. Always aim for 7.5-8.0 seconds. ONLY use durations below 7.5 seconds if the dialogue timing literally requires it (e.g., a sentence ends at 7.2s and the next sentence would push past 8.0s). Even then, see if you can include the START of the next sentence to reach closer to 8.0 seconds. Since you see the full video, you can optimize: count the words, calculate timing (3.0-3.5 words/sec), and determine the exact best break point to maximize duration while maintaining natural breaks. Clips of 7.0 seconds or shorter should be RARE. Prefer fewer, maximally-packed 8-second prompts over many shorter ones.\n\n"
+            "CONTINUITY ENFORCEMENT (MANDATORY): Since you're generating ALL prompts in a single batch with full video context, you have the advantage of knowing the entire performance, visual style, and energy level from start to finish. Use this to ensure perfect consistency. When writing Prompt 2, 3, 4, etc., you MUST begin each prompt by explicitly stating 'CONTINUING FROM PREVIOUS CLIP' and then re-describe: (1) The EXACT same person with identical appearance (same face, hair, clothing, accessories, no changes whatsoever), (2) The EXACT same environment with identical layout (same room, same props in same positions, same background elements), (3) The EXACT same lighting setup (same light sources, same shadows, same color temperature), (4) The EXACT same camera framing style (same angles, same composition), and (5) The EXACT same character energy and performance tone (if energetic in earlier clips, stay energetic; if calm, stay calm - no energy shifts between clips). The person's STARTING position in each new prompt MUST match their ENDING position from the previous prompt. Every object, piece of furniture, wall decoration, and environmental detail MUST remain in the exact same position across all prompts unless the person physically moves it or the camera angle changes. This ensures that when the clips are merged, there will be perfect visual continuity with no jarring changes in appearance, location, spatial layout, or performance energy. Think of it as a single continuous shot split into 8-second chunks - everything must match perfectly at the cut points, including the character's energy and demeanor.\n\n"
+        )
+        instruction += (
+            "Output strict JSON with the following structure:\n"
+            "{\n"
+            "  \"transcript\": \"Full script text\",\n"
+            "  \"generation_prompts\": [\"List of detailed video generation prompts (400-900 words each)\"],\n"
+            "  \"beats\": [{\"start\": \"00:00\", \"end\": \"00:05\", \"summary\": \"...\", \"why_it_works\": \"...\"}],\n"
+            "  \"summary\": \"Overall video concept\",\n"
+            "  \"strengths\": [\"...\"],\n"
+            "  \"recommendations\": [\"...\"],\n"
+            "  \"text_on_video\": \"...\",\n"
+            "  \"voice_over\": \"...\",\n"
+            "  \"storyboard\": [\"...\"],\n"
+            "  \"hook_score\": 8.5,\n"
+            "  \"overall_score\": 7.2,\n"
+            "  \"target_audience\": \"Primary target demographic\",\n"
+            "  \"content_themes\": [\"theme1\", \"theme2\", \"theme3\"]\n"
+            "}\n"
+        )
+    else:
+        # Simplified instruction when NO prompts are needed
+        instruction += (
+            "10) DO NOT GENERATE ANY PROMPTS. Focus exclusively on the analysis (transcript, beats, summary, etc.).\n\n"
+             "Output strict JSON with the following structure:\n"
+            "{\n"
+            "  \"transcript\": \"Full script text\",\n"
+            "  \"beats\": [{\"start\": \"00:00\", \"end\": \"00:05\", \"summary\": \"...\", \"why_it_works\": \"...\"}],\n"
+            "  \"summary\": \"Overall video concept\",\n"
+            "  \"strengths\": [\"...\"],\n"
+            "  \"recommendations\": [\"...\"],\n"
+            "  \"text_on_video\": \"...\",\n"
+            "  \"voice_over\": \"...\",\n"
+            "  \"storyboard\": [\"...\"],\n"
+            "  \"hook_score\": 8.5,\n"
+            "  \"overall_score\": 7.2,\n"
+            "  \"target_audience\": \"Primary target demographic\",\n"
+            "  \"content_themes\": [\"theme1\", \"theme2\", \"theme3\"]\n"
+            "}\n"
+        )
+
+    return instruction
+
+
+def get_image_to_video_brief_template(aspect_ratio_desc: str = "9:16 vertical"):
+    """
+    Template for IMAGE-TO-VIDEO generation.
+    CRITICAL: This is NOT scene generation - this is ANIMATING an existing static image.
+    Focus ONLY on natural, subtle movements of the person: talking, eyes, hands, breathing.
+    NO text, NO dramatic effects, NO scene changes, NO adding elements.
+    """
+    return (
+        "🎬 IMAGE-TO-VIDEO ANIMATION DIRECTOR\\n\\n"
+        "You are animating a STATIC IMAGE with a person speaking. The image is PERFECT and FINAL.\\n"
+        "Your ONLY job: Make the person TALK naturally while keeping everything else unchanged.\\n\\n"
+        "🚨 ABSOLUTE RULES (NEVER BREAK THESE):\\n"
+        "❌ NO text overlays, captions, subtitles, or words on screen\\n"
+        "❌ NO dramatic camera moves (no fast zooms, no spinning, no wild pans)\\n"
+        "❌ NO scene changes or background alterations\\n"
+        "❌ NO adding new elements, objects, or people\\n"
+        "❌ NO describing what's in the image (it's already there!)\\n"
+        "❌ NO creating new scenes or environments\\n\\n"
+        "✅ ONLY DO THIS:\\n"
+        "- Natural talking (lip sync with speech)\\n"
+        "- Eye contact and blinking\\n"
+        "- Subtle hand gestures (if visible)\\n"
+        "- Natural breathing/slight body movement\\n"
+        "- Very subtle camera drift (optional, minimal)\\n\\n"
+        "For EACH segment, use this SIMPLE structure (200-300 words MAX):\\n\\n"
+        "# ANIMATION: Segment [N]\\n\\n"
+        "## DURATION & SETUP\\n"
+        "**Duration:** 7-8 seconds (never exceed 8.0 seconds)\\n"
+        f"**Aspect Ratio:** {aspect_ratio_desc}\\n"
+        "**Image Status:** KEEP AS IS (already perfect)\\n"
+        "**NO text overlays:** Absolutely forbidden\\n\\n"
+        "## WHAT THE PERSON SAYS (from script)\\n"
+        "<Extract the exact words for this 7-8 second segment>\\n\\n"
+        "## NATURAL ANIMATION\\n"
+        "Keep it simple and realistic - the person is TALKING, not performing:\\n\\n"
+        "**Talking & Lip Movement:**\\n"
+        "- Natural lip sync with the spoken words\\n"
+        "- Mouth opens and closes naturally as they speak\\n"
+        "- Facial muscles move subtly with speech\\n\\n"
+        "**Eyes & Face:**\\n"
+        "- Maintains natural eye contact (looking at camera/viewer)\\n"
+        "- Natural blinking (every 3-5 seconds)\\n"
+        "- Subtle eyebrow raises when emphasizing words\\n"
+        "- Micro-expressions that match the tone (friendly, professional, calm)\\n\\n"
+        "**Hands & Body:**\\n"
+        "- IF hands visible: Very subtle natural gestures (pointing, open palm, small movements)\\n"
+        "- IF NOT visible: Mention 'hands not in frame'\\n"
+        "- Slight breathing motion (chest/shoulders move naturally)\\n"
+        "- Body stays still and composed (no wild movements)\\n\\n"
+        "**Camera (Keep Minimal):**\\n"
+        "- PREFERRED: Static hold (no movement) OR\\n"
+        "- ALLOWED: Very slow, subtle zoom in (barely noticeable, takes full 8 seconds) OR\\n"
+        "- ALLOWED: Tiny drift/float (imperceptible stabilizer motion)\\n"
+        "- FORBIDDEN: Fast zooms, pans, spins, shakes\\n\\n"
+        "## TIMING GUIDE (Simple)\\n"
+        "Break the dialogue into 3 natural chunks:\\n"
+        "- **0-2.5s:** <First phrase> - Person starts talking naturally\\n"
+        "- **2.5-5.0s:** <Middle phrase> - Continues speaking, maybe a blink or small gesture\\n"
+        "- **5.0-8.0s:** <Final phrase> - Finishes thought, maintains eye contact\\n\\n"
+        "## ENERGY & TONE\\n"
+        "Match the script's mood with subtle facial cues:\\n"
+        "- Professional? Calm, steady, confident\\n"
+        "- Friendly? Slight smile, warm eyes\\n"
+        "- Serious? Focused, minimal expression change\\n\\n"
+        "🎯 SIMPLE CHECKLIST:\\n"
+        "✅ Person talks naturally (lip sync)\\n"
+        "✅ Eyes maintain contact, blink naturally\\n"
+        "✅ Hands gesture subtly (if visible)\\n"
+        "✅ Camera stays still or moves very slowly\\n"
+        "✅ NO text on screen\\n"
+        "✅ NO scene changes\\n"
+        "✅ Background stays exactly the same\\n\\n"
+        "Remember: You're making a PERSON in a PHOTO talk naturally. That's it. Nothing fancy.\\n\\n"
+        "Return strict JSON only.\\n"
     )
 
 
@@ -557,7 +681,18 @@ class GoogleAIService:
                     except Exception:
                         return None
 
-    def generate_transcript_and_analysis(self, file_path: str = None, file_uri: str = None, custom_instruction: str = None, video_url: str = None) -> Dict[str, Any]:
+    def generate_transcript_and_analysis(
+        self, 
+        file_path: str = None, 
+        file_uri: str = None, 
+        custom_instruction: str = None, 
+        video_url: str = None,
+        image_path: str = None,
+        voice_energy: str = None,
+        language: str = None,
+        accent: str = None,
+        generate_prompts: bool = True
+    ) -> Dict[str, Any]:
         """
         Try OpenRouter first; if that fails, fall back to direct Gemini multi-key.
         Returns dict with keys: transcript, beats, summary, strengths, recommendations.
@@ -567,8 +702,47 @@ class GoogleAIService:
             file_uri: URI of already uploaded video file (deprecated, use file_path)
             custom_instruction: Optional custom instruction to append to system prompt
             video_url: Original remote video URL (used by OpenRouter primary)
+            image_path: Local path to image file for Image-to-Video analysis
+            voice_energy: Desired voice energy (e.g. "High", "Calm")
+            language: Desired language (e.g. "English", "Spanish")
+            accent: Desired accent (e.g. "American", "British")
         """
-        system_instruction = get_default_system_instruction()
+        
+        system_instruction = get_default_system_instruction(include_prompts=generate_prompts)
+        
+        # If Image-to-Video mode (image_path provided), use specialized instruction
+        if image_path:
+            system_instruction = (
+                "You are an expert film director and cinematographer. You are analyzing a static IMAGE and a SCRIPT to generate a video production plan.\n"
+                "Your goal is to bring this image to life as a high-end commercial video based on the script.\n\n"
+                "## 1. DEEP IMAGE ANALYSIS & CONSISTENCY\n"
+                "- Analyze the uploaded image in extreme detail: lighting, color palette, setting, props, and character appearance (if any).\n"
+                "- **CRITICAL**: Your generated prompts MUST describe the EXACT person/object/scene from the image. Do not hallucinate new features. Self-verify: 'Does this description match the uploaded image?'\n"
+                "- **Animation Potential**: Identify what *can* move. (e.g., 'The person can smile and gesture', 'The clouds can drift', 'The leaves can rustle').\n\n"
+                "## 2. CINEMATOGRAPHY & CAMERA CONTROL\n"
+                "- Suggest cinematic camera moves based on the composition. (e.g., 'Slow Push In' for emotional lines, 'Pan Right' to follow action, 'Static' for stability).\n"
+                "- Maintain the same visual style (film grain, depth of field, color grade) as the source image.\n\n"
+                "## 3. PERFORMANCE & EMOTION\n"
+                "- Direct the character's acting. Specify facial expressions, hand gestures, and body language that match the script's emotional beat.\n"
+                "- Ensure the character's energy matches the requested Voice Energy.\n\n"
+                "## 4. SMART SCRIPT SPLITTING (DYNAMIC DURATION)\n"
+                "- Split the script into video segments. MAX duration is 8.0 seconds per segment.\n"
+                "- **Dynamic Sizing**: Don't just aim for 8s. Calculate duration based on speech rate (approx 3 words/sec). If a sentence is short, make the clip short.\n"
+                "- **Natural Cuts**: STRICTLY enforce natural cut points. End on a complete thought or sentence. NEVER cut mid-word or mid-sentence. It is better to have a 4s clip than an awkward 8s clip.\n\n"
+                "## 5. AUDIO & VOICE CONTROL\n"
+                f"- **Voice Energy**: {voice_energy or 'Professional and Engaging'}\n"
+                f"- **Language**: {language or 'English'}\n"
+                f"- **Accent**: {accent or 'Neutral'}\n"
+                "- Specify these audio details in the 'voice_over' and 'audio_specifications' sections.\n\n"
+                "Output strict JSON with the following structure:\n"
+                "{\n"
+                "  \"transcript\": \"Full script text\",\n"
+                "  \"generation_prompts\": [\"List of detailed video generation prompts (400-900 words each)\"],\n"
+                "  \"beats\": [{\"start\": \"00:00\", \"end\": \"00:05\", \"summary\": \"...\"}],\n"
+                "  \"summary\": \"Overall video concept\",\n"
+                "  \"voice_over\": \"Voice direction details\"\n"
+                "}"
+            )
         selected_model: Optional[str] = None
 
         # Optional overrides from AppSetting in DB so they can be edited from the Settings page
@@ -617,6 +791,7 @@ class GoogleAIService:
                 db = SessionLocal()
                 try:
                     from app.models.ad_analysis import AdAnalysis
+                    # Get the most recent analysis for this video
                     row = (
                         db.query(AdAnalysis)
                         .filter(AdAnalysis.used_video_url == video_url, AdAnalysis.raw_ai_response != None)  # type: ignore[attr-defined]
@@ -633,31 +808,94 @@ class GoogleAIService:
                                 raw = json.loads(rv)
                             except Exception:
                                 raw = None
+                    
                     if raw:
-                        # Prefer valid explicit cache over file URI
+                        # CHECK: value of generate_prompts vs cached content
+                        # Heuristic: If cache has "generation_prompts" with content, it was likely a "Heavy" run.
+                        # If cache has empty/missing prompts, it was likely a "Light" run (or failed).
+                        
+                        has_prompts = False
+                        if "generation_prompts" in raw and isinstance(raw["generation_prompts"], list) and len(raw["generation_prompts"]) > 0:
+                            has_prompts = True
+                            
+                        # Mismatched Mode Check:
+                        # 1. User wants NO prompts (False), but cache HAS prompts (Heavy) -> SKIP (don't pay for heavy context)
+                        # 2. User wants prompts (True), but cache HAS NO prompts (Light) -> SKIP (need prompts)
+                        
+                        mode_mismatch = False
+                        if not generate_prompts and has_prompts:
+                            logger.info("Skipping cached result: Cache is 'Heavy' (has prompts) but requested mode is 'Light'")
+                            mode_mismatch = True
+                        elif generate_prompts and not has_prompts:
+                            logger.info("Skipping cached result: Cache is 'Light' (no prompts) but requested mode is 'Heavy'")
+                            mode_mismatch = True
+                            
+                        if not mode_mismatch:
+                            # Prefer valid explicit cache over file URI
+                            cache_name = raw.get("gemini_cache_name")
+                            cached_index = raw.get("gemini_api_key_index")
+                            
+                            if (
+                                cache_name
+                                and isinstance(cached_index, int)
+                                and 0 <= cached_index < len(self.api_keys)
+                            ):
+                                # Validate that the cache is still valid
+                                self.current_key_index = cached_index
+                                self.api_key = self.api_keys[cached_index]
+                                if self.is_cache_valid(cache_name):
+                                    cached_cache_name = cache_name
+                                    logger.info(
+                                        f"Reusing valid explicit cache {cache_name} with API key index {cached_index}"
+                                    )
+                                else:
+                                    logger.info(f"Cache {cache_name} expired, will create new cache")
+                            
+                            # Fallback to file URI if explicit cache is not available BUT file is
+                            # NOTE: Reusing file URI is generally safe regarding "context" (it's just the file),
+                            # BUT we will form a NEW request with the NEW system instruction.
+                            # So reusing file_uri is FINE even if modes mismatch, because file_uri doesn't bind the system instruction.
+                            # ONLY `cached_cache_name` binds the instruction.
+                            
+                            # So, wait. If mode_mismatch is True, we MUST NOT use `cached_cache_name`.
+                            # But we CAN use `raw.get("gemini_file_uri")` because that's just the video file.
+                            # The logic above skipped the WHOLE block if mode_mismatch.
+                            # Let's refine: Only skip `cached_cache_name` if mismatch. File URI is reusable.
+                            pass
+
+                    # Re-evaluating fallback logic carefully:
+                    if raw:
+                        # Logic split:
                         cache_name = raw.get("gemini_cache_name")
                         cached_index = raw.get("gemini_api_key_index")
+                        cached_uri = raw.get("gemini_file_uri")
                         
+                        has_prompts = False
+                        if "generation_prompts" in raw and isinstance(raw["generation_prompts"], list) and len(raw["generation_prompts"]) > 0:
+                            has_prompts = True
+                            
+                        # Only reuse EXPLICIT CACHE if modes match
+                        if not generate_prompts and has_prompts:
+                             cache_name = None # Invalidate explicit cache use
+                        elif generate_prompts and not has_prompts:
+                             cache_name = None # Invalidate explicit cache use
+
+                        # Attempt to reuse explicit cache if allowed
                         if (
                             cache_name
                             and isinstance(cached_index, int)
                             and 0 <= cached_index < len(self.api_keys)
                         ):
-                            # Validate that the cache is still valid
-                            self.current_key_index = cached_index
-                            self.api_key = self.api_keys[cached_index]
-                            if self.is_cache_valid(cache_name):
-                                cached_cache_name = cache_name
-                                logger.info(
-                                    f"Reusing valid explicit cache {cache_name} with API key index {cached_index}"
-                                )
-                            else:
-                                logger.info(f"Cache {cache_name} expired, will create new cache")
+                             self.current_key_index = cached_index
+                             self.api_key = self.api_keys[cached_index]
+                             if self.is_cache_valid(cache_name):
+                                 cached_cache_name = cache_name
+                                 logger.info(f"Reusing valid explicit cache {cache_name}")
                         
-                        # Fallback to file URI if cache not available
+                        # Fallback: If no valid explicit cache (or skipped due to mismatch), try to reuse FILE URI
+                        # This is safe because file uri is just the asset, we will apply the correct NEW system instruction.
                         if not cached_cache_name:
-                            cached_uri = raw.get("gemini_file_uri")
-                            if (
+                             if (
                                 cached_uri
                                 and isinstance(cached_index, int)
                                 and 0 <= cached_index < len(self.api_keys)
@@ -665,9 +903,8 @@ class GoogleAIService:
                                 file_uri = cached_uri
                                 self.current_key_index = cached_index
                                 self.api_key = self.api_keys[cached_index]
-                                logger.info(
-                                    f"Reusing cached Gemini file URI for video_url with API key index {cached_index}"
-                                )
+                                logger.info(f"Reusing cached Gemini file URI {file_uri}")
+
                 finally:
                     db.close()
             except Exception as e:
@@ -756,10 +993,30 @@ class GoogleAIService:
                 logger.info("Unknown video source; attempting Gemini with URL (no upload)")
                 url_only_gemini = True
 
+        # Handle Image Upload for Image-to-Video
+        if image_path:
+            try:
+                logger.info(f"Uploading image for analysis: {image_path}")
+                upload_resp = self.upload_file(image_path)
+                file_uri = upload_resp["file"]["uri"]
+                logger.info(f"Image uploaded to Gemini: {file_uri}")
+                
+                # Wait for image to be active (usually instant, but good practice)
+                self.wait_for_file_active(file_uri)
+                
+                # For Image-to-Video, we use the image as the "video" input for the model
+                # The system instruction guides it to treat it as a reference for video generation
+            except Exception as e:
+                logger.error(f"Failed to upload image: {e}")
+                raise RuntimeError(f"Failed to upload image for analysis: {e}")
+
+        # Determine source handling based on URL
+        enable_reuploads = file_path is not None
         # If only file_uri provided and no uploads, use legacy mode
         # BUT: if we have a valid cache, we can proceed without file_uri/file_path
-        if not enable_reuploads and not file_uri and not url_only_gemini and not cached_cache_name:
-            raise ValueError("Must provide either file_path/file_uri, or a supported video_url for URL analysis")
+        # AND: if we have image_path, we are good too (Image-to-Video mode)
+        if not enable_reuploads and not file_uri and not url_only_gemini and not cached_cache_name and not image_path:
+            raise ValueError("Must provide either file_path/file_uri, image_path, or a supported video_url for URL analysis")
 
         # Response schema expected from the model
         response_schema = {
@@ -783,12 +1040,36 @@ class GoogleAIService:
                 "text_on_video": {"type": "string"},
                 "voice_over": {"type": "string"},
                 "storyboard": {"type": "array", "items": {"type": "string"}},
-                "generation_prompts": {"type": "array", "items": {"type": "string"}},
                 "strengths": {"type": "array", "items": {"type": "string"}},
                 "recommendations": {"type": "array", "items": {"type": "string"}},
+                "hook_score": {
+                    "type": "number", 
+                    "minimum": 0, 
+                    "maximum": 10,
+                    "description": "Score from 0-10 rating the effectiveness of the opening hook"
+                },
+                "overall_score": {
+                    "type": "number", 
+                    "minimum": 0, 
+                    "maximum": 10,
+                    "description": "Overall performance score from 0-10 based on marketing effectiveness"
+                },
+                "target_audience": {
+                    "type": "string",
+                    "description": "Primary target audience for this ad based on content and messaging"
+                },
+                "content_themes": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Key content themes and topics covered in the ad"
+                }
             },
-            "required": ["transcript"]
+            "required": ["transcript", "hook_score", "overall_score", "target_audience", "content_themes"]
         }
+        
+        # Only include generation_prompts in schema if requested
+        if generate_prompts:
+            response_schema["properties"]["generation_prompts"] = {"type": "array", "items": {"type": "string"}}
 
         # Retry with exponential backoff for 503 errors, then try next key
         max_retries_per_key = 3
@@ -876,13 +1157,29 @@ class GoogleAIService:
             # Build payload based on whether we're using cached content or not
             if cache_to_use:
                 # Use cached content - system instruction and video already cached
-                payload = {
-                    "contents": [
-                        {"role": "user", "parts": [{"text": "Analyze this video and produce transcript, beats, summary, text_on_video, voice_over, storyboard, generation_prompts, strengths, and recommendations. Output JSON only matching this JSON Schema:\n" + json.dumps(response_schema)}]}
-                    ],
-                    "cached_content": cache_to_use,
-                    "generation_config": {"temperature": 0.2, "response_mime_type": "application/json", "max_output_tokens": 16384}
-                }
+                    payload = {
+                        "contents": [
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": (
+                                            "Analyze this video and produce transcript, beats, summary, text_on_video, voice_over, storyboard, "
+                                            + ("generation_prompts, " if generate_prompts else "")
+                                            + "strengths, and recommendations. Output JSON only matching this JSON Schema:\n"
+                                            + json.dumps(response_schema)
+                                        )
+                                    }
+                                ]
+                            }
+                        ],
+                        "cached_content": cache_to_use,
+                        "generation_config": {
+                            "temperature": 0.2,
+                            "response_mime_type": "application/json",
+                            "max_output_tokens": 12288 if generate_prompts else 8192
+                        }
+                    }
             else:
                 # No explicit cache - optimize for IMPLICIT CACHING
                 # Key principle: Put consistent content FIRST, variable content LAST
@@ -909,7 +1206,11 @@ class GoogleAIService:
                     "contents": [
                         {"role": "user", "parts": parts}
                     ],
-                    "generation_config": {"temperature": 0.2, "response_mime_type": "application/json", "max_output_tokens": 16384}
+                    "generation_config": {
+                        "temperature": 0.2,
+                        "response_mime_type": "application/json",
+                        "max_output_tokens": 12288 if generate_prompts else 8192
+                    }
                 }
 
             url = f"{GEMINI_API_BASE}/models/{model_name}:generateContent"
@@ -1004,7 +1305,7 @@ class GoogleAIService:
                             if openrouter_key:
                                 logger.info("Fallback: Using OpenRouter...")
                                 openrouter = OpenRouterService(openrouter_key)
-                                result = openrouter.analyze_video(video_url, system_instruction, custom_instruction)
+                                result = openrouter.analyze_video(video_url, system_instruction, custom_instruction, include_prompts=generate_prompts)
                                 logger.info("✓ OpenRouter succeeded")
                                 return result
                             else:
@@ -1042,18 +1343,19 @@ class GoogleAIService:
             if was_truncated and current_file_uri:
                 logger.info("🔄 Continuing generation to get remaining content...")
                 try:
-                    # Build initial chat history
+                    # Build initial chat history (only echo the last portion to reduce prompt tokens)
+                    tail = text_part[-2000:] if isinstance(text_part, str) and len(text_part) > 2000 else text_part
                     initial_history = [
                         {
                             "role": "user",
                             "parts": [
                                 {"file_data": {"file_uri": current_file_uri}},
-                                {"text": "Analyze this video and produce transcript, beats, summary, text_on_video, voice_over, storyboard, generation_prompts, strengths, and recommendations."}
+                                {"text": f"Analyze this video and produce transcript, beats, summary, text_on_video, voice_over, storyboard, {'generation_prompts, ' if generate_prompts else ''}strengths, and recommendations."}
                             ]
                         },
                         {
                             "role": "model",
-                            "parts": [{"text": text_part}]
+                            "parts": [{"text": tail}]
                         }
                     ]
                     
@@ -1062,7 +1364,7 @@ class GoogleAIService:
                         file_uri=current_file_uri,
                         api_key_index=self.current_key_index,
                         history=initial_history,
-                        question="Continue from where you left off. Complete the remaining generation_prompts and any other incomplete sections.",
+                        question=f"Continue from where you left off. Complete the remaining {'generation_prompts and any other ' if generate_prompts else ''}incomplete sections.",
                         cache_name=None
                     )
                     
@@ -1138,8 +1440,57 @@ class GoogleAIService:
                                 else:
                                     raise ValueError("generation_prompts not found in text")
                             except Exception:
-                                logger.warning("Gemini JSON parsing failed after sanitization, substring extraction, and generation_prompts trimming; returning raw")
-                                return {"raw": data}
+                                logger.warning("Gemini JSON parsing failed after all attempts; trying to extract core fields from raw text")
+                                # Try to extract core fields even if JSON is malformed
+                                try:
+                                    core_fields = {}
+                                    
+                                    # Extract transcript
+                                    transcript_match = re.search(r'"transcript":\s*"([^"]*)"', text, re.DOTALL)
+                                    if transcript_match:
+                                        core_fields["transcript"] = transcript_match.group(1)
+                                    
+                                    # Extract summary
+                                    summary_match = re.search(r'"summary":\s*"([^"]*)"', text, re.DOTALL)
+                                    if summary_match:
+                                        core_fields["summary"] = summary_match.group(1)
+                                    
+                                    # Extract scores
+                                    hook_score_match = re.search(r'"hook_score":\s*([0-9.]+)', text)
+                                    if hook_score_match:
+                                        core_fields["hook_score"] = float(hook_score_match.group(1))
+                                    
+                                    overall_score_match = re.search(r'"overall_score":\s*([0-9.]+)', text)
+                                    if overall_score_match:
+                                        core_fields["overall_score"] = float(overall_score_match.group(1))
+                                    
+                                    # Extract target audience
+                                    audience_match = re.search(r'"target_audience":\s*"([^"]*)"', text, re.DOTALL)
+                                    if audience_match:
+                                        core_fields["target_audience"] = audience_match.group(1)
+                                    
+                                    # Extract content themes (simple array extraction)
+                                    themes_match = re.search(r'"content_themes":\s*\[(.*?)\]', text, re.DOTALL)
+                                    if themes_match:
+                                        themes_text = themes_match.group(1)
+                                        themes = re.findall(r'"([^"]*)"', themes_text)
+                                        core_fields["content_themes"] = themes
+                                    
+                                    if core_fields:
+                                        logger.info(f"Extracted {len(core_fields)} core fields from malformed JSON")
+                                        core_fields["raw"] = data  # Include raw for debugging
+                                        core_fields["parsing_status"] = "partial_extraction"
+                                        return core_fields
+                                    
+                                except Exception as e:
+                                    logger.error(f"Core field extraction also failed: {e}")
+                                
+                                logger.warning("All parsing attempts failed; returning raw response")
+                                return {"raw": data, "parsing_status": "failed"}
+
+            # Force remove generation_prompts if not requested (failsafe)
+            if not generate_prompts and isinstance(parsed, dict):
+                parsed.pop("generation_prompts", None)
 
             # Handle various generation_prompts formats that Gemini might return
             try:
@@ -1701,6 +2052,14 @@ class GoogleAIService:
         scene_id = str(uuid.uuid4())
         session_id = f";{int(time.time() * 1000)}"
 
+        request_item = {
+            "aspectRatio": aspect_ratio,
+            "seed": seed,
+            "textInput": {"prompt": prompt},
+            "videoModelKey": video_model_key,
+            "metadata": {"sceneId": scene_id},
+        }
+
         body = {
             "clientContext": {
                 "sessionId": session_id,
@@ -1708,15 +2067,7 @@ class GoogleAIService:
                 "tool": "PINHOLE",
                 "userPaygateTier": "PAYGATE_TIER_TWO",
             },
-            "requests": [
-                {
-                    "aspectRatio": aspect_ratio,
-                    "seed": seed,
-                    "textInput": {"prompt": prompt},
-                    "videoModelKey": video_model_key,
-                    "metadata": {"sceneId": scene_id},
-                }
-            ],
+            "requests": [request_item],
         }
 
         url = "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoText"
@@ -1791,8 +2142,8 @@ class GoogleAIService:
         )
 
     def generate_video_from_prompt(
-        self,
-        prompt: str,
+        self, 
+        prompt: str, 
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         video_model_key: str = "veo_3_1_t2v_portrait",
         seed: int = 9831,
@@ -1800,6 +2151,18 @@ class GoogleAIService:
         timeout_sec: int = 600,
         poll_interval_sec: int = 5,
     ) -> Dict[str, Any]:
+        """
+        Generate video using Veo model via Vertex AI / Gemini.
+        
+        Args:
+            prompt: Text prompt for video generation
+            aspect_ratio: Aspect ratio (e.g. VIDEO_ASPECT_RATIO_PORTRAIT)
+            video_model_key: Model key to use
+            seed: Random seed
+            project_id: GCP Project ID
+            timeout_sec: Max time to wait for generation
+            poll_interval_sec: Polling interval
+        """
         start = self.start_veo_generation(
             prompt=prompt,
             aspect_ratio=aspect_ratio,
@@ -1807,11 +2170,121 @@ class GoogleAIService:
             seed=seed,
             project_id=project_id,
         )
+        
+        op_name = start["operation_name"]
+        scene_id = start["scene_id"]
+        
         return self.poll_veo_generation(
-            operation_name=start["operation_name"],
-            scene_id=start["scene_id"],
+            operation_name=op_name,
+            scene_id=scene_id,
             timeout_sec=timeout_sec,
-            poll_interval_sec=poll_interval_sec,
+            poll_interval_sec=poll_interval_sec
+        )
+
+    def start_veo_image_generation(
+        self,
+        prompt: str,
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        video_model_key: str = "veo_3_1_t2v_portrait",
+        seed: int = 9831,
+        project_id: str = "f065945d-2b3d-442d-a025-dfd6c56d2392",
+        start_frame_file_uri: Optional[str] = None,
+        end_frame_file_uri: Optional[str] = None,
+    ) -> Dict[str, str]:
+        scene_id = str(uuid.uuid4())
+        session_id = f";{int(time.time() * 1000)}"
+
+        request_item = {
+            "aspectRatio": aspect_ratio,
+            "seed": seed,
+            "textInput": {"prompt": prompt},
+            "videoModelKey": video_model_key,
+            "metadata": {"sceneId": scene_id},
+        }
+
+        # Add Image Input (Start Frame)
+        if start_frame_file_uri:
+            # Assuming standard structure for Image-to-Video: imageInput
+            request_item["imageInput"] = {"image": {"uri": start_frame_file_uri}}
+        
+        # Add End Frame if supported (speculative implementation based on common patterns)
+        if end_frame_file_uri:
+             # Some models use controlImages or specific fields. 
+             # For now, we'll log it but not send it to avoid breaking the API unless we are sure.
+             # Or we can try adding it as a secondary image input if the API supports list.
+             # Given the uncertainty, let's stick to start frame (Image-to-Video) which is the core request.
+             logger.warning(f"End frame URI provided but not yet mapped to API payload: {end_frame_file_uri}")
+
+        body = {
+            "clientContext": {
+                "sessionId": session_id,
+                "projectId": project_id,
+                "tool": "PINHOLE",
+                "userPaygateTier": "PAYGATE_TIER_TWO",
+            },
+            "requests": [request_item],
+        }
+
+        url = "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoText"
+        resp = requests.post(url, headers=self._veo_auth_headers(), json=body, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+
+        operations = data.get("operations") or []
+        if not operations:
+            raise RuntimeError(f"No operations returned from Veo API: {data}")
+
+        op_obj = operations[0]
+        op_name = (op_obj.get("operation") or {}).get("name") or op_obj.get("name")
+        if not op_name:
+            raise RuntimeError(f"Could not find operation name in Veo response: {data}")
+
+        return {"operation_name": op_name, "scene_id": scene_id}
+
+    def generate_image_video_from_prompt(
+        self, 
+        prompt: str, 
+        aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
+        video_model_key: str = "veo_3_1_t2v_portrait",
+        seed: int = 9831,
+        project_id: str = "f065945d-2b3d-442d-a025-dfd6c56d2392",
+        timeout_sec: int = 600,
+        poll_interval_sec: int = 5,
+        start_frame_file_uri: Optional[str] = None,
+        end_frame_file_uri: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate video using Veo model via Vertex AI / Gemini.
+        
+        Args:
+            prompt: Text prompt for video generation
+            aspect_ratio: Aspect ratio (e.g. VIDEO_ASPECT_RATIO_PORTRAIT)
+            video_model_key: Model key to use
+            seed: Random seed
+            project_id: GCP Project ID
+            timeout_sec: Max time to wait for generation
+            poll_interval_sec: Polling interval
+            start_frame_file_uri: Optional Gemini File URI for start frame
+            end_frame_file_uri: Optional Gemini File URI for end frame
+        """
+        start = self.start_veo_image_generation(
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            video_model_key=video_model_key,
+            seed=seed,
+            project_id=project_id,
+            start_frame_file_uri=start_frame_file_uri,
+            end_frame_file_uri=end_frame_file_uri
+        )
+        
+        op_name = start["operation_name"]
+        scene_id = start["scene_id"]
+        
+        return self.poll_veo_generation(
+            operation_name=op_name,
+            scene_id=scene_id,
+            timeout_sec=timeout_sec,
+            poll_interval_sec=poll_interval_sec
         )
 
     def get_veo_models(self) -> Dict[str, Any]:
@@ -1893,64 +2366,8 @@ class GoogleAIService:
         return data
 
     def get_veo_credits(self) -> Dict[str, Any]:
-        """Fetch current Veo credits and userPaygateTier from AISandbox API.
-
-        Uses the same Bearer token as Veo generation (_veo_auth_headers) and an
-        API key. The preferred source of the API key is the instance api_key
-        (typically loaded from app_settings), with environment variables used
-        only as a fallback.
-        """
-        api_key = ""
-        # Prefer a value stored in app_settings under key "veo_sandbox_api_key"
-        try:
-            db = SessionLocal()
-            try:
-                setting = db.query(AppSetting).filter(AppSetting.key == "veo_sandbox_api_key").first()
-                if setting and setting.value:
-                    raw = setting.value
-                    if isinstance(raw, dict):
-                        value = raw.get("api_key")
-                        if isinstance(value, str):
-                            api_key = value.strip()
-                        elif value is not None:
-                            api_key = str(value).strip()
-                        else:
-                            api_key = json.dumps(raw)
-                    elif isinstance(raw, str):
-                        try:
-                            loaded = json.loads(raw)
-                            if isinstance(loaded, dict) and "api_key" in loaded:
-                                value = loaded.get("api_key")
-                                if isinstance(value, str):
-                                    api_key = value.strip()
-                                elif value is not None:
-                                    api_key = str(value).strip()
-                                else:
-                                    api_key = raw.strip()
-                            elif isinstance(loaded, str):
-                                api_key = loaded.strip()
-                            else:
-                                api_key = raw.strip()
-                        except Exception:
-                            api_key = raw.strip()
-                    else:
-                        api_key = str(raw).strip()
-            finally:
-                db.close()
-        except Exception:
-            # Ignore DB errors here; fall back to env/instance values.
-            pass
-
-        if not api_key:
-            api_key = os.getenv("GOOGLE_VEO_SANDBOX_API_KEY") or os.getenv("GOOGLE_API_KEY") or self.api_key
-
-        if not api_key:
-            raise RuntimeError("Veo sandbox API key is not configured in settings or environment")
-
         url = "https://aisandbox-pa.googleapis.com/v1/credits"
         headers = self._veo_auth_headers()
-        # Align headers with the working browser/curl pattern as closely as is
-        # reasonable from the backend.
         headers.update(
             {
                 "Accept": "*/*",
@@ -1962,16 +2379,17 @@ class GoogleAIService:
         )
 
         try:
-            resp = requests.get(url, headers=headers, params={"key": api_key}, timeout=30)
+            resp = requests.get(url, headers=headers, timeout=15)
+            if resp.status_code == 401:
+                logger.error("Veo credits API error 401: %s", resp.text[:500])
+                return {"credits": 0, "userPaygateTier": ""}
             if resp.status_code >= 400:
-                logger.error(
-                    "Veo credits API error %s: %s", resp.status_code, resp.text[:500]
-                )
-                resp.raise_for_status()
+                logger.error("Veo credits API error %s: %s", resp.status_code, resp.text[:500])
+                return {"credits": 0, "userPaygateTier": ""}
             data = resp.json()
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch Veo credits: {e}")
-            raise
+            return {"credits": 0, "userPaygateTier": ""}
 
         credits = data.get("credits")
         tier = data.get("userPaygateTier")
@@ -2222,12 +2640,12 @@ class GoogleAIService:
     def generate_video_from_two_images(
         self,
         start_image_media_id: str,
-        end_image_media_id: str,
+        end_image_media_id: Optional[str],
         prompt: str,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         video_model_key: str = "veo_3_1_i2v_s_fast_portrait_ultra_fl",
         seed: Optional[int] = None,
-        project_id: str = "117a4f2e-fdcc-47c3-949c-f95019ebc384",
+        project_id: str = "be377fde-7c13-4b2a-84b7-54b28eb1fe13",
         timeout_sec: int = 600,
         poll_interval_sec: int = 5,
     ) -> Dict[str, Any]:
@@ -2273,16 +2691,19 @@ class GoogleAIService:
                 "startImage": {
                     "mediaId": start_image_media_id
                 },
-                "endImage": {
-                    "mediaId": end_image_media_id
-                },
                 "metadata": {
                     "sceneId": scene_id
                 }
             }]
         }
+        if end_image_media_id:
+            body["requests"][0]["endImage"] = {"mediaId": end_image_media_id}
         
-        url = "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoStartAndEndImage"
+        url = (
+            "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoStartImage"
+            if not end_image_media_id
+            else "https://aisandbox-pa.googleapis.com/v1/video:batchAsyncGenerateVideoStartAndEndImage"
+        )
         
         headers = self._veo_auth_headers()
         headers.update({
@@ -2295,69 +2716,38 @@ class GoogleAIService:
         })
         
         try:
-            # Start video generation
-            logger.info(f"Starting image-to-video generation with prompt: {prompt}")
             resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=60)
             resp.raise_for_status()
             data = resp.json()
-            
             operations = data.get("operations", [])
             if not operations:
                 raise RuntimeError(f"No operations returned from video generation API: {data}")
-            
-            operation = operations[0]
-            operation_name = operation.get("operation", {}).get("name")
-            
+            op = operations[0]
+            operation_name = (op.get("operation") or {}).get("name") or op.get("name")
             if not operation_name:
                 raise RuntimeError(f"No operation name in response: {data}")
-            
-            logger.info(f"Video generation started with operation: {operation_name}")
-            
-            # Poll for completion
             start_time = time.time()
-            while True:
-                elapsed = time.time() - start_time
-                if elapsed > timeout_sec:
-                    raise RuntimeError(f"Video generation timed out after {timeout_sec} seconds")
-                
-                # Check status
-                status_url = f"https://aisandbox-pa.googleapis.com/v1/operations/{operation_name}"
-                status_resp = requests.get(status_url, headers=headers, timeout=30)
-                status_resp.raise_for_status()
-                status_data = status_resp.json()
-                
-                if status_data.get("done"):
-                    # Check for errors
-                    if "error" in status_data:
-                        error = status_data["error"]
-                        raise RuntimeError(f"Video generation failed: {error}")
-                    
-                    # Extract video metadata
-                    metadata = status_data.get("metadata", {})
-                    video_data = metadata.get("video", {})
-                    
-                    video_url = video_data.get("fifeUrl")
-                    if not video_url:
-                        raise RuntimeError(f"No video URL in completed operation: {status_data}")
-                    
-                    logger.info(f"Video generation completed in {elapsed:.1f}s")
-                    
-                    return {
-                        "success": True,
-                        "video_url": video_url,
-                        "media_generation_id": video_data.get("mediaGenerationId"),
-                        "seed": seed,
-                        "prompt": prompt,
-                        "aspect_ratio": aspect_ratio,
-                        "model": video_model_key,
-                        "generation_time_seconds": int(elapsed),
-                        "serving_base_uri": video_data.get("servingBaseUri"),
-                        "is_looped": video_data.get("isLooped", False)
-                    }
-                
-                logger.info(f"Video generation in progress... ({elapsed:.1f}s elapsed)")
-                time.sleep(poll_interval_sec)
-                
+            status = self.poll_veo_generation(operation_name=operation_name, scene_id=scene_id, timeout_sec=timeout_sec, poll_interval_sec=poll_interval_sec)
+            elapsed = time.time() - start_time
+            op_meta = (status.get("operation") or {}).get("metadata") or status.get("metadata") or {}
+            video_data = (op_meta.get("video") or {})
+            video_url = video_data.get("fifeUrl") or status.get("fifeUrl")
+            if isinstance(video_url, str):
+                video_url = video_url.strip().strip('`')
+            if not video_url:
+                raise RuntimeError(f"No video URL in completed operation: {status}")
+            return {
+                "success": True,
+                "video_url": video_url,
+                "media_generation_id": video_data.get("mediaGenerationId") or status.get("mediaGenerationId"),
+                "seed": seed,
+                "prompt": prompt,
+                "aspect_ratio": aspect_ratio,
+                "model": video_model_key,
+                "generation_time_seconds": int(elapsed),
+                "serving_base_uri": video_data.get("servingBaseUri"),
+                "is_looped": video_data.get("isLooped", False)
+            }
         except requests.exceptions.RequestException as e:
             logger.error(f"Video generation from images failed: {e}")
             raise RuntimeError(f"Video generation from images failed: {str(e)}")
@@ -2371,6 +2761,11 @@ class GoogleAIService:
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         custom_instruction: Optional[str] = None,
+        image_path: Optional[str] = None,
+        voice_energy: Optional[str] = None,
+        language: Optional[str] = None,
+        accent: Optional[str] = None,
+        workflow_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate creative brief variations based on a script/VO with different styles.
@@ -2388,10 +2783,18 @@ class GoogleAIService:
         
         # Check if this is an OpenRouter model
         if model.startswith("openrouter:"):
-            return self._generate_briefs_via_openrouter(script, styles, character, model, saved_style, aspect_ratio, custom_instruction)
+            return self._generate_briefs_via_openrouter(
+                script, styles, character, model, saved_style, aspect_ratio, custom_instruction,
+                image_path=image_path, voice_energy=voice_energy, language=language, accent=accent,
+                workflow_type=workflow_type
+            )
         
         # Otherwise use Gemini
-        return self._generate_briefs_via_gemini(script, styles, character, model, saved_style, aspect_ratio, custom_instruction)
+        return self._generate_briefs_via_gemini(
+            script, styles, character, model, saved_style, aspect_ratio, custom_instruction,
+            image_path=image_path, voice_energy=voice_energy, language=language, accent=accent,
+            workflow_type=workflow_type
+        )
     
     def _build_veo_prompt(
         self,
@@ -2401,6 +2804,11 @@ class GoogleAIService:
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         custom_instruction: Optional[str] = None,
+        image_path: Optional[str] = None,
+        voice_energy: Optional[str] = None,
+        language: Optional[str] = None,
+        accent: Optional[str] = None,
+        workflow_type: Optional[str] = None,
     ) -> tuple:
         """
         Build the comprehensive VEO 3 creative brief prompt structure.
@@ -2494,32 +2902,33 @@ class GoogleAIService:
         aspect_ratio_desc = ratio_map.get(aspect_ratio, "9:16 vertical")
 
         # Build the prompt for Gemini
-        system_instruction = f"""You are an expert video creative director specializing in creating detailed VEO 3 creative briefs.
+        image_instruction = ""
+        if image_path:
+            image_instruction = (
+                "\n\n## IMAGE-TO-VIDEO INSTRUCTIONS\n"
+                "You are analyzing an uploaded IMAGE to generate these video briefs.\n"
+                "- **VISUAL CONSISTENCY**: The Character Appearance, Wardrobe, and Environment MUST match the uploaded image EXACTLY.\n"
+                "- **NO HALLUCINATIONS**: Do not invent features that contradict the image.\n"
+                "- **ANIMATION**: Describe how the static elements in the image come to life (movement, expression, lighting changes)."
+            )
 
-Given a script/voiceover and a list of style variations, generate 8-SECOND SEGMENT creative briefs for EACH style.
+        voice_instruction = ""
+        if voice_energy or language or accent:
+            voice_instruction = (
+                "\n\n## AUDIO & VOICE SPECIFICATIONS\n"
+                f"- **Voice Energy**: {voice_energy or 'Professional'}\n"
+                f"- **Language**: {language or 'English'}\n"
+                f"- **Accent**: {accent or 'Neutral'}\n"
+                "Ensure the character's performance and facial expressions match this voice energy."
+            )
 
-🚨🚨🚨 CRITICAL UNDERSTANDING 🚨🚨🚨
-
-**THE VIDEO GENERATION AI CANNOT SEE PREVIOUS SEGMENTS!**
-
-This means EVERY segment must be COMPLETELY SELF-CONTAINED with FULL descriptions of:
-- Character appearance (exact details every time)
-- Environment layout (exact positions every time)
-- Lighting setup (exact sources every time)
-- Camera framing (exact angles every time)
-
-You CANNOT say "same as before" or "continues from previous" without RE-DESCRIBING everything in complete detail!
-
-**ABSOLUTELY NO ON-SCREEN TEXT OR TEXT OVERLAYS!**
-
-Do NOT include ANY text overlays, captions, subtitles, or on-screen text in the video generation prompts. The dialogue is spoken, not shown as text.
-
----
-
-You are generating ALL segments in a single batch, so you have complete knowledge of the full script and can ensure PERFECT CONTINUITY.
-
-Each segment brief should follow this EXACT structure and be EXTREMELY DETAILED:
-
+        # Select the appropriate brief template structure based on workflow type
+        if workflow_type == "image-to-video":
+            # Use the new Image-to-Video template focused on animation
+            template_structure = get_image_to_video_brief_template(aspect_ratio_desc)
+        else:
+            # Use the original Text-to-Video template (VEO 3 CREATIVE BRIEF)
+            template_structure = f"""
 # VEO 3 CREATIVE BRIEF: [Style Name] - [Title]
 
 ## TECHNICAL SPECIFICATIONS
@@ -2624,6 +3033,35 @@ For segments 2+: COPY this exact description from segment 1 - word for word. The
 ## 10. OPTIMIZATION & CHECKLIST
 - Avoid pitfalls: No on-screen text overlays, no hallucinations, no invented elements
 - Success criteria: Seamless continuity, consistent character, smooth merging between segments
+"""
+
+        system_instruction = f"""You are an expert video creative director specializing in creating detailed VEO 3 creative briefs.{image_instruction}{voice_instruction}
+
+Given a script/voiceover and a list of style variations, generate 8-SECOND SEGMENT creative briefs for EACH style.
+
+🚨🚨🚨 CRITICAL UNDERSTANDING 🚨🚨🚨
+
+**THE VIDEO GENERATION AI CANNOT SEE PREVIOUS SEGMENTS!**
+
+This means EVERY segment must be COMPLETELY SELF-CONTAINED with FULL descriptions of:
+- Character appearance (exact details every time)
+- Environment layout (exact positions every time)
+- Lighting setup (exact sources every time)
+- Camera framing (exact angles every time)
+
+You CANNOT say "same as before" or "continues from previous" without RE-DESCRIBING everything in complete detail!
+
+**ABSOLUTELY NO ON-SCREEN TEXT OR TEXT OVERLAYS!**
+
+Do NOT include ANY text overlays, captions, subtitles, or on-screen text in the video generation prompts. The dialogue is spoken, not shown as text.
+
+---
+
+You are generating ALL segments in a single batch, so you have complete knowledge of the full script and can ensure PERFECT CONTINUITY.
+
+Each segment brief should follow this EXACT structure and be EXTREMELY DETAILED:
+
+{template_structure}
 
 ---
 
@@ -2818,18 +3256,45 @@ CRITICAL REMINDERS:
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         custom_instruction: Optional[str] = None,
+        image_path: Optional[str] = None,
+        voice_energy: Optional[str] = None,
+        language: Optional[str] = None,
+        accent: Optional[str] = None,
+        workflow_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using Gemini API."""
         
         # Get the shared VEO prompt structure
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio, custom_instruction)
+        system_instruction, variations_request = self._build_veo_prompt(
+            script, styles, character, saved_style, aspect_ratio, custom_instruction,
+            image_path=image_path, voice_energy=voice_energy, language=language, accent=accent,
+            workflow_type=workflow_type
+        )
+
+        # Handle Image Upload if provided
+        user_parts = []
+        if image_path:
+            try:
+                logger.info(f"Uploading image for brief generation: {image_path}")
+                upload_resp = self.upload_file(image_path)
+                file_uri = upload_resp["file"]["uri"]
+                logger.info(f"Image uploaded to Gemini: {file_uri}")
+                self.wait_for_file_active(file_uri)
+                
+                # Add file to user parts
+                user_parts.append({"file_data": {"file_uri": file_uri, "mime_type": upload_resp["file"]["mimeType"]}})
+            except Exception as e:
+                logger.error(f"Failed to upload image for brief generation: {e}")
+                # Continue without image if upload fails, but log it
+        
+        user_parts.append({"text": variations_request})
 
         # Use iterative generation to handle long responses (MAX_TOKENS truncation)
         full_response_text = ""
         conversation_history = [
             {
                 "role": "user",
-                "parts": [{"text": variations_request}]
+                "parts": user_parts
             }
         ]
         
@@ -3122,6 +3587,11 @@ CRITICAL REMINDERS:
         saved_style: Optional[Dict[str, Any]] = None,
         aspect_ratio: str = "VIDEO_ASPECT_RATIO_PORTRAIT",
         custom_instruction: Optional[str] = None,
+        image_path: Optional[str] = None,
+        voice_energy: Optional[str] = None,
+        language: Optional[str] = None,
+        accent: Optional[str] = None,
+        workflow_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate creative briefs using OpenRouter API."""
         from app.services.openrouter_service import OpenRouterService
@@ -3146,7 +3616,11 @@ CRITICAL REMINDERS:
             db.close()
         
         # Get the shared VEO prompt structure (same as Gemini)
-        system_instruction, variations_request = self._build_veo_prompt(script, styles, character, saved_style, aspect_ratio, custom_instruction)
+        system_instruction, variations_request = self._build_veo_prompt(
+            script, styles, character, saved_style, aspect_ratio, custom_instruction,
+            image_path=image_path, voice_energy=voice_energy, language=language, accent=accent,
+            workflow_type=workflow_type
+        )
         
         # Combine system instruction and user prompt
         full_prompt = system_instruction + "\n\n" + variations_request

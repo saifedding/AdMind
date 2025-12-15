@@ -80,6 +80,9 @@ export function transformAd(apiAd: ApiAd): Ad {
     competitor_id: apiAd.competitor?.id,
     competitor: apiAd.competitor ? transformCompetitor(apiAd.competitor) : undefined,
     analysis: apiAd.analysis ? transformAdAnalysis(apiAd.analysis) : undefined,
+    // Convenience flags
+    is_analyzed: apiAd.is_analyzed,
+    analysis_summary: apiAd.analysis_summary,
 
     // New fields from the backend are now directly mapped
     meta: apiAd.meta || {},
@@ -136,6 +139,8 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
     ad_set_first_seen_date: apiAd.ad_set_first_seen_date,
     ad_set_last_seen_date: apiAd.ad_set_last_seen_date,
     is_favorite: apiAd.is_favorite,
+    is_analyzed: apiAd.is_analyzed,
+    analysis_summary: apiAd.analysis_summary,
   };
 }
 

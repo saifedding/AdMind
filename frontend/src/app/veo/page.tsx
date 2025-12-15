@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useVeoGenerator } from './hooks/useVeoGenerator';
 import { DashboardLayout } from '@/components/dashboard';
 import { VeoFeed } from './components/VeoFeed';
@@ -10,16 +10,19 @@ import { VeoStyleAnalyzer } from './components/VeoStyleAnalyzer';
 import { VeoSettingsPanel } from './components/VeoSettingsPanel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { History } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { VeoHistory } from './components/VeoHistory';
 import { VeoImageToVideo } from './components/VeoImageToVideo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 export default function VeoPage() {
   const veo = useVeoGenerator();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'text-to-video' | 'image-to-video'>('text-to-video');
+  const imageToVideoRef = useRef<any>(null);
 
   return (
     <DashboardLayout>
@@ -53,6 +56,7 @@ export default function VeoPage() {
                         setIsHistoryOpen(false);
                       }}
                       currentSessionId={veo.currentSession?.id}
+                      workflowFilter="text-to-video"
                     />
                   </div>
                 </SheetContent>
@@ -75,40 +79,40 @@ export default function VeoPage() {
                 <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
                   {/* Left Column: Inputs */}
                   <div className="space-y-6 min-w-0">
-                <VeoScriptInput
-                  script={veo.script}
-                  setScript={veo.setScript}
-                  useCustomInstruction={veo.useCustomInstruction}
-                  setUseCustomInstruction={veo.setUseCustomInstruction}
-                  customInstruction={veo.customInstruction}
-                  setCustomInstruction={veo.setCustomInstruction}
-                />
+                    <VeoScriptInput
+                      script={veo.script}
+                      setScript={veo.setScript}
+                      useCustomInstruction={veo.useCustomInstruction}
+                      setUseCustomInstruction={veo.setUseCustomInstruction}
+                      customInstruction={veo.customInstruction}
+                      setCustomInstruction={veo.setCustomInstruction}
+                    />
 
-                <VeoStyleSelector
-                  availableStyles={veo.availableStyles}
-                  selectedStyles={veo.selectedStyles}
-                  handleStyleToggle={veo.handleStyleToggle}
-                  characterPresets={veo.characterPresets}
-                  selectedCharacter={veo.selectedCharacter}
-                  setSelectedCharacter={veo.setSelectedCharacter}
-                />
+                    <VeoStyleSelector
+                      availableStyles={veo.availableStyles}
+                      selectedStyles={veo.selectedStyles}
+                      handleStyleToggle={veo.handleStyleToggle}
+                      characterPresets={veo.characterPresets}
+                      selectedCharacter={veo.selectedCharacter}
+                      setSelectedCharacter={veo.setSelectedCharacter}
+                    />
 
-                <VeoStyleAnalyzer
-                  videoStyleUrl={veo.videoStyleUrl}
-                  setVideoStyleUrl={veo.setVideoStyleUrl}
-                  videoStyleName={veo.videoStyleName}
-                  setVideoStyleName={veo.setVideoStyleName}
-                  analyzingVideo={veo.analyzingVideo}
-                  handleAnalyzeVideo={veo.handleAnalyzeVideo}
-                  reanalyzeStyleTemplate={veo.reanalyzeStyleTemplate}
-                  styleLibrary={veo.styleLibrary}
-                  selectedStyleTemplateId={veo.selectedStyleTemplateId}
-                  setSelectedStyleTemplateId={veo.setSelectedStyleTemplateId}
-                  handleDeleteStyleTemplate={veo.handleDeleteStyleTemplate}
-                  showStyleLibrary={veo.showStyleLibrary}
-                  setShowStyleLibrary={veo.setShowStyleLibrary}
-                />
-              </div>
+                    <VeoStyleAnalyzer
+                      videoStyleUrl={veo.videoStyleUrl}
+                      setVideoStyleUrl={veo.setVideoStyleUrl}
+                      videoStyleName={veo.videoStyleName}
+                      setVideoStyleName={veo.setVideoStyleName}
+                      analyzingVideo={veo.analyzingVideo}
+                      handleAnalyzeVideo={veo.handleAnalyzeVideo}
+                      reanalyzeStyleTemplate={veo.reanalyzeStyleTemplate}
+                      styleLibrary={veo.styleLibrary}
+                      selectedStyleTemplateId={veo.selectedStyleTemplateId}
+                      setSelectedStyleTemplateId={veo.setSelectedStyleTemplateId}
+                      handleDeleteStyleTemplate={veo.handleDeleteStyleTemplate}
+                      showStyleLibrary={veo.showStyleLibrary}
+                      setShowStyleLibrary={veo.setShowStyleLibrary}
+                    />
+                  </div>
 
                   {/* Right Column: Settings */}
                   <div className="xl:sticky xl:top-0">
@@ -156,7 +160,69 @@ export default function VeoPage() {
 
               {/* Image-to-Video Tab */}
               <TabsContent value="image-to-video" className="mt-6">
-                <VeoImageToVideo aspectRatio={veo.aspectRatio as 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_SQUARE'} />
+                {/* Mobile History Button for Image-to-Video */}
+                <div className="lg:hidden mb-4">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-800">
+                        <History className="w-4 h-4 mr-2" />
+                        Image-to-Video History
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-[400px] bg-slate-950 border-r border-slate-800 p-0">
+                      <SheetHeader className="p-6 border-b border-slate-800">
+                        <SheetTitle className="text-slate-200">Image-to-Video History</SheetTitle>
+                      </SheetHeader>
+                      <div className="h-[calc(100vh-80px)]">
+                        <VeoHistory
+                          onSelectSession={(session) => {
+                            if (imageToVideoRef.current?.loadSession) {
+                              imageToVideoRef.current.loadSession(session.id);
+                            }
+                          }}
+                          currentSessionId={undefined}
+                          workflowFilter="image-to-video"
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+                  {/* Left Column: Image-to-Video Component */}
+                  <div className="min-w-0">
+                    <VeoImageToVideo 
+                      ref={imageToVideoRef}
+                      aspectRatio={veo.aspectRatio as 'VIDEO_ASPECT_RATIO_PORTRAIT' | 'VIDEO_ASPECT_RATIO_LANDSCAPE' | 'VIDEO_ASPECT_RATIO_SQUARE'}
+                      onSessionLoaded={(sessionId) => {
+                        console.log('Loaded image-to-video session:', sessionId);
+                      }}
+                    />
+                  </div>
+
+                  {/* Right Column: Image-to-Video History */}
+                  <div className="hidden lg:block">
+                    <Card className="bg-slate-900/40 border-slate-800/50 backdrop-blur-sm sticky top-6">
+                      <div className="p-4 border-b border-slate-800/50">
+                        <h3 className="text-sm font-semibold text-slate-200">Image-to-Video History</h3>
+                        <p className="text-xs text-slate-500 mt-1">Your saved sessions</p>
+                      </div>
+                      <div className="h-[calc(100vh-200px)]">
+                        <VeoHistory
+                          onSelectSession={(session) => {
+                            if (imageToVideoRef.current?.loadSession) {
+                              imageToVideoRef.current.loadSession(session.id);
+                            } else {
+                              toast.error('Failed to load session');
+                            }
+                          }}
+                          currentSessionId={undefined}
+                          workflowFilter="image-to-video"
+                        />
+                      </div>
+                    </Card>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
 

@@ -200,9 +200,11 @@ class AdService:
                 )
                 
             # Filter by media type
-            if filters.media_type:
+            if filters.media_type and filters.media_type.lower() != 'all':
+                mt_map = {'video': 'Video', 'image': 'Image', 'carousel': 'Carousel'}
+                mt_norm = mt_map.get(filters.media_type.lower(), filters.media_type)
                 query = query.join(AdSet.best_ad).filter(
-                    cast(Ad.creatives, SQLAString).like(f'%"type": "{filters.media_type}"%')
+                    cast(Ad.creatives, SQLAString).ilike(f'%"type": "{mt_norm}"%')
                 )
                 
             return query
@@ -921,19 +923,26 @@ class AdService:
             
             # Create the analysis DTO if analysis exists
             analysis_dto = None
-            if ad.analysis:
-                analysis_dto = AdAnalysisResponseDTO(
-                    id=ad.analysis.id,
-                    summary=ad.analysis.summary,
-                    hook_score=ad.analysis.hook_score,
-                    overall_score=ad.analysis.overall_score,
-                    confidence_score=ad.analysis.confidence_score,
-                    target_audience=ad.analysis.target_audience,
-                    content_themes=ad.analysis.content_themes,
-                    analysis_version=ad.analysis.analysis_version,
-                    created_at=ad.analysis.created_at,
-                    updated_at=ad.analysis.updated_at
-                )
+            try:
+                current_analysis = ad.analysis
+                if current_analysis is None:
+                    from app.models.ad_analysis import AdAnalysis
+                    current_analysis = self.db.query(AdAnalysis).filter(AdAnalysis.ad_id == ad.id, AdAnalysis.is_current == 1).first()
+                if current_analysis:
+                    analysis_dto = AdAnalysisResponseDTO(
+                        id=current_analysis.id,
+                        summary=current_analysis.summary,
+                        hook_score=current_analysis.hook_score,
+                        overall_score=current_analysis.overall_score,
+                        confidence_score=current_analysis.confidence_score,
+                        target_audience=current_analysis.target_audience,
+                        content_themes=current_analysis.content_themes,
+                        analysis_version=current_analysis.analysis_version,
+                        created_at=current_analysis.created_at,
+                        updated_at=current_analysis.updated_at
+                    )
+            except Exception:
+                analysis_dto = None
             
             # Create the ad response DTO
             return AdResponseDTO(
@@ -985,6 +994,9 @@ class AdService:
                 
                 # Analysis data
                 analysis=analysis_dto,
+                # Convenience flags
+                is_analyzed=True if analysis_dto is not None else False,
+                analysis_summary=analysis_dto.summary if analysis_dto and analysis_dto.summary else None,
                 
                 # Raw data fields - use the parsed dictionaries
                 meta=meta_data,
@@ -1086,16 +1098,41 @@ class AdService:
         try:
             from app.models.ad_set import AdSet
             from app.models.veo_generation import VeoGeneration
+            from sqlalchemy import and_
 
-            self.db.query(AdSet).filter(AdSet.best_ad_id.isnot(None)).update({"best_ad_id": None}, synchronize_session=False)
+            # 1. Identify "safe" ads (favorites) that should NOT be deleted
+            # We want to keep all ads where is_favorite=True
+            safe_ad_ids = self.db.query(Ad.id).filter(Ad.is_favorite == True).all()
+            safe_ad_ids = [res[0] for res in safe_ad_ids] # Flatten list
 
-            self.db.query(VeoGeneration).delete(synchronize_session=False)
-            analyses_deleted = self.db.query(AdAnalysis).delete(synchronize_session=False)
-            ads_deleted = self.db.query(Ad).delete(synchronize_session=False)
+            # 2. Handle AdSets - Unset best_ad_id ONLY if it points to an ad we are about to delete
+            # If best_ad_id is a favorite, we keep it.
+            if safe_ad_ids:
+                # Set best_ad_id to None for AdSets where the best_ad is NOT in safe list
+                self.db.query(AdSet).filter(
+                    AdSet.best_ad_id.isnot(None),
+                    ~AdSet.best_ad_id.in_(safe_ad_ids)
+                ).update({"best_ad_id": None}, synchronize_session=False)
+            else:
+                # No safe ads, so wipe all best_ad_id references to be safe
+                self.db.query(AdSet).filter(AdSet.best_ad_id.isnot(None)).update({"best_ad_id": None}, synchronize_session=False)
+
+            # 3. Delete dependent data (VeoGeneration, AdAnalysis) but ONLY for ads that are NOT safe
+            if safe_ad_ids:
+                self.db.query(VeoGeneration).filter(~VeoGeneration.ad_id.in_(safe_ad_ids)).delete(synchronize_session=False)
+                analyses_deleted = self.db.query(AdAnalysis).filter(~AdAnalysis.ad_id.in_(safe_ad_ids)).delete(synchronize_session=False)
+                
+                # 4. Delete the ads themselves (excluding favorites)
+                ads_deleted = self.db.query(Ad).filter(~Ad.id.in_(safe_ad_ids)).delete(synchronize_session=False)
+            else:
+                # Fallback: Delete everything if no favorites exist (original behavior)
+                self.db.query(VeoGeneration).delete(synchronize_session=False)
+                analyses_deleted = self.db.query(AdAnalysis).delete(synchronize_session=False)
+                ads_deleted = self.db.query(Ad).delete(synchronize_session=False)
             
             self.db.commit()
             
-            logger.info(f"Successfully deleted ALL {ads_deleted} ads and {analyses_deleted} analyses")
+            logger.info(f"Successfully deleted {ads_deleted} ads and {analyses_deleted} analyses (Protected {len(safe_ad_ids)} favorites)")
             return ads_deleted
             
         except Exception as e:

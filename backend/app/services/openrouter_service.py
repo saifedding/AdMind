@@ -21,7 +21,7 @@ class OpenRouterService:
         self.api_key = api_key
         self.base_url = OPENROUTER_BASE_URL
     
-    def analyze_video(self, video_url: str, system_instruction: str, custom_instruction: str = None) -> Dict[str, Any]:
+    def analyze_video(self, video_url: str, system_instruction: str, custom_instruction: str = None, include_prompts: bool = True) -> Dict[str, Any]:
         """Analyze video using OpenRouter API with Gemini 2.5 Flash.
 
         NOTE: OpenRouter's chat API is OpenAI-compatible and Gemini can fetch
@@ -54,6 +54,7 @@ class OpenRouterService:
                 video_url=video_url,
                 instruction=full_instruction,
                 response_type="analysis",
+                include_prompts=include_prompts,
             )
             logger.info(f"✓ Success with {model} via OpenRouter")
             return result
@@ -96,7 +97,7 @@ class OpenRouterService:
             logger.error(f"{model} via OpenRouter failed: {e}")
             raise Exception(f"OpenRouter prompt generation failed: {e}")
     
-    def _call_model(self, model: str, video_url: str, instruction: str, response_type: str = "analysis") -> Dict[str, Any]:
+    def _call_model(self, model: str, video_url: str, instruction: str, response_type: str = "analysis", include_prompts: bool = True) -> Dict[str, Any]:
         """Call OpenRouter API with video URL for analysis."""
 
         # Response schema for video analysis
@@ -120,11 +121,12 @@ class OpenRouterService:
                 "text_on_video": {"type": "string"},
                 "voice_over": {"type": "string"},
                 "storyboard": {"type": "array", "items": {"type": "string"}},
-                "generation_prompts": {"type": "array", "items": {"type": "string"}},
                 "strengths": {"type": "array", "items": {"type": "string"}},
                 "recommendations": {"type": "array", "items": {"type": "string"}},
             },
         }
+        if include_prompts:
+            response_schema["properties"]["generation_prompts"] = {"type": "array", "items": {"type": "string"}}
 
         # Gemini on OpenRouter supports fetching media from a URL, so we
         # provide the video_url in plain text and ask for JSON only.
@@ -195,6 +197,10 @@ class OpenRouterService:
                 except Exception as e3:
                     logger.error(f"Sanitized parse failed: {e3}")
                     parsed = {"raw": content}
+
+        # Remove prompts if not requested
+        if not include_prompts and isinstance(parsed, dict):
+            parsed.pop("generation_prompts", None)
 
         # Attach token usage and zero cost information if available
         try:

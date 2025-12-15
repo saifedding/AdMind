@@ -97,7 +97,8 @@ export default function DownloadAdsPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [currentPromptForModal, setCurrentPromptForModal] = useState<{ text: string; key: string } | null>(null);
   const [aspectRatio, setAspectRatio] = useState<string>("VIDEO_ASPECT_RATIO_PORTRAIT");
-  const [seed, setSeed] = useState<number>(9831);
+  const [seed, setSeed] = useState<number>(12345);
+  const [generatePrompts, setGeneratePrompts] = useState<boolean>(false);
   const [analysisHistory, setAnalysisHistory] = useState<any>(null);
   const [showAnalysisHistory, setShowAnalysisHistory] = useState<boolean>(false);
   const [selectedAnalysisVersion, setSelectedAnalysisVersion] = useState<number | null>(null);
@@ -126,8 +127,7 @@ export default function DownloadAdsPage() {
       }
 
       // Always use the /ads/{ad_id}/analyze endpoint which handles Instagram URLs properly
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/v1/ads/${result?.ad_id}/analyze`, {
+      const response = await fetch(`/api/v1/ads/${result?.ad_id}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,6 +135,9 @@ export default function DownloadAdsPage() {
         body: JSON.stringify({
           video_url: actualVideoUrl,
           custom_instruction: customInstructionText || undefined,
+          generate_prompts: generatePrompts,
+          async: false,
+          use_task: true,
         }),
       });
 
@@ -143,19 +146,73 @@ export default function DownloadAdsPage() {
       }
 
       const res: AnalyzeVideoResponse = await response.json();
-      setAnalysisByUrl(prev => ({ ...prev, [videoUrl]: res }));
-      setSelectedAnalysisUrl(videoUrl);
 
-      // Always use AI-generated prompts from backend (no manual fallback)
-      const basePrompts = res.generation_prompts || [];
-      setEditedPromptsByUrl(prev => ({ ...prev, [videoUrl]: basePrompts }));
+      if (res.source === 'background-task' || res.source === 'celery-task') {
+        const taskId = res.raw?.task_id;
 
-      // Load chat history from analysis if exists
-      loadChatHistoryFromAnalysis(res);
+        // Show a toast or temporary status
+        // Construct a partial response to show in UI
+        const partial: AnalyzeVideoResponse = {
+          ...res,
+          transcript: "Analysis running in background...",
+          summary: "Processing...",
+          beats: [],
+          generation_prompts: [],
+          storyboard: []
+        };
+        setAnalysisByUrl(prev => ({ ...prev, [videoUrl]: partial }));
+        setSelectedAnalysisUrl(videoUrl);
 
-      // Load analysis history if ad_id exists
-      if (result?.ad_id) {
-        loadAnalysisHistory(result.ad_id);
+        if (taskId) {
+          // Poll for completion
+          const pollInterval = setInterval(async () => {
+            try {
+              const status = await adsApi.getAdAnalysisTaskStatus(taskId);
+              
+              if (status.state === 'SUCCESS' && status.result) {
+                clearInterval(pollInterval);
+                const finalResult = status.result;
+                setAnalysisByUrl(prev => ({ ...prev, [videoUrl]: finalResult }));
+                
+                // Update prompts and history
+                const basePrompts = finalResult.generation_prompts || [];
+                setEditedPromptsByUrl(prev => ({ ...prev, [videoUrl]: basePrompts }));
+                loadChatHistoryFromAnalysis(finalResult);
+                
+                if (result?.ad_id) {
+                  loadAnalysisHistory(result.ad_id);
+                }
+              } else if (status.state === 'FAILURE') {
+                clearInterval(pollInterval);
+                setError(`Analysis failed: ${status.error || 'Unknown error'}`);
+                setAnalysisByUrl(prev => ({ 
+                    ...prev, 
+                    [videoUrl]: { ...partial, transcript: "Analysis failed.", message: status.error } 
+                }));
+              }
+            } catch (e) {
+              console.error("Polling error:", e);
+            }
+          }, 2000);
+
+          // Safety timeout (5 minutes)
+          setTimeout(() => clearInterval(pollInterval), 300000);
+        }
+      } else {
+        setAnalysisByUrl(prev => ({ ...prev, [videoUrl]: res }));
+        setSelectedAnalysisUrl(videoUrl);
+        
+        // Always use AI-generated prompts from backend (no manual fallback)
+        const basePrompts = res.generation_prompts || [];
+        setEditedPromptsByUrl(prev => ({ ...prev, [videoUrl]: basePrompts }));
+
+        // Load chat history from analysis if exists
+        loadChatHistoryFromAnalysis(res);
+
+        // Load analysis history if ad_id exists
+        if (result?.ad_id) {
+          loadAnalysisHistory(result.ad_id);
+        }
       }
     } catch (err: any) {
       setError(err?.message || "Analysis failed");
@@ -242,7 +299,10 @@ export default function DownloadAdsPage() {
       setRegeneratingWithInstruction(true);
       setError(null);
 
-      const res = await adsApi.regenerateAdAnalysis(result.ad_id, { instruction });
+      const res = await adsApi.regenerateAdAnalysis(result.ad_id, {
+        instruction,
+        generate_prompts: generatePrompts
+      });
 
       // Update analysis with new version
       setAnalysisByUrl(prev => ({ ...prev, [selectedAnalysisUrl]: res }));
@@ -451,7 +511,7 @@ export default function DownloadAdsPage() {
       }, 2500); // Update every 2.5 seconds
 
       // Call backend to download clips
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const downloadResponse = await fetch(`${backendUrl}/api/v1/settings/ai/veo/download-clips`, {
         method: 'POST',
         headers: {
@@ -539,7 +599,7 @@ export default function DownloadAdsPage() {
       });
 
       // Use backend server URL (http://localhost:8000) for video access
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace('localhost','127.0.0.1');
       const videoUrl = res.public_url ? `${backendUrl}${res.public_url}` : null;
 
       console.log('Using backend video URL:', videoUrl);
@@ -935,14 +995,14 @@ export default function DownloadAdsPage() {
       setAnalyzing(selectedAnalysisUrl);
       setError(null);
 
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/v1/ads/${result.ad_id}/analyze`, {
+      const response = await fetch(`/api/v1/ads/${result.ad_id}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           video_url: selectedAnalysisUrl,
+          generate_prompts: generatePrompts,
         }),
       });
 
@@ -1446,30 +1506,37 @@ export default function DownloadAdsPage() {
                       <div className="text-[10px] text-neutral-500">
                         {new Date(h.created_at).toLocaleString()}
                       </div>
-                      {h.ad_id && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {h.analysis_count > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded border border-blue-600/30">
-                              📊 {h.analysis_count} Analysis{h.analysis_count > 1 ? 'es' : ''}
-                            </span>
-                          )}
-                          {h.prompt_count > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded border border-purple-600/30">
-                              🎬 {h.prompt_count} Prompt{h.prompt_count > 1 ? 's' : ''}
-                            </span>
-                          )}
-                          {h.veo_video_count > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded border border-green-600/30">
-                              🎥 {h.veo_video_count} Video{h.veo_video_count > 1 ? 's' : ''}
-                            </span>
-                          )}
-                          {h.merge_count > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 bg-orange-600/20 text-orange-400 rounded border border-orange-600/30">
-                              🎞️ {h.merge_count} Merge{h.merge_count > 1 ? 's' : ''}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {h.has_analysis && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded border border-green-600/30">
+                            ✅ Analyzed
+                          </span>
+                        )}
+                        {h.ad_id && (
+                          <>
+                            {h.analysis_count > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded border border-blue-600/30">
+                                📊 {h.analysis_count} Analysis{h.analysis_count > 1 ? 'es' : ''}
+                              </span>
+                            )}
+                            {h.prompt_count > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded border border-purple-600/30">
+                                🎬 {h.prompt_count} Prompt{h.prompt_count > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {h.veo_video_count > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded border border-green-600/30">
+                                🎥 {h.veo_video_count} Video{h.veo_video_count > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {h.merge_count > 0 && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-orange-600/20 text-orange-400 rounded border border-orange-600/30">
+                                🎞️ {h.merge_count} Merge{h.merge_count > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                       {h.save_path ? (
                         <div className="text-[11px] text-neutral-400 font-mono truncate" title={h.save_path}>{h.save_path}</div>
                       ) : null}
@@ -1669,23 +1736,25 @@ export default function DownloadAdsPage() {
                     <h2 className="text-lg font-semibold">Video Analysis</h2>
                     <div className="flex items-center gap-2 text-xs">
                       <button className={`px-3 py-1.5 rounded-md border ${activeTab === 'analysis' ? 'border-blue-500 text-blue-300' : 'border-neutral-700 text-neutral-300'}`} onClick={() => setActiveTab('analysis')}>Analysis</button>
-                      <button className={`px-3 py-1.5 rounded-md border ${activeTab === 'prompts' ? 'border-blue-500 text-blue-300' : 'border-neutral-700 text-neutral-300'}`} onClick={() => {
-                        setActiveTab('prompts');
-                        // Load saved generations when switching to prompts tab
-                        const analysis = analysisByUrl[selectedAnalysisUrl];
-                        if (analysis?.generation_prompts) {
-                          matchGenerationsToPrompts(analysis.generation_prompts, selectedAnalysisUrl);
-                        }
-                        // Load merge history
-                        if (result?.ad_id) {
-                          loadMergeHistory(result.ad_id);
-                        }
+                      {(analysisByUrl[selectedAnalysisUrl]?.generation_prompts?.length ?? 0) > 0 && (
+                        <button className={`px-3 py-1.5 rounded-md border ${activeTab === 'prompts' ? 'border-blue-500 text-blue-300' : 'border-neutral-700 text-neutral-300'}`} onClick={() => {
+                          setActiveTab('prompts');
+                          // Load saved generations when switching to prompts tab
+                          const analysis = analysisByUrl[selectedAnalysisUrl];
+                          if (analysis?.generation_prompts) {
+                            matchGenerationsToPrompts(analysis.generation_prompts, selectedAnalysisUrl);
+                          }
+                          // Load merge history
+                          if (result?.ad_id) {
+                            loadMergeHistory(result.ad_id);
+                          }
 
-                        // Load Veo generations
-                        if (result?.ad_id) {
-                          loadVeoGenerationsForAd(result.ad_id);
-                        }
-                      }}>Gen Prompts</button>
+                          // Load Veo generations
+                          if (result?.ad_id) {
+                            loadVeoGenerationsForAd(result.ad_id);
+                          }
+                        }}>Gen Prompts</button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1778,8 +1847,8 @@ export default function DownloadAdsPage() {
                         <div
                           key={item.id}
                           className={`p-2 border rounded-md cursor-pointer transition-colors ${item.is_current
-                              ? 'border-blue-600 bg-blue-600/10'
-                              : 'border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50'
+                            ? 'border-blue-600 bg-blue-600/10'
+                            : 'border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50'
                             }`}
                           onClick={() => {
                             if (result?.ad_id && selectedAnalysisUrl) {
@@ -2044,17 +2113,17 @@ export default function DownloadAdsPage() {
                                   // Official Google Gemini pricing per 1M tokens (USD) - default to 2.0 Flash if unknown
                                   // Source: https://ai.google.dev/gemini-api/docs/pricing
                                   const modelName = (msg as any).model || 'gemini-2.0-flash-001';
-                                  const pricingTable: Record<string, {prompt: number, cached: number, completion: number}> = {
-                                    'gemini-3-pro-preview': {prompt: 2.00, cached: 0.20, completion: 12.00},
-                                    'gemini-2.5-pro': {prompt: 1.25, cached: 0.125, completion: 10.00},
-                                    'gemini-2.5-flash': {prompt: 0.30, cached: 0.03, completion: 2.50},
-                                    'gemini-2.5-flash-001': {prompt: 0.30, cached: 0.03, completion: 2.50},
-                                    'gemini-2.5-flash-preview-09-2025': {prompt: 0.30, cached: 0.03, completion: 2.50},
-                                    'gemini-2.5-flash-lite': {prompt: 0.10, cached: 0.01, completion: 0.40},
-                                    'gemini-2.5-flash-lite-preview-09-2025': {prompt: 0.10, cached: 0.01, completion: 0.40},
-                                    'gemini-2.0-flash': {prompt: 0.10, cached: 0.025, completion: 0.40},
-                                    'gemini-2.0-flash-001': {prompt: 0.10, cached: 0.025, completion: 0.40},
-                                    'gemini-2.0-flash-lite': {prompt: 0.075, cached: 0.075, completion: 0.30},
+                                  const pricingTable: Record<string, { prompt: number, cached: number, completion: number }> = {
+                                    'gemini-3-pro-preview': { prompt: 2.00, cached: 0.20, completion: 12.00 },
+                                    'gemini-2.5-pro': { prompt: 1.25, cached: 0.125, completion: 10.00 },
+                                    'gemini-2.5-flash': { prompt: 0.30, cached: 0.03, completion: 2.50 },
+                                    'gemini-2.5-flash-001': { prompt: 0.30, cached: 0.03, completion: 2.50 },
+                                    'gemini-2.5-flash-preview-09-2025': { prompt: 0.30, cached: 0.03, completion: 2.50 },
+                                    'gemini-2.5-flash-lite': { prompt: 0.10, cached: 0.01, completion: 0.40 },
+                                    'gemini-2.5-flash-lite-preview-09-2025': { prompt: 0.10, cached: 0.01, completion: 0.40 },
+                                    'gemini-2.0-flash': { prompt: 0.10, cached: 0.025, completion: 0.40 },
+                                    'gemini-2.0-flash-001': { prompt: 0.10, cached: 0.025, completion: 0.40 },
+                                    'gemini-2.0-flash-lite': { prompt: 0.075, cached: 0.075, completion: 0.30 },
                                   };
                                   const pricing = pricingTable[modelName] || pricingTable['gemini-2.0-flash-001'];
                                   const promptPerMillion = pricing.prompt;
@@ -2854,6 +2923,20 @@ export default function DownloadAdsPage() {
               }
               className="w-full h-32 px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {pendingAnalyzeUrl && (
+              <div className="flex items-center gap-2 mt-4">
+                <input
+                  id="generatePromptsPopup"
+                  type="checkbox"
+                  checked={generatePrompts}
+                  onChange={(e) => setGeneratePrompts(e.target.checked)}
+                  className="w-4 h-4 rounded border-neutral-700 bg-neutral-800 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="generatePromptsPopup" className="text-sm text-neutral-300 select-none cursor-pointer">
+                  Generate Visual Prompts
+                </label>
+              </div>
+            )}
             <div className="flex items-center justify-end gap-3 mt-4">
               <button
                 onClick={() => {
