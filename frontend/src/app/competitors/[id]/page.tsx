@@ -42,34 +42,14 @@ import {
   type CompetitorDetail,
   type CompetitorScrapeRequest 
 } from '@/lib/api';
+import { AdCard } from '@/features/dashboard/components/AdCard';
+import { type AdWithAnalysis } from '@/types/ad';
 
-interface CompetitorAd {
-  id: number;
-  ad_copy?: string;
-  main_title?: string;
-  main_body_text?: string;
-  media_type?: string;
-  media_url?: string;
-  main_image_urls?: string[];
-  impressions_text?: string;
-  spend?: string;
-  start_date?: string;
-  end_date?: string;
-  is_active?: boolean;
-  created_at: string;
-  updated_at: string;
-  analysis?: {
-    overall_score?: number;
-    hook_score?: number;
-    confidence_score?: number;
-    target_audience?: string;
-    content_themes?: string[];
-  };
-}
+// Using AdWithAnalysis type from types/ad.ts instead of local interface
 
 interface CompetitorAdsResponse {
   ads: {
-    data: CompetitorAd[];
+    data: AdWithAnalysis[];
     total: number;
     page: number;
     page_size: number;
@@ -276,19 +256,7 @@ export default function CompetitorDetailPage() {
     });
   };
 
-  const getScoreColor = (score?: number) => {
-    if (!score) return 'text-muted-foreground';
-    if (score >= 8) return 'text-green-400';
-    if (score >= 6) return 'text-yellow-400';
-    return 'text-red-400';
-  };
 
-  const getScoreBadge = (score?: number) => {
-    if (!score) return 'secondary';
-    if (score >= 8) return 'default';
-    if (score >= 6) return 'secondary';
-    return 'destructive';
-  };
 
   const toggleCountry = (country: string) => {
     setScrapeConfig(prev => {
@@ -725,64 +693,32 @@ export default function CompetitorDetailPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ads?.ads.data.map((ad) => (
-                  <Card key={ad.id} className="bg-card border-border hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        {/* Ad Title */}
-                        <div>
-                          <h3 className="font-semibold text-lg line-clamp-2">
-                            {ad.main_title || ad.ad_copy || 'Untitled Ad'}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(ad.created_at)}
-                          </p>
-                        </div>
-                        
-                        {/* Media */}
-                        {ad.main_image_urls && ad.main_image_urls.length > 0 && (
-                          <div className="aspect-video bg-iridium-800 rounded-lg flex items-center justify-center">
-                            <img 
-                              src={ad.main_image_urls[0]} 
-                              alt="Ad creative"
-                              className="max-h-full max-w-full object-contain rounded-lg"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        
-                        {/* Ad Copy */}
-                        {ad.main_body_text && (
-                          <p className="text-sm text-foreground line-clamp-3">
-                            {ad.main_body_text}
-                          </p>
-                        )}
-                        
-                        {/* Metrics */}
-                        <div className="flex flex-wrap gap-2">
-                          {ad.is_active && (
-                            <Badge variant="default" className="bg-green-500/20 text-green-400">
-                              Active
-                            </Badge>
-                          )}
-                          {ad.analysis?.overall_score && (
-                            <Badge variant={getScoreBadge(ad.analysis.overall_score)}>
-                              Score: {ad.analysis.overall_score?.toFixed(1) || '0.0'}
-                            </Badge>
-                          )}
-                          {ad.impressions_text && (
-                            <Badge variant="secondary" className="bg-photon-500/20 text-photon-400">
-                              {ad.impressions_text}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {ads?.ads.data.map((ad) => {
+                  // The API already returns ads in the correct AdWithAnalysis format
+                  // Just ensure the competitor info is properly set
+                  const transformedAd = {
+                    ...ad,
+                    competitor: ad.competitor || (competitor ? {
+                      id: competitor.id,
+                      name: competitor.name,
+                      page_id: competitor.page_id,
+                      is_active: competitor.is_active,
+                      created_at: competitor.created_at,
+                      updated_at: competitor.updated_at
+                    } : undefined),
+                    page_name: ad.page_name || competitor?.name,
+                    is_analyzed: ad.is_analyzed || !!ad.analysis
+                  } as AdWithAnalysis;
+                  
+                  return (
+                    <AdCard 
+                      key={ad.id} 
+                      ad={transformedAd}
+                      disableSetNavigation={true}
+                    />
+                  );
+                })}
               </div>
             )}
             

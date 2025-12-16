@@ -304,44 +304,21 @@ class EnhancedAdExtractionService:
         
         return form_details
     
-    def build_detailed_creative_object(self, creative_data: Dict) -> Optional[Dict]:
+    def build_detailed_creative_object(self, creative_data: Dict, snapshot: Dict = None) -> Optional[Dict]:
         """
-        Builds a highly detailed object for a single creative (card).
-        This matches the logic from test_ad_extraction.py
+        Enhanced creative object builder that handles multiple Facebook API response formats.
+        Extracts content from cards, videos, images, and main snapshot data.
         """
         if not isinstance(creative_data, dict):
             return None
         
-        # Safely extract and strip text fields
-        headline = (creative_data.get("title") or "").strip()
-        
-        # Handle body data more carefully with additional type checking
-        body_data = creative_data.get("body")
-        body = ""
-        if body_data is None:
-            body = ""
-        elif isinstance(body_data, dict):
-            body = (body_data.get("text") or "").strip()
-        elif isinstance(body_data, str):
-            body = body_data.strip()
-        else:
-            self.logger.warning(f"Unexpected body_data type: {type(body_data)}")
-            body = str(body_data) if body_data is not None else ""
-            
-        caption = (creative_data.get("caption") or "").strip()
+        # Enhanced text extraction with multiple fallbacks
+        headline = self._extract_text_content(creative_data, ["title"], snapshot)
+        body = self._extract_body_content(creative_data, snapshot)
+        caption = self._extract_text_content(creative_data, ["caption"], snapshot)
 
-        # Transform media URLs into a list of media objects
-        media_list = []
-        if url := creative_data.get("video_hd_url"):
-            media_list.append({"type": "Video", "url": url})
-        if url := creative_data.get("video_sd_url"):
-            media_list.append({"type": "Video", "url": url})
-        if url := creative_data.get("original_image_url"):
-            media_list.append({"type": "Image", "url": url})
-        if url := creative_data.get("resized_image_url"):
-            media_list.append({"type": "Image", "url": url})
-        if url := creative_data.get("video_preview_image_url"):
-             media_list.append({"type": "Image", "url": url})
+        # Enhanced media extraction from multiple sources
+        media_list = self._extract_creative_media_urls(creative_data, snapshot)
 
         creative_object = {
             "headline": headline or None,
@@ -363,6 +340,126 @@ class EnhancedAdExtractionService:
                 creative_object[key] = {k: v for k, v in creative_object[key].items() if v}
         
         return creative_object
+    
+    def _extract_text_content(self, creative_data: Dict, field_names: List[str], snapshot: Dict = None) -> str:
+        """Extract text content from multiple possible field locations"""
+        for field_name in field_names:
+            # Try creative data first
+            if value := creative_data.get(field_name):
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+            
+            # Try snapshot as fallback
+            if snapshot and (value := snapshot.get(field_name)):
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+        
+        return ""
+    
+    def _extract_body_content(self, creative_data: Dict, snapshot: Dict = None) -> str:
+        """Enhanced body content extraction with multiple fallback sources"""
+        # Priority 1: Creative data body
+        body_data = creative_data.get("body")
+        if body_data:
+            if isinstance(body_data, dict):
+                if text := body_data.get("text"):
+                    return text.strip()
+            elif isinstance(body_data, str) and body_data.strip():
+                return body_data.strip()
+        
+        # Priority 2: Snapshot body
+        if snapshot:
+            body_data = snapshot.get("body")
+            if body_data:
+                if isinstance(body_data, dict):
+                    if text := body_data.get("text"):
+                        return text.strip()
+                elif isinstance(body_data, str) and body_data.strip():
+                    return body_data.strip()
+        
+        # Priority 3: Link description
+        if link_desc := creative_data.get("link_description") or (snapshot and snapshot.get("link_description")):
+            if isinstance(link_desc, str) and len(link_desc.strip()) > 10:
+                return link_desc.strip()
+        
+        # Priority 4: Extract from extra_texts if available
+        if snapshot and snapshot.get("extra_texts"):
+            meaningful_texts = [
+                item.get("text", "") for item in snapshot.get("extra_texts", [])
+                if isinstance(item, dict) and item.get("text") and 
+                len(item.get("text", "")) > 20 and  # Longer text for body
+                not any(skip_word in item.get("text", "").lower() 
+                       for skip_word in ["terms and conditions", "privacy policy", "full name", "phone number", "email"])
+            ]
+            
+            if meaningful_texts:
+                return meaningful_texts[0].strip()
+        
+        return ""
+    
+    def _extract_creative_media_urls(self, creative_data: Dict, snapshot: Dict = None) -> List[Dict]:
+        """Enhanced media URL extraction from multiple Facebook API sources"""
+        media_list = []
+        
+        # Extract from creative data
+        video_urls = [
+            creative_data.get("video_hd_url"),
+            creative_data.get("video_sd_url"),
+        ]
+        
+        image_urls = [
+            creative_data.get("original_image_url"),
+            creative_data.get("resized_image_url"),
+            creative_data.get("video_preview_image_url"),
+        ]
+        
+        # Add videos
+        for url in video_urls:
+            if url:
+                media_list.append({"type": "Video", "url": url})
+        
+        # Add images
+        for url in image_urls:
+            if url:
+                media_list.append({"type": "Image", "url": url})
+        
+        # Extract from snapshot if no media found in creative
+        if not media_list and snapshot:
+            # Check snapshot videos
+            if videos := snapshot.get("videos"):
+                for video in videos:
+                    if isinstance(video, dict):
+                        for url_field in ["video_hd_url", "video_sd_url"]:
+                            if url := video.get(url_field):
+                                media_list.append({"type": "Video", "url": url})
+                        # Add video thumbnail
+                        if thumb_url := video.get("video_preview_image_url"):
+                            media_list.append({"type": "Image", "url": thumb_url})
+            
+            # Check snapshot images
+            if images := snapshot.get("images"):
+                for image in images:
+                    if isinstance(image, dict):
+                        for url_field in ["original_image_url", "resized_image_url"]:
+                            if url := image.get(url_field):
+                                media_list.append({"type": "Image", "url": url})
+            
+            # Check extra images and videos
+            if extra_images := snapshot.get("extra_images"):
+                for image in extra_images:
+                    if isinstance(image, dict):
+                        for url_field in ["original_image_url", "resized_image_url"]:
+                            if url := image.get(url_field):
+                                media_list.append({"type": "Image", "url": url})
+            
+            if extra_videos := snapshot.get("extra_videos"):
+                for video in extra_videos:
+                    if isinstance(video, dict):
+                        for url_field in ["video_hd_url", "video_sd_url"]:
+                            if url := video.get(url_field):
+                                media_list.append({"type": "Video", "url": url})
+        
+        return media_list
     
     def extract_targeting_data(self, ad_data: Dict) -> Dict:
         """
@@ -412,8 +509,8 @@ class EnhancedAdExtractionService:
     
     def build_clean_ad_object(self, ad_data: Dict) -> Optional[Dict]:
         """
-        Transforms a single raw ad variation into a clean, structured object.
-        This is the main transformation logic from test_ad_extraction.py
+        Enhanced transformation of Facebook API response into clean, structured object.
+        Handles multiple Facebook API response formats including GraphQL and REST.
         """
         # TRACE: Method entry
         ad_id = ad_data.get("ad_archive_id", "unknown")
@@ -455,6 +552,7 @@ class EnhancedAdExtractionService:
         if raw_start is not None:
             print(f"  CONVERSION TEST: {raw_start} -> {self.convert_timestamp_to_date(raw_start)}")
 
+        # Enhanced meta extraction to capture more Facebook API data
         ad_object = {
             "ad_archive_id": ad_data.get("ad_archive_id"),
             "meta": {
@@ -465,29 +563,73 @@ class EnhancedAdExtractionService:
                 "page_name": page_name,
                 "page_url": page_url,
                 "start_date": converted_start,
-                "end_date": converted_end
+                "end_date": converted_end,
+                # Enhanced Facebook API data extraction
+                "snapshot": snapshot,  # Store full snapshot for frontend access
+                "body": snapshot.get("body"),  # Direct body access
+                "title": snapshot.get("title"),  # Direct title access
+                "caption": snapshot.get("caption"),  # Direct caption access
+                "link_description": snapshot.get("link_description"),  # Link description
+                "link_url": snapshot.get("link_url"),  # Link URL
+                "page_categories": snapshot.get("page_categories", []),  # Page categories
+                "page_like_count": snapshot.get("page_like_count"),  # Page likes
+                "publisher_platform": ad_data.get("publisher_platform", []),  # Platforms
+                "extra_texts": snapshot.get("extra_texts", []),  # Extra text content
+                "extra_images": snapshot.get("extra_images", []),  # Extra images
+                "extra_videos": snapshot.get("extra_videos", []),  # Extra videos
+                "cards": snapshot.get("cards", []),  # Cards for carousel ads
+                "videos": snapshot.get("videos", []),  # Video content
+                "images": snapshot.get("images", []),  # Image content
             },
             "targeting": self.extract_targeting_data(ad_data),
             "lead_form": self.parse_dynamic_lead_form(snapshot.get("extra_texts", [])),
             "creatives": []
         }
         
-        # Process cards/creatives
+        # Enhanced creative processing to handle multiple Facebook API formats
         creatives_source = []
+        
+        # Priority 1: Cards (carousel/DCO ads)
         if snapshot.get("cards"):
             creatives_source.extend(snapshot["cards"])
         
+        # Priority 2: Videos and Images
         if not creatives_source:
             if snapshot.get("videos"):
                 creatives_source.extend(snapshot["videos"])
             if snapshot.get("images"):
-                 creatives_source.extend(snapshot["images"])
+                creatives_source.extend(snapshot["images"])
+        
+        # Priority 3: Main snapshot content (single creative ads)
+        if not creatives_source and (snapshot.get('title') or snapshot.get('body') or 
+                                   snapshot.get('caption') or snapshot.get('link_description')):
+            creatives_source = [snapshot]
+        
+        # Priority 4: Extract from extra content if available
+        if not creatives_source and snapshot.get("extra_texts"):
+            # Create a synthetic creative from extra texts
+            meaningful_texts = [
+                item.get("text", "") for item in snapshot.get("extra_texts", [])
+                if isinstance(item, dict) and item.get("text") and 
+                len(item.get("text", "")) > 10 and
+                not any(skip_word in item.get("text", "").lower() 
+                       for skip_word in ["terms and conditions", "privacy policy", "full name", "phone number"])
+            ]
+            
+            if meaningful_texts:
+                synthetic_creative = {
+                    "body": {"text": meaningful_texts[0]},  # Use first meaningful text as body
+                    "title": snapshot.get("title"),
+                    "caption": snapshot.get("caption"),
+                    "link_url": snapshot.get("link_url"),
+                    "cta_text": snapshot.get("cta_text"),
+                    "cta_type": snapshot.get("cta_type")
+                }
+                creatives_source = [synthetic_creative]
 
-        if not creatives_source and (snapshot.get('title') or snapshot.get('body')):
-             creatives_source = [snapshot]
-
+        # Process each creative
         for i, creative_data in enumerate(creatives_source):
-            detailed_creative = self.build_detailed_creative_object(creative_data)
+            detailed_creative = self.build_detailed_creative_object(creative_data, snapshot)
             if detailed_creative:
                 detailed_creative['id'] = f"{ad_object['ad_archive_id']}-{i}"
                 ad_object['creatives'].append(detailed_creative)

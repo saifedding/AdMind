@@ -97,6 +97,24 @@ class DeleteAllAdsResponse(BaseModel):
     message: str
     deleted_count: int
 
+class SaveSearchAdRequest(BaseModel):
+    """
+    Request model for saving an ad from search results
+    """
+    ad_archive_id: str
+    competitor_name: Optional[str] = None
+    competitor_page_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class SaveSearchAdResponse(BaseModel):
+    """
+    Response model for saving an ad from search results
+    """
+    success: bool
+    message: str
+    ad_id: Optional[int] = None
+    competitor_id: Optional[int] = None
+
 # Dependency factory to avoid circular imports
 def get_ad_service_dependency(db: Session = Depends(get_db)) -> "AdService":
     """Factory function to create AdService instance for dependency injection."""
@@ -682,6 +700,7 @@ class AdLibrarySearchRequest(BaseModel):
     max_pages: Optional[int] = Field(default=3, description="Maximum pages to scrape")
     save_to_database: Optional[bool] = Field(default=True, description="Save results to database")
     min_duration_days: Optional[int] = Field(None, description="Minimum ad duration in days")
+    cursor: Optional[str] = Field(None, description="Pagination cursor for loading more results")
 
 class AdLibrarySearchResponse(BaseModel):
     """Response model for Ad Library search"""
@@ -696,6 +715,8 @@ class AdLibrarySearchResponse(BaseModel):
     ads_preview: List[Dict[str, Any]] = Field(default_factory=list)
     message: str
     search_time: str
+    next_cursor: Optional[str] = Field(None, description="Cursor for next page of results")
+    has_next_page: Optional[bool] = Field(None, description="Whether more results are available")
 
 @router.post("/ads/library/search", response_model=AdLibrarySearchResponse)
 async def search_ad_library(
@@ -733,17 +754,22 @@ async def search_ad_library(
             scraper_search_type = "page"
             view_all_page_id = request.page_id
             query_string = ""
+            page_ids = [request.page_id]  # Also set pageIDs for GraphQL
         else:
             search_type = "keyword"
             search_query = request.query_string
             scraper_search_type = "KEYWORD_UNORDERED"
             view_all_page_id = "0"  # Use 0 for keyword searches
             query_string = request.query_string
+            page_ids = []
         
         logger.info(f"Starting Ad Library search: type={search_type}, query='{search_query}', countries={request.countries}")
         
         # Create scraper service with duration filter
         scraper_service = FacebookAdsScraperService(db, request.min_duration_days)
+        
+        # For page searches, use a higher 'first' value to get more ads per page
+        first_value = 50 if search_type == "page" else 30
         
         # Create scraper configuration
         scraper_config = FacebookAdsScraperConfig(
@@ -756,7 +782,9 @@ async def search_ad_library(
             active_status=request.active_status,
             ad_type=request.ad_type,
             media_type=request.media_type,
-            save_json=False
+            save_json=False,
+            cursor=request.cursor,  # Add cursor support for pagination
+            first=first_value  # Use higher value for page searches
         )
         
         # Perform the search
@@ -765,9 +793,11 @@ async def search_ad_library(
         if request.save_to_database:
             # Full scrape with database saving
             all_ads_data, all_json_responses, enhanced_data, stats = scraper_service.scrape_ads(scraper_config)
+            next_cursor = None
+            has_next_page = False
         else:
             # Preview-only mode - scrape but don't save to database
-            all_ads_data, all_json_responses, enhanced_data, stats = scraper_service.scrape_ads_preview_only(scraper_config)
+            all_ads_data, all_json_responses, enhanced_data, stats, next_cursor, has_next_page = scraper_service.scrape_ads_preview_only(scraper_config)
         
         # Calculate search time
         end_time = datetime.utcnow()
@@ -778,6 +808,18 @@ async def search_ad_library(
         if enhanced_data:
             for competitor_name, ads_list in enhanced_data.items():
                 for ad in ads_list:  # Include all ads, not just first 5
+                    # Prepare meta object with media URLs
+                    meta_data = ad.get("meta", {})
+                    meta_data.update({
+                        "image_urls": ad.get("image_urls", []),
+                        "video_urls": ad.get("video_urls", []),
+                        "primary_media_url": ad.get("primary_media_url", ""),
+                        "main_image_urls": ad.get("main_image_urls", []),
+                        "main_video_urls": ad.get("main_video_urls", []),
+                        "media_url": ad.get("media_url", ""),
+                        "video_preview_image_url": ad.get("video_preview_image_url", "")
+                    })
+                    
                     preview = {
                         "ad_archive_id": ad.get("ad_archive_id"),
                         "advertiser": competitor_name,
@@ -791,7 +833,7 @@ async def search_ad_library(
                         "creatives": ad.get("creatives", []),
                         "targeting": ad.get("targeting", {}),
                         "lead_form": ad.get("lead_form", {}),
-                        "meta": ad.get("meta", {})
+                        "meta": meta_data
                     }
                     ads_preview.append(preview)
         
@@ -811,7 +853,9 @@ async def search_ad_library(
             ads_preview=ads_preview,
             message=f"Found {total_ads_found} ads in {search_duration:.1f}s" + 
                    (f", saved {total_ads_saved} to database" if request.save_to_database else ""),
-            search_time=f"{search_duration:.1f}s"
+            search_time=f"{search_duration:.1f}s",
+            next_cursor=next_cursor,
+            has_next_page=has_next_page
         )
         
         logger.info(f"Search completed: {response.message}")
@@ -4062,3 +4106,229 @@ async def get_unified_task_status(
     except Exception as e:
         logger.error(f"Error getting task status for {task_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting task status: {str(e)}")
+
+class GetSearchAdRequest(BaseModel):
+    """
+    Request model for getting a specific ad by archive ID
+    """
+    ad_archive_id: str
+
+class GetSearchAdResponse(BaseModel):
+    """
+    Response model for getting a specific ad by archive ID
+    """
+    success: bool
+    message: str
+    ad: Optional[Dict[str, Any]] = None
+
+@router.post("/search/get-ad", response_model=GetSearchAdResponse)
+async def get_search_ad(
+    request: GetSearchAdRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific ad by archive ID from Facebook Ad Library.
+    
+    This endpoint fetches ad details directly from Facebook Ad Library API
+    when the ad is not available in cache.
+    """
+    try:
+        from app.services.facebook_ads_scraper import FacebookAdsScraperService
+        
+        # First check if the ad exists in our database
+        existing_ad = db.query(Ad).filter(Ad.ad_archive_id == request.ad_archive_id).first()
+        if existing_ad:
+            # Convert database ad to search ad format
+            ad_data = {
+                'ad_archive_id': existing_ad.ad_archive_id,
+                'advertiser': existing_ad.page_name or 'Unknown',
+                'page_name': existing_ad.page_name,
+                'page_id': existing_ad.page_id,
+                'media_type': existing_ad.media_type or 'unknown',
+                'is_active': existing_ad.is_active or False,
+                'start_date': existing_ad.start_date.isoformat() if existing_ad.start_date else None,
+                'duration_days': existing_ad.duration_days,
+                'creatives_count': len(existing_ad.creatives) if existing_ad.creatives else 1,
+                'has_targeting': bool(existing_ad.targeting),
+                'has_lead_form': bool(existing_ad.lead_form),
+                'creatives': existing_ad.creatives or [],
+                'targeting': existing_ad.targeting,
+                'lead_form': existing_ad.lead_form,
+                'meta': existing_ad.meta or {},
+                'countries': [],
+                'impressions_text': existing_ad.impressions_text,
+                'spend': existing_ad.spend
+            }
+            
+            return GetSearchAdResponse(
+                success=True,
+                message="Ad found in database",
+                ad=ad_data
+            )
+        
+        # If not in database, fetch from Facebook Ad Library
+        scraper_service = FacebookAdsScraperService()
+        
+        # Search for the specific ad by archive ID
+        search_config = FacebookAdsScraperConfig(
+            view_all_page_id="1591077094491398",  # Default page ID
+            countries=["AE", "US", "GB"],  # Try multiple countries
+            max_pages=1,
+            active_status="all",
+            ad_type="ALL",
+            media_type="all",
+            search_type="keyword",
+            query_string=request.ad_archive_id  # Search by archive ID
+        )
+        
+        # Perform the search
+        search_results = scraper_service.search_ads(search_config)
+        
+        # Find the specific ad in results
+        target_ad = None
+        for ad_data in search_results.get('ads_preview', []):
+            if ad_data.get('ad_archive_id') == request.ad_archive_id:
+                target_ad = ad_data
+                break
+        
+        if target_ad:
+            return GetSearchAdResponse(
+                success=True,
+                message="Ad found in Facebook Ad Library",
+                ad=target_ad
+            )
+        else:
+            return GetSearchAdResponse(
+                success=False,
+                message=f"Ad with archive ID {request.ad_archive_id} not found in Facebook Ad Library"
+            )
+            
+    except Exception as e:
+        logger.error(f"Error fetching search ad {request.ad_archive_id}: {str(e)}")
+        return GetSearchAdResponse(
+            success=False,
+            message=f"Error fetching ad: {str(e)}"
+        )
+
+@router.post("/search/save-ad", response_model=SaveSearchAdResponse)
+async def save_search_ad(
+    request: SaveSearchAdRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Save an ad from search results to the database.
+    
+    This endpoint allows saving ads discovered through the Facebook Ad Library search
+    directly to the local database for tracking and analysis.
+    """
+    try:
+        from app.services.facebook_ads_scraper import FacebookAdsScraperService
+        from app.services.ingestion_service import DataIngestionService
+        
+        # First, check if the ad already exists
+        existing_ad = db.query(Ad).filter(Ad.ad_archive_id == request.ad_archive_id).first()
+        if existing_ad:
+            return SaveSearchAdResponse(
+                success=False,
+                message=f"Ad with archive ID {request.ad_archive_id} already exists in database",
+                ad_id=existing_ad.id
+            )
+        
+        # Handle competitor creation/lookup
+        competitor_id = None
+        if request.competitor_name:
+            # Check if competitor already exists
+            existing_competitor = db.query(Competitor).filter(
+                Competitor.name == request.competitor_name
+            ).first()
+            
+            if existing_competitor:
+                competitor_id = existing_competitor.id
+            else:
+                # Create new competitor
+                new_competitor = Competitor(
+                    name=request.competitor_name,
+                    page_id=request.competitor_page_id,
+                    page_name=request.competitor_name,
+                    notes=request.notes or f"Added from search ad {request.ad_archive_id}",
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                db.add(new_competitor)
+                db.flush()  # Get the ID without committing
+                competitor_id = new_competitor.id
+        
+        # Fetch the ad details from Facebook Ad Library
+        scraper_service = FacebookAdsScraperService()
+        
+        # Search for the specific ad by archive ID
+        search_config = FacebookAdsScraperConfig(
+            view_all_page_id="1591077094491398",  # Default page ID
+            countries=["AE"],  # Default country
+            max_pages=1,
+            active_status="all",
+            ad_type="ALL",
+            media_type="all",
+            search_type="keyword",
+            query_string=request.ad_archive_id  # Search by archive ID
+        )
+        
+        # Perform the search
+        search_results = scraper_service.search_ads(search_config)
+        
+        # Find the specific ad in results
+        target_ad = None
+        for ad_data in search_results.get('ads_preview', []):
+            if ad_data.get('ad_archive_id') == request.ad_archive_id:
+                target_ad = ad_data
+                break
+        
+        if not target_ad:
+            return SaveSearchAdResponse(
+                success=False,
+                message=f"Could not fetch ad details for archive ID {request.ad_archive_id} from Facebook"
+            )
+        
+        # Use the ingestion service to save the ad
+        ingestion_service = DataIngestionService(db)
+        
+        # Transform the search result into the format expected by ingestion service
+        ad_for_ingestion = {
+            'ad_archive_id': target_ad.get('ad_archive_id'),
+            'advertiser': target_ad.get('advertiser'),
+            'page_name': target_ad.get('page_name'),
+            'page_id': target_ad.get('page_id'),
+            'media_type': target_ad.get('media_type'),
+            'is_active': target_ad.get('is_active', False),
+            'start_date': target_ad.get('start_date'),
+            'creatives': target_ad.get('creatives', []),
+            'targeting': target_ad.get('targeting'),
+            'lead_form': target_ad.get('lead_form'),
+            'meta': target_ad.get('meta', {}),
+            'competitor_id': competitor_id,
+            'notes': request.notes
+        }
+        
+        # Save the ad using ingestion service
+        saved_ad = ingestion_service.ingest_single_ad(ad_for_ingestion)
+        
+        if saved_ad:
+            db.commit()
+            
+            return SaveSearchAdResponse(
+                success=True,
+                message=f"Successfully saved ad {request.ad_archive_id} to database",
+                ad_id=saved_ad.id,
+                competitor_id=competitor_id
+            )
+        else:
+            db.rollback()
+            return SaveSearchAdResponse(
+                success=False,
+                message=f"Failed to save ad {request.ad_archive_id} to database"
+            )
+            
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving search ad {request.ad_archive_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving ad: {str(e)}")

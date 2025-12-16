@@ -174,6 +174,16 @@ class FacebookAdsScraperService:
             "v": "608791",
             "viewAllPageID": config.view_all_page_id
         }
+        
+        # Debug logging for page searches
+        if config.search_type == "page":
+            logger.info(f"Building GraphQL variables for page search:")
+            logger.info(f"  - viewAllPageID: {config.view_all_page_id}")
+            logger.info(f"  - first: {config.first}")
+            logger.info(f"  - activeStatus: {config.active_status}")
+            logger.info(f"  - countries: {config.countries}")
+            logger.info(f"  - searchType: {config.search_type}")
+        
         return json.dumps(variables, separators=(',', ':'))
 
     def build_dynamic_payload(self, config: FacebookAdsScraperConfig) -> str:
@@ -307,6 +317,36 @@ class FacebookAdsScraperService:
                         break
                     
                     logger.info(f"Page {page_count}: Found {len(edges)} ad groups. Processing with enhanced extraction.")
+                    
+                    # Debug logging for page searches to understand the issue
+                    if config.search_type == "page":
+                        logger.info(f"DEBUG - Page search results:")
+                        logger.info(f"  - Requested 'first': {config.first}")
+                        logger.info(f"  - Actual edges returned: {len(edges)}")
+                        logger.info(f"  - Page info: {page_info}")
+                        
+                        # Log first few ad archive IDs to verify we're getting different ads
+                        if edges:
+                            ad_ids = []
+                            for i, edge in enumerate(edges[:5]):  # First 5 ads
+                                try:
+                                    ad_archive_id = edge.get('node', {}).get('ad_archive_id')
+                                    if ad_archive_id:
+                                        ad_ids.append(ad_archive_id)
+                                except:
+                                    pass
+                            logger.info(f"  - Sample ad archive IDs: {ad_ids}")
+                        
+                        # Check if we're getting the same ad repeated
+                        unique_ad_ids = set()
+                        for edge in edges:
+                            try:
+                                ad_archive_id = edge.get('node', {}).get('ad_archive_id')
+                                if ad_archive_id:
+                                    unique_ad_ids.add(ad_archive_id)
+                            except:
+                                pass
+                        logger.info(f"  - Unique ads in this page: {len(unique_ad_ids)} out of {len(edges)} total")
 
                     enhanced_data, _ = self.enhanced_extractor.process_raw_responses([response_data])
                     
@@ -345,7 +385,7 @@ class FacebookAdsScraperService:
             logger.error(f"Error in ads scraping: {str(e)}")
             raise 
 
-    def scrape_ads_preview_only(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict]:
+    def scrape_ads_preview_only(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict, Optional[str], bool]:
         """
         Scrape Facebook Ads for preview only - no database saving, no competitor creation
         
@@ -353,7 +393,7 @@ class FacebookAdsScraperService:
             config: Scraper configuration
         
         Returns:
-            Tuple of (all_ads_data, all_json_responses, enhanced_data, stats)
+            Tuple of (all_ads_data, all_json_responses, enhanced_data, stats, next_cursor, has_next_page)
         """
         logger.info(f"Starting preview-only data collection for {config.view_all_page_id}")
         
@@ -407,6 +447,36 @@ class FacebookAdsScraperService:
                         break
                     
                     logger.info(f"Page {page_count}: Found {len(edges)} ad groups. Processing for preview only.")
+                    
+                    # Debug logging for page searches to understand the issue
+                    if config.search_type == "page":
+                        logger.info(f"DEBUG - Page search results (preview):")
+                        logger.info(f"  - Requested 'first': {config.first}")
+                        logger.info(f"  - Actual edges returned: {len(edges)}")
+                        logger.info(f"  - Page info: {page_info}")
+                        
+                        # Log first few ad archive IDs to verify we're getting different ads
+                        if edges:
+                            ad_ids = []
+                            for i, edge in enumerate(edges[:5]):  # First 5 ads
+                                try:
+                                    ad_archive_id = edge.get('node', {}).get('ad_archive_id')
+                                    if ad_archive_id:
+                                        ad_ids.append(ad_archive_id)
+                                except:
+                                    pass
+                            logger.info(f"  - Sample ad archive IDs: {ad_ids}")
+                        
+                        # Check if we're getting the same ad repeated
+                        unique_ad_ids = set()
+                        for edge in edges:
+                            try:
+                                ad_archive_id = edge.get('node', {}).get('ad_archive_id')
+                                if ad_archive_id:
+                                    unique_ad_ids.add(ad_archive_id)
+                            except:
+                                pass
+                        logger.info(f"  - Unique ads in this page: {len(unique_ad_ids)} out of {len(edges)} total")
 
                     # Process raw responses but don't save to database
                     page_enhanced_data = self.enhanced_extractor.transform_raw_data_to_enhanced_format([response_data])
@@ -441,7 +511,21 @@ class FacebookAdsScraperService:
                     break
             
             logger.info(f"Preview scraping complete. Final stats: {stats}")
-            return [], all_json_responses, enhanced_data, stats
+            
+            # Extract pagination info from the last response
+            next_cursor = None
+            has_next_page = False
+            if all_json_responses:
+                try:
+                    last_response = all_json_responses[-1]
+                    search_results = last_response['data']['ad_library_main']['search_results_connection']
+                    page_info = search_results.get('page_info', {})
+                    next_cursor = page_info.get('end_cursor')
+                    has_next_page = page_info.get('has_next_page', False)
+                except (KeyError, TypeError):
+                    logger.warning("Could not extract pagination info from response")
+            
+            return [], all_json_responses, enhanced_data, stats, next_cursor, has_next_page
         
         except Exception as e:
             logger.error(f"Error in preview ads scraping: {str(e)}")
