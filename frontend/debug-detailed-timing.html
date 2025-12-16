@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Performance Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .timing-row { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .timing-label { font-weight: bold; min-width: 200px; }
+        .timing-value { color: #007bff; }
+        .slow { background-color: #fff3cd; }
+        .fast { background-color: #d4edda; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Detailed Performance Analysis</h1>
+    <p>This will break down exactly where the 3.5 second delay is happening.</p>
+    
+    <button onclick="runDetailedAnalysis()">🚀 Run Detailed Analysis</button>
+    <button onclick="clearResults()">🗑️ Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addSection(title, content) {
+            const results = document.getElementById('results');
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = `<h3>${title}</h3>${content}`;
+            results.appendChild(section);
+        }
+
+        function addTiming(label, value, threshold = 100) {
+            const results = document.getElementById('results');
+            const row = document.createElement('div');
+            row.className = `timing-row ${value > threshold ? 'slow' : 'fast'}`;
+            row.innerHTML = `
+                <span class="timing-label">${label}</span>
+                <span class="timing-value">${value}ms</span>
+            `;
+            results.appendChild(row);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runDetailedAnalysis() {
+            clearResults();
+            
+            const url = "http://localhost:8000/api/v1/ads?page=1&page_size=24&sort_by=created_at&sort_order=desc";
+            
+            // Step 1: Measure DNS + Connection
+            const overallStart = performance.now();
+            
+            try {
+                // Use Resource Timing API for detailed network metrics
+                const observer = new PerformanceObserver((list) => {
+                    const entries = list.getEntries();
+                    entries.forEach((entry) => {
+                        if (entry.name.includes('/api/v1/ads')) {
+                            addSection('🌐 Network Timing Breakdown', `
+                                <div class="timing-row">
+                                    <span class="timing-label">DNS Lookup</span>
+                                    <span class="timing-value">${(entry.domainLookupEnd - entry.domainLookupStart).toFixed(2)}ms</span>
+                                </div>
+                                <div class="timing-row">
+                                    <span class="timing-label">TCP Connection</span>
+                                    <span class="timing-value">${(entry.connectEnd - entry.connectStart).toFixed(2)}ms</span>
+                                </div>
+                                <div class="timing-row">
+                                    <span class="timing-label">TLS Handshake</span>
+                                    <span class="timing-value">${entry.secureConnectionStart ? (entry.connectEnd - entry.secureConnectionStart).toFixed(2) : 0}ms</span>
+                                </div>
+                                <div class="timing-row">
+                                    <span class="timing-label">Request Sent</span>
+                                    <span class="timing-value">${(entry.responseStart - entry.requestStart).toFixed(2)}ms</span>
+                                </div>
+                                <div class="timing-row">
+                                    <span class="timing-label">Response Download</span>
+                                    <span class="timing-value">${(entry.responseEnd - entry.responseStart).toFixed(2)}ms</span>
+                                </div>
+                                <div class="timing-row">
+                                    <span class="timing-label">Total Network Time</span>
+                                    <span class="timing-value">${entry.duration.toFixed(2)}ms</span>
+                                </div>
+                            `);
+                        }
+                    });
+                });
+                observer.observe({ entryTypes: ['resource'] });
+
+                // Step 2: Make the request with detailed timing
+                const fetchStart = performance.now();
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        "accept": "*/*",
+                        "content-type": "application/json"
+                    }
+                });
+                
+                const fetchEnd = performance.now();
+                addTiming('Fetch Request Time', fetchEnd - fetchStart, 500);
+
+                // Step 3: Measure JSON parsing
+                const parseStart = performance.now();
+                const data = await response.json();
+                const parseEnd = performance.now();
+                addTiming('JSON Parsing Time', parseEnd - parseStart, 100);
+
+                // Step 4: Analyze response size
+                const responseSize = JSON.stringify(data).length;
+                const responseSizeKB = (responseSize / 1024).toFixed(2);
+                
+                addSection('📦 Response Analysis', `
+                    <div class="timing-row">
+                        <span class="timing-label">Response Size</span>
+                        <span class="timing-value">${responseSizeKB} KB (${responseSize} bytes)</span>
+                    </div>
+                    <div class="timing-row">
+                        <span class="timing-label">Number of Ads</span>
+                        <span class="timing-value">${data.data?.length || 0}</span>
+                    </div>
+                    <div class="timing-row">
+                        <span class="timing-label">Avg Size per Ad</span>
+                        <span class="timing-value">${((responseSize / (data.data?.length || 1)) / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <div class="timing-row">
+                        <span class="timing-label">Total Items Available</span>
+                        <span class="timing-value">${data.pagination?.total_items || 0}</span>
+                    </div>
+                `);
+
+                // Step 5: Measure data transformation (simulate frontend processing)
+                const transformStart = performance.now();
+                
+                // Simulate the exact transformation that happens in React
+                const transformedData = data.data.map(apiAd => ({
+                    id: apiAd.id,
+                    ad_archive_id: apiAd.ad_archive_id,
+                    ad_copy: apiAd.ad_copy,
+                    media_type: apiAd.media_type,
+                    media_url: apiAd.media_url,
+                    date_found: apiAd.date_found,
+                    page_name: apiAd.page_name,
+                    publisher_platform: apiAd.publisher_platform,
+                    impressions_text: apiAd.impressions_text,
+                    cta_text: apiAd.cta_text,
+                    page_id: apiAd.page_id,
+                    is_favorite: apiAd.is_favorite,
+                    start_date: apiAd.start_date,
+                    end_date: apiAd.end_date,
+                    spend: apiAd.spend,
+                    page_profile_picture_url: apiAd.page_profile_picture_url,
+                    main_title: apiAd.main_title,
+                    main_body_text: apiAd.main_body_text,
+                    main_caption: apiAd.main_caption,
+                    main_image_urls: apiAd.main_image_urls || [],
+                    main_video_urls: apiAd.main_video_urls || [],
+                    competitor_id: apiAd.competitor?.id,
+                    competitor: apiAd.competitor,
+                    analysis: apiAd.analysis,
+                    is_analyzed: apiAd.is_analyzed,
+                    analysis_summary: apiAd.analysis_summary,
+                    meta: apiAd.meta || { is_active: apiAd.is_active },
+                    targeting: apiAd.targeting || { locations: [], age_range: { min: 0, max: 0 } },
+                    lead_form: apiAd.lead_form || { questions: {}, standalone_fields: [] },
+                    creatives: apiAd.creatives || [],
+                    ad_set_id: apiAd.ad_set_id,
+                    variant_count: apiAd.variant_count,
+                    ad_set_created_at: apiAd.ad_set_created_at,
+                    ad_set_first_seen_date: apiAd.ad_set_first_seen_date,
+                    ad_set_last_seen_date: apiAd.ad_set_last_seen_date,
+                    is_active: apiAd.is_active ?? apiAd.meta?.is_active ?? (!apiAd.end_date || new Date(apiAd.end_date) >= new Date())
+                }));
+                
+                const transformEnd = performance.now();
+                addTiming('Data Transformation', transformEnd - transformStart, 50);
+
+                // Step 6: Simulate DOM creation (like React rendering)
+                const renderStart = performance.now();
+                
+                // Create a simplified version of what React would do
+                const fragment = document.createDocumentFragment();
+                transformedData.forEach((ad, index) => {
+                    const adElement = document.createElement('div');
+                    adElement.className = 'ad-card-simulation';
+                    adElement.innerHTML = `
+                        <div class="ad-header">
+                            <h3>${ad.main_title || ad.ad_copy || 'No title'}</h3>
+                            <span>${ad.page_name || 'Unknown page'}</span>
+                        </div>
+                        <div class="ad-content">
+                            <p>${(ad.main_body_text || ad.ad_copy || '').substring(0, 100)}...</p>
+                        </div>
+                        <div class="ad-meta">
+                            <span>Type: ${ad.media_type || 'unknown'}</span>
+                            <span>Active: ${ad.is_active ? 'Yes' : 'No'}</span>
+                            ${ad.analysis ? `<span>Score: ${ad.analysis.overall_score || 'N/A'}</span>` : ''}
+                        </div>
+                    `;
+                    fragment.appendChild(adElement);
+                });
+                
+                const renderEnd = performance.now();
+                addTiming('DOM Creation Simulation', renderEnd - renderStart, 100);
+
+                // Step 7: Total time analysis
+                const overallEnd = performance.now();
+                const totalTime = overallEnd - overallStart;
+                
+                addTiming('TOTAL PROCESSING TIME', totalTime, 1000);
+
+                // Step 8: Identify bottlenecks
+                const networkTime = fetchEnd - fetchStart;
+                const processingTime = totalTime - networkTime;
+                
+                addSection('🎯 Bottleneck Analysis', `
+                    <div class="timing-row ${networkTime > 2000 ? 'slow' : 'fast'}">
+                        <span class="timing-label">Network Time</span>
+                        <span class="timing-value">${networkTime.toFixed(2)}ms (${((networkTime/totalTime)*100).toFixed(1)}%)</span>
+                    </div>
+                    <div class="timing-row ${processingTime > 500 ? 'slow' : 'fast'}">
+                        <span class="timing-label">Processing Time</span>
+                        <span class="timing-value">${processingTime.toFixed(2)}ms (${((processingTime/totalTime)*100).toFixed(1)}%)</span>
+                    </div>
+                `);
+
+                // Step 9: Recommendations
+                let recommendations = [];
+                
+                if (networkTime > 2000) {
+                    recommendations.push('🌐 Network is the main bottleneck - consider response compression or CDN');
+                }
+                if (parseEnd - parseStart > 100) {
+                    recommendations.push('📦 JSON parsing is slow - response payload is too large');
+                }
+                if (transformEnd - transformStart > 50) {
+                    recommendations.push('🔄 Data transformation needs optimization');
+                }
+                if (renderEnd - renderStart > 100) {
+                    recommendations.push('🎨 DOM creation is slow - consider virtual scrolling');
+                }
+                if (responseSize > 200000) {
+                    recommendations.push('📏 Response size is large - implement pagination or field selection');
+                }
+
+                if (recommendations.length > 0) {
+                    addSection('💡 Recommendations', recommendations.map(r => `<p>${r}</p>`).join(''));
+                } else {
+                    addSection('✅ Performance Analysis', '<p>No major bottlenecks detected. Performance is within acceptable range.</p>');
+                }
+
+                observer.disconnect();
+
+            } catch (error) {
+                addSection('❌ Error', `<pre>${error.message}\n${error.stack}</pre>`);
+            }
+        }
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            console.log('🔍 Detailed performance analyzer ready');
+        });
+    </script>
+</body>
+</html>

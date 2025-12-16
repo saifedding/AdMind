@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, Field
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app.models.competitor import Competitor
@@ -23,6 +23,8 @@ class DailyScrapeRequest(BaseModel):
     max_pages_per_competitor: Optional[int] = 3
     delay_between_requests: Optional[int] = 2
     hours_lookback: Optional[int] = 24
+    days_lookback: Optional[int] = None  # New parameter for days-based lookback
+    min_duration_days: Optional[int] = Field(None, ge=1, description="Minimum days running filter (must be >= 1)")
     active_status: Optional[str] = "active"
 
 class SpecificCompetitorsScrapeRequest(BaseModel):
@@ -31,6 +33,8 @@ class SpecificCompetitorsScrapeRequest(BaseModel):
     countries: Optional[List[str]] = ["AE", "US", "UK"]
     max_pages_per_competitor: Optional[int] = 3
     delay_between_requests: Optional[int] = 2
+    days_lookback: Optional[int] = None  # New parameter for days-based lookback
+    min_duration_days: Optional[int] = Field(None, ge=1, description="Minimum days running filter (must be >= 1)")
     active_status: Optional[str] = "active"
 
 class TaskResponse(BaseModel):
@@ -78,12 +82,18 @@ async def start_daily_scraping(
                 detail="No active competitors found. Please add some competitors first."
             )
         
+        # Calculate hours_lookback from days if provided
+        hours_lookback = scrape_request.hours_lookback
+        if scrape_request.days_lookback is not None:
+            hours_lookback = scrape_request.days_lookback * 24
+        
         # Start the daily scraping task
         task = scrape_new_ads_daily_task.delay(
             countries=scrape_request.countries,
             max_pages_per_competitor=scrape_request.max_pages_per_competitor,
             delay_between_requests=scrape_request.delay_between_requests,
-            hours_lookback=scrape_request.hours_lookback,
+            hours_lookback=hours_lookback,
+            min_duration_days=scrape_request.min_duration_days,
             active_status=scrape_request.active_status
         )
         
@@ -133,12 +143,19 @@ async def start_specific_competitors_scraping(
             invalid_ids = [id for id in scrape_request.competitor_ids if id not in valid_ids]
             logger.warning(f"Some competitor IDs are invalid or inactive: {invalid_ids}")
         
+        # Calculate hours_lookback from days if provided (default to 24 hours)
+        hours_lookback = 24
+        if scrape_request.days_lookback is not None:
+            hours_lookback = scrape_request.days_lookback * 24
+        
         # Start the specific competitors scraping task
         task = scrape_specific_competitors_task.delay(
             competitor_ids=scrape_request.competitor_ids,
             countries=scrape_request.countries,
             max_pages_per_competitor=scrape_request.max_pages_per_competitor,
             delay_between_requests=scrape_request.delay_between_requests,
+            hours_lookback=hours_lookback,
+            min_duration_days=scrape_request.min_duration_days,
             active_status=scrape_request.active_status
         )
         
@@ -301,3 +318,70 @@ async def cancel_scraping_task(task_id: str):
     except Exception as e:
         logger.error(f"Error cancelling task {task_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
+
+@router.get("/tasks/{task_id}/ads")
+async def get_ads_found_by_task(
+    task_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the ads that were found/created by a specific scraping task.
+    
+    This endpoint looks for ads created in the last hour and returns them
+    with pagination support.
+    """
+    try:
+        from app.models.ad import Ad
+        from app.models.competitor import Competitor
+        
+        # Get ads created in the last hour (assuming task completed recently)
+        # In a production system, you might want to store task_id with each ad
+        recent_ads = db.query(Ad).join(Competitor).filter(
+            Ad.created_at >= datetime.utcnow() - timedelta(hours=1),
+            Competitor.is_active == True
+        ).order_by(Ad.created_at.desc()).limit(100).all()
+        
+        ads_data = []
+        for ad in recent_ads:
+            # Extract headline and body from meta or raw_data
+            headline = "N/A"
+            body = "N/A"
+            countries = []
+            media_type = "N/A"
+            
+            if ad.meta:
+                headline = ad.meta.get('headline', 'N/A')
+                body = ad.meta.get('body', 'N/A')
+                countries = ad.meta.get('countries', [])
+                media_type = ad.meta.get('media_type', 'N/A')
+            elif ad.raw_data:
+                headline = ad.raw_data.get('headline', 'N/A')
+                body = ad.raw_data.get('body', 'N/A')
+                countries = ad.raw_data.get('countries', [])
+                media_type = ad.raw_data.get('media_type', 'N/A')
+            
+            ads_data.append({
+                "id": ad.id,
+                "ad_archive_id": ad.ad_archive_id,
+                "competitor_id": ad.competitor_id,
+                "competitor_name": ad.competitor.name if ad.competitor else "Unknown",
+                "headline": headline,
+                "body": body,
+                "created_at": ad.created_at.isoformat(),
+                "date_found": ad.date_found.isoformat() if ad.date_found else None,
+                "duration_days": ad.duration_days,
+                "countries": countries,
+                "media_type": media_type,
+                "is_favorite": ad.is_favorite
+            })
+        
+        return {
+            "task_id": task_id,
+            "total_ads": len(ads_data),
+            "ads": ads_data,
+            "message": f"Found {len(ads_data)} ads created in the last hour"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting ads for task {task_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting ads: {str(e)}")

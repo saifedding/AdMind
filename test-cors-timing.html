@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Timing Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .fast { background-color: #d4edda; }
+        .slow { background-color: #fff3cd; }
+        .error { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>🔍 CORS & Network Timing Test</h1>
+    <p>Testing different request configurations to identify the delay source.</p>
+    
+    <button onclick="runAllTests()">🚀 Run All Tests</button>
+    <button onclick="clearResults()">🗑️ Clear</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(title, timing, details, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            
+            let className = 'test ';
+            if (isError) className += 'error';
+            else if (timing > 1000) className += 'slow';
+            else className += 'fast';
+            
+            div.className = className;
+            div.innerHTML = `
+                <h4>${title} - ${timing}ms</h4>
+                <pre>${details}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testRequest(title, url, options = {}) {
+            const start = performance.now();
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    ...options
+                });
+                
+                const end = performance.now();
+                const timing = Math.round(end - start);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const parseTime = Math.round(performance.now() - end);
+                    
+                    addResult(title, timing, 
+                        `Status: ${response.status}\n` +
+                        `Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n` +
+                        `Data size: ${JSON.stringify(data).length} chars\n` +
+                        `Parse time: ${parseTime}ms\n` +
+                        `Ads returned: ${data.data?.length || 0}`
+                    );
+                } else {
+                    const errorText = await response.text();
+                    addResult(title, timing, 
+                        `Status: ${response.status}\n` +
+                        `Error: ${errorText}`, 
+                        true
+                    );
+                }
+                
+                return timing;
+                
+            } catch (error) {
+                const end = performance.now();
+                const timing = Math.round(end - start);
+                
+                addResult(title, timing, 
+                    `Error: ${error.message}\n` +
+                    `Stack: ${error.stack}`, 
+                    true
+                );
+                
+                return timing;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            
+            const baseUrl = "http://localhost:8000/api/v1/ads?page=1&page_size=24&sort_by=created_at&sort_order=desc";
+            
+            // Test 1: Minimal headers (like our Python test)
+            await testRequest(
+                "Test 1: Minimal Headers", 
+                baseUrl,
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Test 2: Browser-like headers (like the frontend)
+            await testRequest(
+                "Test 2: Full Browser Headers", 
+                baseUrl,
+                {
+                    headers: {
+                        "accept": "*/*",
+                        "accept-language": "en-US,en;q=0.9",
+                        "content-type": "application/json",
+                        "sec-ch-ua": '"Brave";v="143", "Chromium";v="143", "Not A(Brand)";v="24"',
+                        "sec-ch-ua-mobile": "?0",
+                        "sec-ch-ua-platform": '"Windows"',
+                        "sec-fetch-dest": "empty",
+                        "sec-fetch-mode": "cors",
+                        "sec-fetch-site": "same-site",
+                        "sec-gpc": "1"
+                    }
+                }
+            );
+
+            // Test 3: CORS mode explicit
+            await testRequest(
+                "Test 3: Explicit CORS Mode", 
+                baseUrl,
+                {
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Test 4: No-CORS mode (if possible)
+            await testRequest(
+                "Test 4: No-CORS Mode", 
+                baseUrl,
+                {
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Test 5: Smaller page size to test if it's data volume
+            await testRequest(
+                "Test 5: Smaller Page Size", 
+                "http://localhost:8000/api/v1/ads?page=1&page_size=5&sort_by=created_at&sort_order=desc",
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Test 6: Different endpoint to test if it's ads-specific
+            await testRequest(
+                "Test 6: Competitors Endpoint", 
+                "http://localhost:8000/api/v1/competitors?page=1&page_size=100",
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Test 7: Health check endpoint
+            await testRequest(
+                "Test 7: Health Check", 
+                "http://localhost:8000/health",
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+        }
+
+        window.addEventListener('load', () => {
+            console.log('🔍 CORS timing test ready');
+        });
+    </script>
+</body>
+</html>

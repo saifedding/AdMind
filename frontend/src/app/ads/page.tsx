@@ -5,8 +5,8 @@ import { AdList } from '@/features/dashboard/components/AdList';
 import { BulkActionToolbar } from '@/features/dashboard/components/BulkActionToolbar';
 import { AdWithAnalysis } from '@/types/ad';
 import { adsApi, ApiError } from '@/lib/api';
-import { transformAdsWithAnalysis } from '@/lib/transformers';
-import { useEffect, useState, Suspense } from 'react';
+import { transformAdsWithAnalysisOptimized } from '@/lib/transformers-optimized';
+import { useEffect, useState, Suspense, useMemo } from 'react';
 import { DashboardLayout } from '@/components/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,11 +19,8 @@ import {
   Target,
   RefreshCw,
   Filter,
-  Search,
   Zap,
   Eye,
-  DollarSign,
-  MousePointer,
   LayoutGrid
 } from 'lucide-react';
 import { AdFilters } from '@/features/dashboard/components/AdFilters';
@@ -92,7 +89,7 @@ function AdsPageInner() {
     };
   };
 
-  const [filters, setFilters] = useState<AdFilterParams>(parseInitialFilters);
+  const [filters, setFilters] = useState<AdFilterParams>(() => parseInitialFilters());
   
   // New state for view and selection
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -100,12 +97,19 @@ function AdsPageInner() {
   const [selectedAds, setSelectedAds] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingAds, setDeletingAds] = useState<Set<number>>(new Set());
-  const [isDeletingAll, setIsDeletingAll] = useState(false);
-  const isDevMode = process.env.NODE_ENV === 'development';
 
+
+  // Create stable filter dependency to prevent infinite re-renders
+  const filterDeps = useMemo(() => JSON.stringify(filters), [filters]);
+  
   useEffect(() => {
-    fetchAds();
-  }, [filters]);
+    // Debounce API calls to prevent excessive requests
+    const timeoutId = setTimeout(() => {
+      fetchAds();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [filterDeps]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -137,6 +141,12 @@ function AdsPageInner() {
   }, [ads]);
 
   const fetchAds = async () => {
+    // Only make API calls on the client side
+    if (typeof window === 'undefined') {
+      console.log('⚠️ fetchAds called on server side, skipping');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -177,7 +187,7 @@ function AdsPageInner() {
       setTotalItems(response.pagination.total_items);
       setTotalPages(response.pagination.total_pages);
       
-      const transformedAds = transformAdsWithAnalysis(response.data);
+      const transformedAds = transformAdsWithAnalysisOptimized(response.data);
       setAds(transformedAds);
       
       // The client-side filtering was removed for debugging.
@@ -364,23 +374,7 @@ function AdsPageInner() {
     }
   };
 
-  const handleDropAllAds = async () => {
-    if (!window.confirm('WARNING: This will delete ALL ads in the database. This action cannot be undone. Are you sure?')) {
-      return;
-    }
-    
-    try {
-      setIsDeletingAll(true);
-      const result = await adsApi.deleteAllAds();
-      alert(`Successfully deleted ${result.count} ads`);
-      fetchAds(); // Refresh the ads list
-    } catch (error) {
-      console.error('Error deleting all ads:', error);
-      alert(`Error deleting all ads: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsDeletingAll(false);
-    }
-  };
+
 
   const renderStats = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-8">

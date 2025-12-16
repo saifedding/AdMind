@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Performance Profiler</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .timing { font-weight: bold; color: #007bff; }
+        .slow { background-color: #fff3cd; border-color: #ffeaa7; }
+        .fast { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Frontend Performance Profiler</h1>
+    <p>This will profile each step of the frontend data processing pipeline.</p>
+    
+    <button onclick="runProfiler()">🚀 Start Profiling</button>
+    <button onclick="clearResults()">🗑️ Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let stepCount = 0;
+
+        function addStep(title, timing, details = '', isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            
+            let className = 'step ';
+            if (isError) className += 'error';
+            else if (timing > 1000) className += 'slow';
+            else className += 'fast';
+            
+            div.className = className;
+            
+            let content = `<strong>Step ${++stepCount}: ${title}</strong> <span class="timing">(${timing}ms)</span>`;
+            if (details) {
+                content += `<pre>${details}</pre>`;
+            }
+            div.innerHTML = content;
+            
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+            
+            return timing;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            stepCount = 0;
+        }
+
+        async function runProfiler() {
+            clearResults();
+            
+            const totalStart = performance.now();
+            
+            // Step 1: API Request
+            const apiStart = performance.now();
+            let apiData = null;
+            
+            try {
+                const response = await fetch("http://localhost:8000/api/v1/ads?page=1&page_size=24&sort_by=created_at&sort_order=desc", {
+                    method: 'GET',
+                    headers: {
+                        "accept": "*/*",
+                        "content-type": "application/json"
+                    }
+                });
+                
+                const apiEnd = performance.now();
+                const apiTime = apiEnd - apiStart;
+                
+                if (response.ok) {
+                    apiData = await response.json();
+                    const parseTime = performance.now() - apiEnd;
+                    
+                    addStep('API Request', apiTime, `Status: ${response.status}\nData size: ${JSON.stringify(apiData).length} chars\nAds returned: ${apiData.data?.length || 0}`);
+                    addStep('JSON Parsing', parseTime, `Parsed ${apiData.data?.length || 0} ad objects`);
+                } else {
+                    addStep('API Request Failed', apiTime, `Status: ${response.status}\nError: ${await response.text()}`, true);
+                    return;
+                }
+            } catch (error) {
+                const apiTime = performance.now() - apiStart;
+                addStep('API Request Error', apiTime, `Error: ${error.message}`, true);
+                return;
+            }
+
+            // Step 2: Data Transformation
+            const transformStart = performance.now();
+            let transformedData = null;
+            
+            try {
+                // Simulate the transformation that happens in the frontend
+                transformedData = apiData.data.map(apiAd => {
+                    // This mimics transformAdWithAnalysis function
+                    return {
+                        id: apiAd.id,
+                        ad_archive_id: apiAd.ad_archive_id,
+                        ad_copy: apiAd.ad_copy,
+                        media_type: apiAd.media_type,
+                        media_url: apiAd.media_url,
+                        date_found: apiAd.date_found,
+                        page_name: apiAd.page_name,
+                        publisher_platform: apiAd.publisher_platform,
+                        impressions_text: apiAd.impressions_text,
+                        cta_text: apiAd.cta_text,
+                        page_id: apiAd.page_id,
+                        is_favorite: apiAd.is_favorite,
+                        start_date: apiAd.start_date,
+                        end_date: apiAd.end_date,
+                        spend: apiAd.spend,
+                        page_profile_picture_url: apiAd.page_profile_picture_url,
+                        main_title: apiAd.main_title,
+                        main_body_text: apiAd.main_body_text,
+                        main_caption: apiAd.main_caption,
+                        main_image_urls: apiAd.main_image_urls,
+                        main_video_urls: apiAd.main_video_urls,
+                        competitor_id: apiAd.competitor?.id,
+                        competitor: apiAd.competitor,
+                        analysis: apiAd.analysis,
+                        is_analyzed: apiAd.is_analyzed,
+                        analysis_summary: apiAd.analysis_summary,
+                        meta: apiAd.meta || { is_active: apiAd.is_active },
+                        targeting: apiAd.targeting || { 
+                            locations: [], 
+                            age_range: { min: 0, max: 0 }
+                        },
+                        lead_form: apiAd.lead_form || { questions: {}, standalone_fields: [] },
+                        creatives: apiAd.creatives || [],
+                        ad_set_id: apiAd.ad_set_id,
+                        variant_count: apiAd.variant_count,
+                        ad_set_created_at: apiAd.ad_set_created_at,
+                        ad_set_first_seen_date: apiAd.ad_set_first_seen_date,
+                        ad_set_last_seen_date: apiAd.ad_set_last_seen_date
+                    };
+                });
+                
+                const transformTime = performance.now() - transformStart;
+                addStep('Data Transformation', transformTime, `Transformed ${transformedData.length} ads\nAvg per ad: ${(transformTime / transformedData.length).toFixed(2)}ms`);
+                
+            } catch (error) {
+                const transformTime = performance.now() - transformStart;
+                addStep('Transformation Error', transformTime, `Error: ${error.message}`, true);
+                return;
+            }
+
+            // Step 3: DOM Manipulation Simulation
+            const domStart = performance.now();
+            
+            try {
+                // Simulate creating DOM elements for each ad (like AdCard components)
+                const container = document.createElement('div');
+                
+                transformedData.forEach((ad, index) => {
+                    const adElement = document.createElement('div');
+                    adElement.className = 'ad-card';
+                    adElement.innerHTML = `
+                        <div class="ad-header">
+                            <h3>${ad.main_title || ad.ad_copy || 'No title'}</h3>
+                            <span>${ad.page_name || 'Unknown page'}</span>
+                        </div>
+                        <div class="ad-media">
+                            ${ad.media_url ? `<img src="${ad.media_url}" alt="Ad media" style="max-width: 100px;">` : ''}
+                        </div>
+                        <div class="ad-meta">
+                            <span>Type: ${ad.media_type || 'unknown'}</span>
+                            <span>Active: ${ad.is_active ? 'Yes' : 'No'}</span>
+                            ${ad.analysis ? `<span>Score: ${ad.analysis.overall_score || 'N/A'}</span>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(adElement);
+                });
+                
+                // Don't actually add to DOM, just measure creation time
+                const domTime = performance.now() - domStart;
+                addStep('DOM Creation Simulation', domTime, `Created ${transformedData.length} DOM elements\nAvg per element: ${(domTime / transformedData.length).toFixed(2)}ms`);
+                
+            } catch (error) {
+                const domTime = performance.now() - domStart;
+                addStep('DOM Creation Error', domTime, `Error: ${error.message}`, true);
+            }
+
+            // Step 4: Total Time
+            const totalTime = performance.now() - totalStart;
+            addStep('TOTAL PIPELINE', totalTime, `Complete frontend processing pipeline\nExpected browser time: ~${totalTime}ms`);
+
+            // Analysis
+            if (totalTime > 3000) {
+                addStep('🔴 PERFORMANCE ISSUE DETECTED', 0, `Total time (${totalTime}ms) exceeds 3 seconds!\n\nLikely causes:\n• Heavy data transformation\n• Large response payload\n• Complex DOM operations\n• Network latency\n\nRecommendations:\n• Optimize transformers\n• Implement virtual scrolling\n• Add response caching\n• Reduce payload size`, true);
+            } else if (totalTime > 1000) {
+                addStep('🟡 MODERATE PERFORMANCE', 0, `Total time (${totalTime}ms) is acceptable but could be improved`, false);
+            } else {
+                addStep('🟢 GOOD PERFORMANCE', 0, `Total time (${totalTime}ms) is within acceptable range`, false);
+            }
+        }
+
+        // Auto-run profiler on page load
+        window.addEventListener('load', () => {
+            console.log('🔍 Performance profiler loaded. Click "Start Profiling" to begin.');
+        });
+    </script>
+</body>
+</html>

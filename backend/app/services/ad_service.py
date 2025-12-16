@@ -59,8 +59,9 @@ class AdService:
             sort_order = filters.sort_order or "desc"
             query = self._apply_adset_sorting(query, sort_by, sort_order)
             
-            # Get total count before pagination
-            total_items = query.count()
+            # Get total count before pagination - use a more efficient count query
+            count_query = query.statement.with_only_columns(func.count()).order_by(None)
+            total_items = self.db.execute(count_query).scalar()
             
             # Apply pagination
             offset = (filters.page - 1) * filters.page_size
@@ -79,24 +80,10 @@ class AdService:
                     ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
                     ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
                     # Set favorite status from AdSet, not individual Ad
-                    has_favorite_attr = hasattr(ad_set, 'is_favorite')
-                    favorite_value = ad_set.is_favorite if has_favorite_attr else False
-                    logger.info(f"AdSet {ad_set.id}: hasattr={has_favorite_attr}, is_favorite={favorite_value}")
-                    ad_dto.is_favorite = favorite_value
+                    ad_dto.is_favorite = getattr(ad_set, 'is_favorite', False)
                     ad_dtos.append(ad_dto)
-                else:
-                    # If there's no best_ad, fetch the first ad in the set
-                    first_ad = self.db.query(Ad).filter(Ad.ad_set_id == ad_set.id).first()
-                    if first_ad:
-                        ad_dto = self._convert_to_dto(first_ad)
-                        ad_dto.ad_set_id = ad_set.id
-                        ad_dto.variant_count = ad_set.variant_count
-                        ad_dto.ad_set_created_at = ad_set.created_at
-                        ad_dto.ad_set_first_seen_date = ad_set.first_seen_date
-                        ad_dto.ad_set_last_seen_date = ad_set.last_seen_date
-                        # Set favorite status from AdSet
-                        ad_dto.is_favorite = ad_set.is_favorite if hasattr(ad_set, 'is_favorite') else False
-                        ad_dtos.append(ad_dto)
+                # Skip ad sets without best_ad to avoid N+1 queries
+                # These should be rare and can be handled by data cleanup
             
             # Calculate pagination metadata
             total_pages = (total_items + filters.page_size - 1) // filters.page_size
@@ -121,80 +108,94 @@ class AdService:
     def _apply_adset_filters(self, query, filters: AdFilterParams):
         """
         Apply filters to AdSet query based on filter parameters.
-        Filters are applied based on the properties of the best ad in each set.
+        Optimized to minimize joins and improve performance.
         """
         try:
-            # Filter by competitor
+            # Track if we need to join with best_ad (do it only once)
+            needs_ad_join = False
+            needs_competitor_join = False
+            needs_analysis_join = False
+            
+            # Check which joins we need
+            if (filters.competitor_id or filters.competitor_name or filters.min_duration_days or 
+                filters.max_duration_days or filters.is_active or filters.search):
+                needs_ad_join = True
+                
+            if filters.competitor_name:
+                needs_competitor_join = True
+                
+            if (filters.has_analysis is not None or filters.min_hook_score is not None or 
+                filters.max_hook_score is not None or filters.min_overall_score is not None or 
+                filters.max_overall_score is not None):
+                needs_analysis_join = True
+                needs_ad_join = True
+            
+            # Apply joins only once
+            if needs_ad_join:
+                query = query.join(AdSet.best_ad)
+                
+            if needs_competitor_join:
+                query = query.join(Ad.competitor)
+                
+            if needs_analysis_join:
+                query = query.join(Ad.analysis, isouter=True)
+            
+            # Apply filters
             if filters.competitor_id:
-                query = query.join(AdSet.best_ad).filter(Ad.competitor_id == filters.competitor_id)
+                query = query.filter(Ad.competitor_id == filters.competitor_id)
             
             if filters.competitor_name:
-                query = query.join(AdSet.best_ad).join(Ad.competitor).filter(
-                    Competitor.name.ilike(f"%{filters.competitor_name}%")
-                )
+                query = query.filter(Competitor.name.ilike(f"%{filters.competitor_name}%"))
             
             # Filter by has_analysis
             if filters.has_analysis is not None:
                 if filters.has_analysis:
-                    query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).filter(AdAnalysis.id.isnot(None))
+                    query = query.filter(AdAnalysis.id.isnot(None))
                 else:
-                    query = query.join(AdSet.best_ad).outerjoin(Ad.analysis).filter(AdAnalysis.id.is_(None))
+                    query = query.filter(AdAnalysis.id.is_(None))
             
-            # Filter by hook_score
+            # Score filters
             if filters.min_hook_score is not None:
-                query = query.join(AdSet.best_ad).join(Ad.analysis).filter(
-                    AdAnalysis.hook_score >= filters.min_hook_score
-                )
+                query = query.filter(AdAnalysis.hook_score >= filters.min_hook_score)
                 
             if filters.max_hook_score is not None:
-                query = query.join(AdSet.best_ad).join(Ad.analysis).filter(
-                    AdAnalysis.hook_score <= filters.max_hook_score
-                )
+                query = query.filter(AdAnalysis.hook_score <= filters.max_hook_score)
             
-            # Filter by overall_score
             if filters.min_overall_score is not None:
-                query = query.join(AdSet.best_ad).join(Ad.analysis).filter(
-                    AdAnalysis.overall_score >= filters.min_overall_score
-                )
+                query = query.filter(AdAnalysis.overall_score >= filters.min_overall_score)
                 
             if filters.max_overall_score is not None:
-                query = query.join(AdSet.best_ad).join(Ad.analysis).filter(
-                    AdAnalysis.overall_score <= filters.max_overall_score
-                )
+                query = query.filter(AdAnalysis.overall_score <= filters.max_overall_score)
             
-            # Filter by duration
+            # Duration filters
             if filters.min_duration_days is not None:
-                query = query.join(AdSet.best_ad).filter(Ad.duration_days >= filters.min_duration_days)
+                query = query.filter(Ad.duration_days >= filters.min_duration_days)
                 
             if filters.max_duration_days is not None:
-                query = query.join(AdSet.best_ad).filter(Ad.duration_days <= filters.max_duration_days)
+                query = query.filter(Ad.duration_days <= filters.max_duration_days)
             
-            # Filter by date range on the AdSet's lifetime
+            # Date range filters (AdSet level - no join needed)
             if filters.date_from:
                 query = query.filter(AdSet.last_seen_date >= filters.date_from)
                 
             if filters.date_to:
                 query = query.filter(AdSet.first_seen_date <= filters.date_to)
             
-            # Filter by active status
+            # Active status filter
             if filters.is_active is not None:
-                # Check the meta JSON field for is_active
-                query = query.join(AdSet.best_ad).filter(
-                    Ad.meta['is_active'].as_string() == str(filters.is_active).lower()
-                )
+                query = query.filter(Ad.meta['is_active'].as_string() == str(filters.is_active).lower())
             
-            # Filter by favorite status (AdSet level)
+            # Favorite status (AdSet level - no join needed)
             if filters.is_favorite is not None:
                 query = query.filter(AdSet.is_favorite == filters.is_favorite)
             
-            # Search in ad content
+            # Search filter (optimized to avoid expensive JSON operations when possible)
             if filters.search:
                 search_term = f"%{filters.search}%"
-                query = query.join(AdSet.best_ad).filter(
+                # Use simpler text search when possible
+                query = query.filter(
                     or_(
-                        # Search in ad text fields within the creatives JSON
                         cast(Ad.creatives, SQLAString).ilike(search_term),
-                        # Check for page name within the meta JSON
                         cast(Ad.meta, SQLAString).ilike(search_term)
                     )
                 )
@@ -222,21 +223,48 @@ class AdService:
             direction = desc if sort_order.lower() == "desc" else asc
             
             # Apply sorting based on different fields
-            if sort_by == "created_at" or sort_by == "date_found" or sort_by == "updated_at":
-                # Sort by date fields from the Ad model
-                query = query.join(AdSet.best_ad).order_by(direction(getattr(Ad, sort_by)))
+            if sort_by == "created_at":
+                # Sort by Ad creation date (default)
+                query = query.join(AdSet.best_ad).order_by(direction(Ad.created_at))
+            elif sort_by == "date_found":
+                # Sort by date the ad was first found
+                query = query.join(AdSet.best_ad).order_by(direction(Ad.date_found))
+            elif sort_by == "updated_at":
+                # Sort by last update date
+                query = query.join(AdSet.best_ad).order_by(direction(Ad.updated_at))
             elif sort_by == "variant_count":
                 # Sort directly by AdSet's variant_count
                 query = query.order_by(direction(AdSet.variant_count))
-            elif sort_by == "hook_score" or sort_by == "overall_score":
-                # Sort by analysis scores
-                query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).order_by(
-                    direction(getattr(AdAnalysis, sort_by, None)),
-                    desc(Ad.date_found)  # Secondary sort by date found
-                )
+            elif sort_by == "duration_days":
+                # Sort by duration in days
+                query = query.join(AdSet.best_ad).order_by(direction(Ad.duration_days))
+            elif sort_by == "hook_score":
+                # Sort by hook score with null values last
+                if sort_order.lower() == "desc":
+                    query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).order_by(
+                        AdAnalysis.hook_score.desc().nullslast(),
+                        desc(Ad.created_at)
+                    )
+                else:
+                    query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).order_by(
+                        AdAnalysis.hook_score.asc().nullsfirst(),
+                        desc(Ad.created_at)
+                    )
+            elif sort_by == "overall_score":
+                # Sort by overall score with null values last
+                if sort_order.lower() == "desc":
+                    query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).order_by(
+                        AdAnalysis.overall_score.desc().nullslast(),
+                        desc(Ad.created_at)
+                    )
+                else:
+                    query = query.join(AdSet.best_ad).join(Ad.analysis, isouter=True).order_by(
+                        AdAnalysis.overall_score.asc().nullsfirst(),
+                        desc(Ad.created_at)
+                    )
             else:
-                # Default to sorting by AdSet creation date
-                query = query.order_by(direction(AdSet.created_at))
+                # Default to sorting by Ad creation date (most recent first)
+                query = query.join(AdSet.best_ad).order_by(desc(Ad.created_at))
                 
             return query
         except Exception as e:

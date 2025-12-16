@@ -165,4 +165,28 @@
   .btn-glow:hover {
     animation: pulse-glow 2s ease-in-out infinite;
   }
+  
+  /* Custom z-index utilities */
+  .z-5 {
+    z-index: 5;
+  }
+
+  /* Video Controls - Minimal styling */
+  video {
+    pointer-events: auto;
+  }
+  
+  /* Ensure video duration and time displays are visible */
+  video::-webkit-media-controls-current-time-display,
+  video::-webkit-media-controls-time-remaining-display {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure the timeline shows duration */
+  video::-webkit-media-controls-timeline {
+    display: block !important;
+    visibility: visible !important;
+  }
 }

@@ -98,6 +98,67 @@ export interface CreateDownloadHistoryRequest {
   video_urls?: string[];
   image_urls?: string[];
   media?: any[];
+}
+
+export interface AdLibrarySearchRequest {
+  query_string?: string;
+  page_id?: string;
+  countries?: string[];
+  active_status?: string;
+  ad_type?: string;
+  media_type?: string;
+  max_pages?: number;
+  save_to_database?: boolean;
+  min_duration_days?: number | undefined;
+}
+
+export interface AdLibrarySearchResponse {
+  success: boolean;
+  search_type: string;
+  query: string;
+  countries: string[];
+  total_ads_found: number;
+  total_ads_saved: number;
+  pages_scraped: number;
+  stats: {
+    total_processed: number;
+    created: number;
+    updated: number;
+    errors: number;
+    competitors_processed: number;
+    ads_filtered_by_duration?: number;
+  };
+  ads_preview: Array<{
+    ad_archive_id: string;
+    advertiser: string;
+    media_type: string;
+    is_active: boolean;
+    start_date?: string;
+    duration_days?: number;
+    creatives_count: number;
+    has_targeting: boolean;
+    has_lead_form: boolean;
+    creatives?: any[];
+    targeting?: any;
+    lead_form?: any;
+    meta?: any;
+  }>;
+  message: string;
+  search_time: string;
+}
+
+export interface SaveSelectedAdsRequest {
+  ad_archive_ids: string[];
+  search_params: AdLibrarySearchRequest;
+}
+
+export interface SaveSelectedAdsResponse {
+  success: boolean;
+  total_requested: number;
+  total_saved: number;
+  already_existed: number;
+  errors: number;
+  message: string;
   save_path?: string;
 }
 
@@ -445,6 +506,22 @@ class ApiClient {
 
   async getAdById(id: number): Promise<ApiAd> {
     return this.request<ApiAd>(`/ads/${id}`);
+  }
+
+  async searchAdLibrary(data: AdLibrarySearchRequest): Promise<AdLibrarySearchResponse> {
+    console.log('🔍 Searching Ad Library:', data);
+    return this.request<AdLibrarySearchResponse>('/ads/library/search', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async saveSelectedAds(data: SaveSelectedAdsRequest): Promise<SaveSelectedAdsResponse> {
+    console.log('💾 Saving selected ads:', data);
+    return this.request<SaveSelectedAdsResponse>('/ads/library/save-selected', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   async getTopPerformingAds(limit: number = 10): Promise<ApiAd[]> {
@@ -942,6 +1019,10 @@ export const adsApi = {
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
   getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
+
+  // Ad Library Search API
+  searchAdLibrary: (data: AdLibrarySearchRequest) => apiClient.searchAdLibrary(data),
+  saveSelectedAds: (data: SaveSelectedAdsRequest) => apiClient.saveSelectedAds(data),
 
   // Favorites API
   getFavoriteLists: () => apiClient.getFavoriteLists(),

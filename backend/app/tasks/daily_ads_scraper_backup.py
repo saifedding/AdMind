@@ -66,8 +66,7 @@ def scrape_new_ads_daily_task(
             "total_new_ads": 0,
             "total_processed_ads": 0,
             "competitors_results": [],
-            "errors": [],
-            "new_ad_archive_ids": []  # Collect all new ad archive IDs
+            "errors": []
         }
 
         # Process each competitor

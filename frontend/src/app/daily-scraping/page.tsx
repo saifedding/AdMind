@@ -22,7 +22,8 @@ import {
   AlertCircle,
   Info,
   Globe,
-  Activity
+  Activity,
+  Eye
 } from "lucide-react";
 
 interface DailyScrapingConfig {
@@ -32,6 +33,8 @@ interface DailyScrapingConfig {
   max_pages_per_competitor: number;
   delay_between_requests: number;
   hours_lookback: number;
+  days_lookback: number; // New field for days-based lookback
+  min_duration_days: number | null; // Minimum days running filter
   active_status: string;
   selected_competitors: number[]; // Empty array means all competitors
 }
@@ -83,6 +86,8 @@ export default function DailyScrapingPage() {
     max_pages_per_competitor: 10,  // Increased to match competitors page
     delay_between_requests: 2,
     hours_lookback: 24,
+    days_lookback: 1, // Default to 1 day
+    min_duration_days: null, // No minimum duration by default
     active_status: "all",  // Changed to 'all' to match working config
     selected_competitors: [] // Empty means all
   });
@@ -159,6 +164,8 @@ export default function DailyScrapingPage() {
             max_pages_per_competitor: config.max_pages_per_competitor,
             delay_between_requests: config.delay_between_requests,
             hours_lookback: config.hours_lookback,
+            days_lookback: config.days_lookback,
+            min_duration_days: config.min_duration_days,
             active_status: config.active_status
           }
         : {
@@ -166,6 +173,8 @@ export default function DailyScrapingPage() {
             countries: config.countries,
             max_pages_per_competitor: config.max_pages_per_competitor,
             delay_between_requests: config.delay_between_requests,
+            days_lookback: config.days_lookback,
+            min_duration_days: config.min_duration_days,
             active_status: config.active_status
           };
 
@@ -278,6 +287,8 @@ export default function DailyScrapingPage() {
         max_pages_per_competitor: 10,
         delay_between_requests: 2,
         hours_lookback: 24,
+        days_lookback: 1,
+        min_duration_days: null,
         active_status: "all",
         selected_competitors: []
       };
@@ -386,6 +397,68 @@ export default function DailyScrapingPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const viewTaskAds = async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/v1/scraping/tasks/${taskId}/ads`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.total_ads > 0) {
+          // Create a new window/tab to show the ads
+          const adsWindow = window.open('', '_blank');
+          if (adsWindow) {
+            adsWindow.document.write(`
+              <html>
+                <head>
+                  <title>Ads Found by Task ${taskId}</title>
+                  <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .ad-card { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 8px; }
+                    .ad-header { font-weight: bold; color: #333; margin-bottom: 10px; }
+                    .ad-meta { color: #666; font-size: 0.9em; }
+                    .ad-content { margin: 10px 0; }
+                    .competitor { color: #0066cc; font-weight: bold; }
+                  </style>
+                </head>
+                <body>
+                  <h1>🎯 Found ${data.total_ads} New Ads</h1>
+                  <p><strong>Task ID:</strong> ${taskId}</p>
+                  <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                  <hr>
+                  ${data.ads.map((ad: any) => `
+                    <div class="ad-card">
+                      <div class="ad-header">
+                        📢 Ad ID: ${ad.ad_archive_id}
+                        <span class="competitor">(${ad.competitor_name})</span>
+                      </div>
+                      <div class="ad-content">
+                        <strong>Headline:</strong> ${ad.headline || 'N/A'}<br>
+                        <strong>Body:</strong> ${ad.body || 'N/A'}<br>
+                      </div>
+                      <div class="ad-meta">
+                        📅 Created: ${new Date(ad.created_at).toLocaleString()} | 
+                        ⏱️ Duration: ${ad.duration_days} days | 
+                        🌍 Countries: ${ad.countries?.join(', ') || 'N/A'} |
+                        📱 Media: ${ad.media_type || 'N/A'}
+                      </div>
+                    </div>
+                  `).join('')}
+                </body>
+              </html>
+            `);
+            adsWindow.document.close();
+          }
+        } else {
+          alert('No ads found for this task.');
+        }
+      } else {
+        alert('Failed to fetch ads for this task.');
+      }
+    } catch (error) {
+      console.error('Error fetching task ads:', error);
+      alert('Error fetching ads for this task.');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -433,15 +506,36 @@ export default function DailyScrapingPage() {
                 <div>
                   <p className="text-sm font-medium">State: {currentTask.state}</p>
                   {currentTask.result && (
-                    <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Competitors Processed:</span>
-                        <span className="ml-2 font-medium">{currentTask.result.competitors_processed}</span>
+                    <div className="mt-2 space-y-3">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Competitors Processed:</span>
+                          <span className="ml-2 font-medium">{currentTask.result.competitors_processed}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">New Ads Found:</span>
+                          <span className="ml-2 font-medium text-green-600">{currentTask.result.total_new_ads}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">New Ads Found:</span>
-                        <span className="ml-2 font-medium">{currentTask.result.total_new_ads}</span>
-                      </div>
+                      {currentTask.result.total_new_ads > 0 && currentTask.state === "SUCCESS" && (
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            onClick={() => viewTaskAds(currentTask.task_id)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View {currentTask.result.total_new_ads} Found Ads
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigator.clipboard.writeText(`Found ${currentTask.result.total_new_ads} new ads from daily scraping task ${currentTask.task_id}`)}
+                          >
+                            Share Results
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   {currentTask.error && (
@@ -511,6 +605,36 @@ export default function DailyScrapingPage() {
                 />
                 <p className="text-xs text-muted-foreground">
                   How many hours back to look for new ads (default: 24)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="days-lookback">Days Lookback</Label>
+                <Input
+                  id="days-lookback"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={config.days_lookback}
+                  onChange={(e) => setConfig(prev => ({ ...prev, days_lookback: parseInt(e.target.value) }))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  How many days back to look for ads from same competitors (overrides hours if set)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="min-duration-days">Minimum Days Running</Label>
+                <Input
+                  id="min-duration-days"
+                  type="number"
+                  min="1"
+                  placeholder="e.g., 15 (optional)"
+                  value={config.min_duration_days ?? ''}
+                  onChange={(e) => setConfig(prev => ({ ...prev, min_duration_days: e.target.value ? parseInt(e.target.value, 10) : null }))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Only scrape ads that have been running for at least this many days. Leave empty to include all ads.
                 </p>
               </div>
             </CardContent>

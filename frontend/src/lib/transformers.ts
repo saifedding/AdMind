@@ -85,8 +85,14 @@ export function transformAd(apiAd: ApiAd): Ad {
     analysis_summary: apiAd.analysis_summary,
 
     // New fields from the backend are now directly mapped
-    meta: apiAd.meta || {},
-    targeting: apiAd.targeting || { locations: [], age_range: { min: 0, max: 0 } },
+    meta: apiAd.meta || { is_active: apiAd.is_active },
+    targeting: apiAd.targeting || { 
+      locations: [], 
+      age_range: { min: 0, max: 0 },
+      gender: undefined,
+      reach_breakdown: undefined,
+      total_reach: undefined
+    },
     lead_form: apiAd.lead_form || { questions: {}, standalone_fields: [] },
     creatives: apiAd.creatives || [],
     
@@ -106,24 +112,7 @@ export function transformAdWithAnalysis(apiAd: ApiAd): AdWithAnalysis {
   const competitor = apiAd.competitor ? transformCompetitor(apiAd.competitor) : undefined;
   const analysis = apiAd.analysis 
     ? transformAdAnalysis(apiAd.analysis)
-    : {
-        id: 0,
-        ad_id: apiAd.id,
-        summary: undefined,
-        hook_score: undefined,
-        overall_score: undefined,
-        ai_prompts: undefined,
-        raw_ai_response: undefined,
-        target_audience: undefined,
-        ad_format_analysis: undefined,
-        competitor_insights: undefined,
-        content_themes: undefined,
-        performance_predictions: undefined,
-        analysis_version: undefined,
-        confidence_score: undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+    : undefined;
 
   return {
     ...ad,

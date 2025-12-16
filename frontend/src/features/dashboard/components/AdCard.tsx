@@ -33,7 +33,7 @@ const getMainAdContent = (ad: AdWithAnalysis, creative?: Creative): string => {
   );
 };
 
-export function AdCard({ 
+export const AdCard = React.memo(function AdCard({ 
   ad, 
   isSelected = false, 
   isDeleting = false, 
@@ -79,6 +79,8 @@ export function AdCard({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showListsDropdown]);
+
+
   
   const getPrimaryMedia = () => {
     if (currentCreative?.media && currentCreative.media.length > 0) {
@@ -97,14 +99,20 @@ export function AdCard({
   const { url: primaryMediaUrl, isVideo } = getPrimaryMedia();
   const displayContent = getMainAdContent(ad, currentCreative);
   const impressionsText = ad.impressions_text || '';
-  const ctaText = currentCreative?.cta?.text || ad.meta?.cta_type || ad.cta_text || '';
+
   const countries = ad.targeting?.locations?.map(l => l.name) || [];
   const isActive = ad.is_active !== undefined ? ad.is_active : (ad.meta?.is_active !== undefined ? ad.meta.is_active : !ad.end_date || new Date(ad.end_date) >= new Date());
   const adDuration = formatAdDuration(ad.start_date, ad.end_date, isActive);
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation when clicking on interactive elements
     if ((e.target as HTMLElement).closest('.carousel-control')) return;
     if ((e.target as HTMLElement).closest('.action-btn')) return;
+    
+    // Prevent navigation when clicking on video element or its controls
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'VIDEO' || target.closest('video')) return;
+    
     if (disableSetNavigation) { router.push(`/ads/${ad.id}`); return; }
     if (isAdSet && ad.ad_set_id) router.push(`/ad-sets/${ad.ad_set_id}`);
     else router.push(`/ads/${ad.id}`);
@@ -205,6 +213,8 @@ export function AdCard({
       <Card className={cn(
         "overflow-hidden transition-all duration-200 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-0",
         "hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5",
+        "!gap-0.5", // Override the default gap-6 with minimal spacing
+        "h-[600px] flex flex-col", // Fixed height and flex layout
         isSelected && "ring-2 ring-blue-500",
         isDeleting && "opacity-50 pointer-events-none",
         isAdSet && !hideSetBadge && "border-l-2 border-l-indigo-500"
@@ -214,9 +224,13 @@ export function AdCard({
 
         {/* Media Section */}
         <div className="relative aspect-[9/16] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-          {/* Gradients */}
-          <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/50 to-transparent z-10" />
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent z-10" />
+          {/* Gradients - Only show for images, not videos */}
+          {!isVideo && (
+            <>
+              <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/50 to-transparent z-5 pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent z-5 pointer-events-none" />
+            </>
+          )}
           
           {/* Top Left: Media Type + Status + Selection */}
           <div className="absolute top-2 left-2 z-20 flex gap-1">
@@ -251,36 +265,36 @@ export function AdCard({
             </div>
           )}
 
-          {/* Bottom Left: Analysis + Variants - Adjusted to avoid action buttons */}
-          <div className="absolute bottom-2 left-2 z-20 flex gap-1">
-            {ad.id && (
-              <AnalysisStatusBadge
-                adId={ad.id}
-                adSetId={ad.ad_set_id}
-                hasAnalysis={undefined}
-                showAnalyzeButton={true}
-                size="sm"
-                className="!py-0.5 !px-2 !text-[10px] !bg-black/60"
-                onAnalysisComplete={() => window.location.reload()}
-              />
-            )}
-            {isAdSet && !hideSetBadge && (
-              <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold flex items-center gap-0.5">
-                <Layers className="h-2.5 w-2.5" />{ad.variant_count}
-              </span>
-            )}
-          </div>
+
 
           {/* Media */}
           {primaryMediaUrl ? (
             isVideo ? (
               <div className="relative h-full w-full">
-                <video src={primaryMediaUrl} className="absolute inset-0 h-full w-full object-cover" preload="metadata" playsInline controls ref={videoRef}
-                  onPlay={() => setIsVideoPlaying(true)} onPause={() => setIsVideoPlaying(false)} onEnded={() => setIsVideoPlaying(false)} />
+                <video 
+                  src={primaryMediaUrl} 
+                  className="absolute inset-0 h-full w-full object-cover"
+                  preload="metadata" 
+                  playsInline 
+                  controls 
+                  ref={videoRef}
+                  onPlay={() => setIsVideoPlaying(true)} 
+                  onPause={() => setIsVideoPlaying(false)} 
+                  onEnded={() => setIsVideoPlaying(false)}
+                  onClick={(e) => e.stopPropagation()}
+                />
                 {!isVideoPlaying && (
-                  <button type="button" className="absolute inset-0 flex items-center justify-center z-10 carousel-control"
-                    onClick={(e) => { e.stopPropagation(); videoRef.current?.play(); }}>
-                    <div className="bg-white/90 rounded-full p-3 shadow-lg"><Play className="h-5 w-5 text-gray-800 fill-gray-800 ml-0.5" /></div>
+                  <button 
+                    type="button" 
+                    className="absolute inset-0 flex items-center justify-center z-5 carousel-control pointer-events-none"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      videoRef.current?.play(); 
+                    }}
+                  >
+                    <div className="bg-white/90 rounded-full p-3 shadow-lg pointer-events-auto">
+                      <Play className="h-5 w-5 text-gray-800 fill-gray-800 ml-0.5" />
+                    </div>
                   </button>
                 )}
               </div>
@@ -291,37 +305,9 @@ export function AdCard({
             <div className="absolute inset-0 flex items-center justify-center"><Image className="h-8 w-8 text-gray-400" /></div>
           )}
 
-          {/* Hover Quick Actions - Positioned to avoid video controls */}
-          <div className="absolute bottom-12 right-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              aria-label={isSaved ? 'Unsave' : 'Save'}
-              title={isSaved ? 'Unsave' : 'Save'}
-              onClick={handleSaveClick}
-              disabled={isSaving}
-              className={cn("p-1.5 rounded-full shadow-lg bg-white/95 hover:bg-white backdrop-blur-sm action-btn", isSaved ? "ring-2 ring-emerald-500" : "")}
-            >
-              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-800" /> : <Save className="h-3.5 w-3.5 text-gray-800" />}
-            </button>
-            <button
-              aria-label="Refresh media"
-              title="Refresh"
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-              className="p-1.5 rounded-full shadow-lg bg-white/95 hover:bg-white backdrop-blur-sm action-btn"
-            >
-              {isRefreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-800" /> : <RefreshCw className="h-3.5 w-3.5 text-gray-800" />}
-            </button>
-            <button
-              aria-label="Add to list"
-              title="Add to list"
-              onClick={handleAddToListClick}
-              className="p-1.5 rounded-full shadow-lg bg-white/95 hover:bg-white backdrop-blur-sm action-btn"
-            >
-              <FolderPlus className="h-3.5 w-3.5 text-gray-800" />
-            </button>
-          </div>
 
-          {/* Carousel */}
+
+          {/* Carousel - Clean positioning */}
           {hasMultipleCreatives && (
             <>
               <button onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(p => p > 0 ? p - 1 : (ad.creatives?.length || 1) - 1); }}
@@ -332,7 +318,7 @@ export function AdCard({
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full carousel-control z-20 shadow-lg backdrop-blur-sm">
                 <ChevronRight className="h-3 w-3 text-gray-800" />
               </button>
-              <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex gap-1 z-20">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-20">
                 {ad.creatives?.map((_, i) => (
                   <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(i); }}
                     className={cn("h-1 rounded-full transition-all carousel-control", currentCardIndex === i ? "bg-white w-3" : "bg-white/50 w-1")} />
@@ -341,8 +327,62 @@ export function AdCard({
             </>
           )}
         </div>
+
+        {/* Action Bar - Minimal padding, directly under video */}
+        <div className="px-2 py-1 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+          {/* Left: Analysis + Variants */}
+          <div className="flex items-center gap-1">
+            {ad.id && (
+              <AnalysisStatusBadge
+                adId={ad.id}
+                adSetId={ad.ad_set_id}
+                hasAnalysis={ad.is_analyzed || !!ad.analysis}
+                showAnalyzeButton={true}
+                size="sm"
+                className="!py-0.5 !px-2 !text-[10px]"
+                onAnalysisComplete={() => window.location.reload()}
+              />
+            )}
+            {isAdSet && !hideSetBadge && (
+              <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold flex items-center gap-2.5">
+                <Layers className="h-2.5 w-2.5" />{ad.variant_count}
+              </span>
+            )}
+          </div>
+
+          {/* Right: Quick Actions */}
+          <div className="flex items-center gap-1">
+            <button
+              aria-label={isSaved ? 'Unsave' : 'Save'}
+              title={isSaved ? 'Unsave' : 'Save'}
+              onClick={handleSaveClick}
+              disabled={isSaving}
+              className={cn("p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 action-btn transition-colors", isSaved ? "text-emerald-600" : "text-gray-600")}
+            >
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              aria-label="Refresh media"
+              title="Refresh"
+              onClick={handleRefreshClick}
+              disabled={isRefreshing}
+              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 action-btn transition-colors text-gray-600"
+            >
+              {isRefreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              aria-label="Add to list"
+              title="Add to list"
+              onClick={handleAddToListClick}
+              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 action-btn transition-colors text-gray-600"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
         {/* Content Section */}
-        <CardContent className="p-2 space-y-1">
+        <CardContent className="p-2 pt-1 space-y-1">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={ad.page_profile_picture_url || (ad.competitor?.page_id ? `https://graph.facebook.com/${ad.competitor.page_id}/picture?width=40` : undefined)} />
@@ -371,12 +411,7 @@ export function AdCard({
             </div>
           )}
 
-          {/* CTA */}
-          {ctaText && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[11px] font-medium text-blue-700 dark:text-blue-300">
-              <span className="w-1 h-1 rounded-full bg-blue-500" />{ctaText}
-            </span>
-          )}
+
 
           {/* Bottom Row: Days + Spend + Countries + Date */}
           <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-100 dark:border-gray-800">
@@ -487,6 +522,6 @@ export function AdCard({
       </Card>
     </div>
   );
-}
+});
 
 export default AdCard;

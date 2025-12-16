@@ -344,3 +344,105 @@ class FacebookAdsScraperService:
         except Exception as e:
             logger.error(f"Error in ads scraping: {str(e)}")
             raise 
+
+    def scrape_ads_preview_only(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict]:
+        """
+        Scrape Facebook Ads for preview only - no database saving, no competitor creation
+        
+        Args:
+            config: Scraper configuration
+        
+        Returns:
+            Tuple of (all_ads_data, all_json_responses, enhanced_data, stats)
+        """
+        logger.info(f"Starting preview-only data collection for {config.view_all_page_id}")
+        
+        try:
+            all_json_responses = []
+            page_count = 0
+            enhanced_data = {}
+            
+            stats = {
+                "total_processed": 0,
+                "created": 0,
+                "updated": 0,
+                "errors": 0,
+                'competitors_created': 0,
+                'competitors_updated': 0,
+                'campaigns_processed': 0
+            }
+            
+            while True:
+                page_count += 1
+                if config.max_pages and page_count > config.max_pages:
+                    logger.info(f"Reached max pages limit of {config.max_pages}.")
+                    break
+
+                logger.info(f"Scraping page {page_count} (preview only)")
+                
+                response_data = self.fetch_ads_page(config)
+
+                if not response_data:
+                    logger.warning(f"No response data on page {page_count}. Stopping scrape.")
+                    break
+                
+                all_json_responses.append(response_data)
+                
+                try:
+                    # Check if response contains errors instead of data
+                    if 'errors' in response_data:
+                        error_details = response_data['errors'][0] if response_data['errors'] else {}
+                        error_msg = error_details.get('message', 'Unknown Facebook API error')
+                        error_code = error_details.get('code', 'N/A')
+                        logger.error(f"Facebook API Error on page {page_count}: {error_msg} (Code: {error_code})")
+                        stats['errors'] += 1
+                        break
+                    
+                    search_results = response_data['data']['ad_library_main']['search_results_connection']
+                    edges = search_results.get('edges', [])
+                    page_info = search_results.get('page_info', {})
+
+                    if not edges:
+                        logger.info("No ads found on this page. Stopping scrape.")
+                        break
+                    
+                    logger.info(f"Page {page_count}: Found {len(edges)} ad groups. Processing for preview only.")
+
+                    # Process raw responses but don't save to database
+                    page_enhanced_data = self.enhanced_extractor.transform_raw_data_to_enhanced_format([response_data])
+                    
+                    # Merge with existing enhanced_data
+                    for competitor_name, ads_list in page_enhanced_data.items():
+                        if competitor_name not in enhanced_data:
+                            enhanced_data[competitor_name] = []
+                        enhanced_data[competitor_name].extend(ads_list)
+                    
+                    # Count processed ads for stats
+                    page_ad_count = sum(len(ads_list) for ads_list in page_enhanced_data.values())
+                    stats['total_processed'] += page_ad_count
+                    stats['competitors_updated'] += len(page_enhanced_data)
+                    
+                    has_next_page = page_info.get('has_next_page', False)
+                    end_cursor = page_info.get('end_cursor')
+
+                    if not has_next_page:
+                        logger.info("No more pages available. Finished preview.")
+                        break
+                    
+                    config.cursor = end_cursor
+                    
+                    if config.delay_between_requests > 0:
+                        logger.info(f"Waiting {config.delay_between_requests} seconds...")
+                        time.sleep(config.delay_between_requests)
+
+                except (KeyError, TypeError) as e:
+                    logger.error(f"Error parsing response data on page {page_count}: {e}")
+                    stats['errors'] += 1
+                    break
+            
+            logger.info(f"Preview scraping complete. Final stats: {stats}")
+            return [], all_json_responses, enhanced_data, stats
+        
+        except Exception as e:
+            logger.error(f"Error in preview ads scraping: {str(e)}")
+            raise 
