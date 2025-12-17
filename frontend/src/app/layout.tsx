@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/components/providers";
+import { GlobalErrorBoundary } from "@/components/error-boundary/GlobalErrorBoundary";
 
 // Temporary fallback fonts until actual Geist Mono and Satoshi files are added
 const inter = Inter({
@@ -44,7 +46,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        {children}
+        <GlobalErrorBoundary>
+          <Providers>
+            {children}
+          </Providers>
+        </GlobalErrorBoundary>
         <Toaster />
       </body>
     </html>

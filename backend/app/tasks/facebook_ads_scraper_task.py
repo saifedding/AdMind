@@ -130,6 +130,21 @@ def scrape_competitor_ads_task(
     db = next(get_db())
     
     try:
+        # Create initial TaskStatus record
+        from app.models.task_status import TaskStatus
+        task_status = TaskStatus(
+            task_id=task_id,
+            status='running',
+            result={
+                'competitor_page_id': competitor_page_id,
+                'current_step': 'Initializing',
+                'progress': 0,
+                'message': 'Checking competitor and setting up scraper...'
+            }
+        )
+        db.add(task_status)
+        db.commit()
+        
         # Update task state to show initialization
         self.update_state(
             state='PROGRESS',
@@ -146,13 +161,22 @@ def scrape_competitor_ads_task(
         competitor = db.query(Competitor).filter_by(page_id=competitor_page_id).first()
         if not competitor:
             logger.warning(f"Competitor with page_id {competitor_page_id} not found, skipping scraping")
-            return {
+            warning_result = {
                 'success': False,
                 'warning': f"Competitor with page_id {competitor_page_id} not found, skipping scraping",
                 'competitor_page_id': competitor_page_id,
                 'task_id': task_id,
                 'completion_time': datetime.utcnow().isoformat()
             }
+            
+            # Update TaskStatus record to failed
+            task_status = db.query(TaskStatus).filter_by(task_id=task_id).first()
+            if task_status:
+                task_status.status = 'failed'
+                task_status.result = warning_result
+                db.commit()
+            
+            return warning_result
         
         # Update progress
         self.update_state(
@@ -165,7 +189,7 @@ def scrape_competitor_ads_task(
             }
         )
         
-        # Create scraper service
+        # Create scraper service with min_duration_days
         scraper_service = FacebookAdsScraperService(db, min_duration_days)
         
         # Create scraper configuration for specific competitor
@@ -181,7 +205,7 @@ def scrape_competitor_ads_task(
             save_json=save_json,
             start_date=date_from,
             end_date=date_to
-            )
+        )
         
         # Update progress before scraping
         self.update_state(
@@ -227,6 +251,7 @@ def scrape_competitor_ads_task(
             'success': True,
             'competitor_page_id': competitor_page_id,
             'total_ads_scraped': stats.get('total_processed', 0),
+            'ads_collected': stats.get('total_processed', 0),
             'database_stats': stats,
             'completion_time': datetime.utcnow().isoformat(),
             'task_id': task_id,
@@ -236,6 +261,14 @@ def scrape_competitor_ads_task(
                 "total_ads": sum(len(c.get("ads", [])) for c in enhanced_data.get("campaigns", []))
             }
         }
+        
+        # Update TaskStatus record to completed
+        task_status = db.query(TaskStatus).filter_by(task_id=task_id).first()
+        if task_status:
+            task_status.status = 'completed'
+            task_status.result = results
+            db.commit()
+        
         logger.info(f"Competitor ads scraping task completed successfully. Results: {results}")
         return results
     except Exception as e:
@@ -260,7 +293,7 @@ def scrape_competitor_ads_task(
         else:
             # Max retries reached, return failure
             logger.error(f"Max retries ({self.max_retries}) reached for competitor {competitor_page_id}")
-            return {
+            failure_result = {
                 'success': False,
                 'error': str(e),
                 'competitor_page_id': competitor_page_id,
@@ -269,6 +302,15 @@ def scrape_competitor_ads_task(
                 'retries_attempted': self.request.retries,
                 'max_retries': self.max_retries
             }
+            
+            # Update TaskStatus record to failed
+            task_status = db.query(TaskStatus).filter_by(task_id=task_id).first()
+            if task_status:
+                task_status.status = 'failed'
+                task_status.result = failure_result
+                db.commit()
+            
+            return failure_result
     finally:
         db.commit()
         db.close()

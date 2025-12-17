@@ -63,6 +63,7 @@ export const AdCard = React.memo(function AdCard({
   const listsLoadedOnceRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [mediaAspectRatio, setMediaAspectRatio] = useState<string>('aspect-[9/16]'); // Default to portrait
 
   const hasMultipleCreatives = ad.creatives && ad.creatives.length > 1;
   const currentCreative = ad.creatives?.[currentCardIndex];
@@ -98,6 +99,42 @@ export const AdCard = React.memo(function AdCard({
 
   const { url: primaryMediaUrl, isVideo } = getPrimaryMedia();
   const displayContent = getMainAdContent(ad, currentCreative);
+
+  // Function to determine aspect ratio from dimensions
+  const getAspectRatioClass = (width: number, height: number): string => {
+    const ratio = width / height;
+    
+    // Common aspect ratios with tolerance
+    if (Math.abs(ratio - 16/9) < 0.1) return 'aspect-[16/9]';   // Landscape
+    if (Math.abs(ratio - 9/16) < 0.1) return 'aspect-[9/16]';   // Portrait
+    if (Math.abs(ratio - 4/3) < 0.1) return 'aspect-[4/3]';     // Traditional
+    if (Math.abs(ratio - 3/4) < 0.1) return 'aspect-[3/4]';     // Portrait traditional
+    if (Math.abs(ratio - 1) < 0.1) return 'aspect-square';      // Square
+    if (Math.abs(ratio - 21/9) < 0.1) return 'aspect-[21/9]';   // Ultra-wide
+    if (Math.abs(ratio - 5/4) < 0.1) return 'aspect-[5/4]';     // Classic photo
+    if (Math.abs(ratio - 4/5) < 0.1) return 'aspect-[4/5]';     // Instagram portrait
+    
+    // For other ratios, use closest standard
+    if (ratio > 1.5) return 'aspect-[16/9]';  // Wide content
+    if (ratio < 0.7) return 'aspect-[9/16]';  // Tall content
+    return 'aspect-square'; // Default for near-square content
+  };
+
+  // Handle media load to get dimensions
+  const handleMediaLoad = (width: number, height: number) => {
+    const aspectClass = getAspectRatioClass(width, height);
+    setMediaAspectRatio(aspectClass);
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    handleMediaLoad(img.naturalWidth, img.naturalHeight);
+  };
+
+  const handleVideoLoad = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    handleMediaLoad(video.videoWidth, video.videoHeight);
+  };
   const impressionsText = ad.impressions_text || '';
 
   const countries = ad.targeting?.locations?.map(l => l.name) || [];
@@ -214,7 +251,7 @@ export const AdCard = React.memo(function AdCard({
         "overflow-hidden transition-all duration-200 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-0",
         "hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 hover:-translate-y-0.5",
         "!gap-0.5", // Override the default gap-6 with minimal spacing
-        "h-[600px] flex flex-col", // Fixed height and flex layout
+        "flex flex-col", // Flexible height with flex layout
         isSelected && "ring-2 ring-blue-500",
         isDeleting && "opacity-50 pointer-events-none",
         isAdSet && !hideSetBadge && "border-l-2 border-l-indigo-500"
@@ -223,7 +260,7 @@ export const AdCard = React.memo(function AdCard({
 
 
         {/* Media Section */}
-        <div className="relative aspect-[9/16] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+        <div className={cn("relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800", mediaAspectRatio)}>
           {/* Gradients - Only show for images, not videos */}
           {!isVideo && (
             <>
@@ -281,6 +318,7 @@ export const AdCard = React.memo(function AdCard({
                   onPlay={() => setIsVideoPlaying(true)} 
                   onPause={() => setIsVideoPlaying(false)} 
                   onEnded={() => setIsVideoPlaying(false)}
+                  onLoadedMetadata={handleVideoLoad}
                   onClick={(e) => e.stopPropagation()}
                 />
                 {!isVideoPlaying && (
@@ -299,7 +337,7 @@ export const AdCard = React.memo(function AdCard({
                 )}
               </div>
             ) : (
-              <img src={primaryMediaUrl} alt={ad.main_title || 'Ad'} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <img src={primaryMediaUrl} alt={ad.main_title || 'Ad'} className="absolute inset-0 h-full w-full object-cover" loading="lazy" onLoad={handleImageLoad} />
             )
           ) : (
             <div className="absolute inset-0 flex items-center justify-center"><Image className="h-8 w-8 text-gray-400" /></div>
@@ -310,17 +348,17 @@ export const AdCard = React.memo(function AdCard({
           {/* Carousel - Clean positioning */}
           {hasMultipleCreatives && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(p => p > 0 ? p - 1 : (ad.creatives?.length || 1) - 1); }}
+              <button onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(p => p > 0 ? p - 1 : (ad.creatives?.length || 1) - 1); setMediaAspectRatio('aspect-[9/16]'); }}
                 className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full carousel-control z-20 shadow-lg backdrop-blur-sm">
                 <ChevronLeft className="h-3 w-3 text-gray-800" />
               </button>
-              <button onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(p => p < ((ad.creatives?.length || 1) - 1) ? p + 1 : 0); }}
+              <button onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(p => p < ((ad.creatives?.length || 1) - 1) ? p + 1 : 0); setMediaAspectRatio('aspect-[9/16]'); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 hover:bg-white rounded-full carousel-control z-20 shadow-lg backdrop-blur-sm">
                 <ChevronRight className="h-3 w-3 text-gray-800" />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-20">
                 {ad.creatives?.map((_, i) => (
-                  <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(i); }}
+                  <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentCardIndex(i); setMediaAspectRatio('aspect-[9/16]'); }}
                     className={cn("h-1 rounded-full transition-all carousel-control", currentCardIndex === i ? "bg-white w-3" : "bg-white/50 w-1")} />
                 ))}
               </div>

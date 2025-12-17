@@ -570,6 +570,119 @@ async def get_scraping_status(task_id: str) -> dict:
         logger.error(f"Error fetching scraping status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching scraping status: {str(e)}")
 
+class ScrapingHistoryItem(BaseModel):
+    """Response model for scraping history item"""
+    task_id: str
+    status: str
+    created_at: str
+    updated_at: Optional[str] = None
+    result: Optional[dict] = None
+
+class ScrapingHistoryResponse(BaseModel):
+    """Response model for scraping history"""
+    competitor_id: int
+    competitor_name: str
+    page_id: str
+    history: List[ScrapingHistoryItem]
+    total_count: int
+
+@router.get("/{competitor_id}/scraping-history", response_model=ScrapingHistoryResponse)
+async def get_competitor_scraping_history(
+    competitor_id: int,
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of history items to return"),
+    competitor_service: "CompetitorService" = Depends(get_competitor_service_dependency),
+    db: Session = Depends(get_db)
+) -> ScrapingHistoryResponse:
+    """
+    Get scraping history for a specific competitor.
+    
+    Returns a list of all scraping tasks (completed, failed, or in progress) 
+    for the specified competitor, ordered by creation date (newest first).
+    """
+    try:
+        # Validate competitor exists
+        competitor = competitor_service.get_competitor_by_id(competitor_id)
+        
+        # Import TaskStatus model
+        from app.models.task_status import TaskStatus
+        from celery.result import AsyncResult
+        from app.celery_worker import celery_app
+        
+        # Query task history from database
+        # We'll look for tasks that contain the competitor's page_id in their result
+        db_tasks = db.query(TaskStatus).order_by(TaskStatus.created_at.desc()).limit(limit * 2).all()
+        
+        # Filter tasks related to this competitor and get live status
+        history_items = []
+        
+        for task in db_tasks:
+            # Check if this task is related to our competitor
+            is_related = False
+            
+            # Check if result contains our page_id
+            if task.result and isinstance(task.result, dict):
+                if task.result.get('competitor_page_id') == competitor.page_id:
+                    is_related = True
+            
+            # Also check live Celery task status for additional info
+            if is_related:
+                try:
+                    # Get live task status from Celery
+                    celery_task = AsyncResult(task.task_id, app=celery_app)
+                    
+                    # Determine final status
+                    final_status = task.status
+                    final_result = task.result
+                    
+                    # If DB shows pending/running, check Celery for updates
+                    if task.status in ['pending', 'running']:
+                        if celery_task.state == 'SUCCESS':
+                            final_status = 'completed'
+                            final_result = celery_task.result
+                        elif celery_task.state == 'FAILURE':
+                            final_status = 'failed'
+                            final_result = {'error': str(celery_task.info)}
+                        elif celery_task.state == 'PROGRESS':
+                            final_status = 'running'
+                            final_result = celery_task.info
+                    
+                    history_items.append(ScrapingHistoryItem(
+                        task_id=task.task_id,
+                        status=final_status,
+                        created_at=task.created_at.isoformat(),
+                        updated_at=task.updated_at.isoformat() if task.updated_at else None,
+                        result=final_result
+                    ))
+                    
+                except Exception as e:
+                    # If Celery task lookup fails, use DB data
+                    logger.warning(f"Failed to get live status for task {task.task_id}: {e}")
+                    history_items.append(ScrapingHistoryItem(
+                        task_id=task.task_id,
+                        status=task.status,
+                        created_at=task.created_at.isoformat(),
+                        updated_at=task.updated_at.isoformat() if task.updated_at else None,
+                        result=task.result
+                    ))
+            
+            # Stop if we have enough items
+            if len(history_items) >= limit:
+                break
+        
+        return ScrapingHistoryResponse(
+            competitor_id=competitor_id,
+            competitor_name=competitor.name,
+            page_id=competitor.page_id,
+            history=history_items,
+            total_count=len(history_items)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching scraping history for competitor {competitor_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching scraping history: {str(e)}")
+
 # ========================================
 # Competitor Ads Management
 # ========================================

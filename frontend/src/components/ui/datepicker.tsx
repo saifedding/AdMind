@@ -1,40 +1,37 @@
-"use client"
+import React from 'react';
+import { Input } from './input';
+import { Label } from './label';
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { CalendarIcon } from "lucide-react"
-
-export interface DatePickerProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
+export interface DatePickerProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
 }
 
-const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
-  ({ className, label, ...props }, ref) => {
-    return (
-      <div className="relative">
-        {label && (
-          <label className="mb-1 block text-xs text-muted-foreground">
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          <input
-            type="date"
-            className={cn(
-              "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-              "[&::-webkit-calendar-picker-indicator]:bg-transparent [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-              className
-            )}
-            ref={ref}
-            {...props}
-          />
-          <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-    )
-  }
-)
-DatePicker.displayName = "DatePicker"
-
-export { DatePicker } 
+/**
+ * Simple DatePicker component using HTML5 date input
+ */
+export const DatePicker: React.FC<DatePickerProps> = ({
+  value,
+  onChange,
+  label,
+  placeholder,
+  disabled,
+  className,
+}) => {
+  return (
+    <div className={className}>
+      {label && <Label className="text-sm font-medium">{label}</Label>}
+      <Input
+        type="date"
+        value={value || ''}
+        onChange={(e) => onChange?.(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+    </div>
+  );
+};

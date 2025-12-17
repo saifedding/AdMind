@@ -1246,18 +1246,28 @@ class EnhancedAdExtractionService:
                             is_active = meta.get('is_active', False)
                             ad_id = ad_data.get('ad_archive_id', 'unknown')
                             
+                            # ENHANCED DURATION FILTERING LOGGING
+                            self.logger.info(f"🔍 DURATION FILTER CHECK for ad {ad_id}:")
+                            self.logger.info(f"  min_duration_days setting: {self.min_duration_days}")
+                            self.logger.info(f"  start_date: {start_date}")
+                            self.logger.info(f"  end_date: {end_date}")
+                            self.logger.info(f"  is_active: {is_active}")
+                            
                             if self.min_duration_days is not None:
                                 duration = self.calculate_duration_days(start_date, end_date, is_active)
                                 meets_req = self.meets_duration_requirement(start_date, end_date, is_active)
                                 
-                                self.logger.debug(f"Ad {ad_id}: start_date={start_date}, end_date={end_date}, is_active={is_active}, duration={duration}, min_required={self.min_duration_days}, meets_req={meets_req}")
+                                self.logger.info(f"  calculated duration: {duration} days")
+                                self.logger.info(f"  meets requirement: {meets_req}")
                                 
                                 if not meets_req:
-                                    self.logger.debug(f"Ad {ad_id} filtered out: duration {duration} days < required {self.min_duration_days} days")
+                                    self.logger.info(f"❌ Ad {ad_id} FILTERED OUT: duration {duration} days < required {self.min_duration_days} days")
                                     stats["ads_filtered_by_duration"] += 1
                                     continue
                                 else:
-                                    self.logger.debug(f"Ad {ad_id} passed filter: duration {duration} days >= required {self.min_duration_days} days")
+                                    self.logger.info(f"✅ Ad {ad_id} PASSED filter: duration {duration} days >= required {self.min_duration_days} days")
+                            else:
+                                self.logger.info(f"⚪ No duration filter applied (min_duration_days is None)")
                             
                             # Create or update the ad
                             ad_obj, is_new = self._create_or_update_enhanced_ad(
