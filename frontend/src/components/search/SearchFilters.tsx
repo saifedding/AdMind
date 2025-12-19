@@ -27,9 +27,9 @@ const MEDIA_TYPES = [
 ];
 
 const AD_STATUS = [
+  { value: 'all', label: 'All' },
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
-  { value: 'all', label: 'All' },
 ];
 
 export function SearchFilters({
@@ -82,7 +82,7 @@ export function SearchFilters({
           {activeStatus === 'all' ? ' All statuses' : ` ${activeStatus} ads`} • 
           {mediaType === 'all' ? ' All media' : ` ${mediaType} only`} • 
           {maxPages} pages • 
-          {minDurationDays ? `${minDurationDays}+ days` : 'Any duration'}
+          {minDurationDays ? `Running ${minDurationDays}+ days` : 'Any duration'}
         </div>
       </div>
 
@@ -149,26 +149,41 @@ export function SearchFilters({
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center flex-wrap">
           <div className="flex gap-2 items-center">
             <span className="text-sm text-iridium-300 whitespace-nowrap">Pages:</span>
-            <select
+            <input
+              type="number"
               value={maxPages}
-              onChange={(e) => onMaxPagesChange(Number(e.target.value))}
-              className="h-9 px-3 rounded-md bg-iridium-900 border border-border text-foreground text-sm"
-            >
-              <option value={1}>1</option>
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={5}>5</option>
-            </select>
+              onChange={(e) => onMaxPagesChange(Number(e.target.value) || 1)}
+              min="1"
+              max="50"
+              placeholder="3"
+              className="h-9 w-20 px-3 rounded-md bg-iridium-900 border border-border text-foreground text-sm"
+            />
           </div>
 
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-iridium-300 whitespace-nowrap">Min Days:</span>
+            <span className="text-sm text-iridium-300 whitespace-nowrap" title="Minimum number of days the ad has been running">
+              Min Running Days:
+            </span>
             <input
               type="number"
               value={minDurationDays || ''}
               onChange={(e) => onMinDurationDaysChange(e.target.value ? Number(e.target.value) : undefined)}
               placeholder="Any"
+              min="0"
+              title="Filter ads by how many days they've been running (leave empty for all ads)"
               className="h-9 w-20 px-3 rounded-md bg-iridium-900 border border-border text-foreground text-sm"
+            />
+          </div>
+          
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-iridium-300 whitespace-nowrap" title="Filter ads by when they started">
+              Started Before:
+            </span>
+            <input
+              type="date"
+              placeholder="Any"
+              title="Show only ads that started before this date (leave empty for all ads)"
+              className="h-9 px-3 rounded-md bg-iridium-900 border border-border text-foreground text-sm"
             />
           </div>
         </div>

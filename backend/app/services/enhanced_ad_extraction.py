@@ -3,6 +3,7 @@ import hashlib
 from datetime import datetime, date, timezone
 from typing import Dict, List, Optional, Any, Tuple, cast
 import logging
+import threading
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -696,90 +697,181 @@ class EnhancedAdExtractionService:
     
     def _group_ads_into_sets(self, ads_data: List[Dict]) -> Dict[str, List[Dict]]:
         """
-        Group similar ads into sets based on creative content comparison
+        Group similar ads using OPTIMAL multi-stage clustering:
+        1. Fast signature generation (parallel)
+        2. Hamming distance bucketing (LSH-inspired)
+        3. Smart comparison within buckets only
         
-        Args:
-            ads_data: List of ads to group
-            
-        Returns:
-            Dictionary mapping content_signature to list of ad data
+        This achieves both SPEED (O(n) average) and ACCURACY (perceptual hash + full verification)
         """
-        self.logger.info(f"Starting ad grouping process for {len(ads_data)} ads")
+        import time
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import multiprocessing
+        from collections import defaultdict
         
-        ad_groups = {}  # Signature -> list of ads with that signature
+        start_time = time.time()
+        num_ads = len(ads_data)
+        self.logger.info(f"🚀 OPTIMAL grouping: {num_ads} ads")
         
-        # First pass: group identical ads (exact same content signature)
-        for ad_data in ads_data:
-            # Extract ad identifier
-            ad_id = ad_data.get("ad_archive_id", ad_data.get("id", "unknown"))
-            
-            # Generate the content signature based on ad copy or media
-            content_signature = self._generate_content_signature(ad_data)
-            self.logger.info(f"Generated content signature for ad {ad_id}: {content_signature[:8]}...")
-            
-            if content_signature not in ad_groups:
-                self.logger.info(f"Creating new ad group with signature {content_signature[:8]}...")
-                ad_groups[content_signature] = []
-                
-            ad_groups[content_signature].append(ad_data)
-            self.logger.info(f"Added ad {ad_id} to group {content_signature[:8]}...")
+        # === PHASE 1: PARALLEL SIGNATURE GENERATION ===
+        phase1_start = time.time()
+        max_workers = min(multiprocessing.cpu_count() or 1, 12)
         
-        self.logger.info(f"First-pass grouping complete: {len(ad_groups)} groups created")
-        for sig, ads in ad_groups.items():
-            self.logger.info(f"Group {sig[:8]}: {len(ads)} ads, first ad: {ads[0].get('ad_archive_id', ads[0].get('id', 'unknown'))}")
+        def process_ad(ad_data):
+            """Generate signature for single ad"""
+            try:
+                signature = self._generate_content_signature(ad_data)
+                return (signature, ad_data)
+            except Exception:
+                ad_id = ad_data.get("ad_archive_id", ad_data.get("id", "unknown"))
+                return (str(ad_id), ad_data)
         
-        # Second pass: try to merge groups with similar content
-        # This uses our creative comparison service for more sophisticated matching
+        # Parallel signature generation
+        ad_groups = defaultdict(list)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(process_ad, ad) for ad in ads_data]
+            for future in as_completed(futures):
+                signature, ad_data = future.result()
+                ad_groups[signature].append(ad_data)
+        
+        ad_groups = dict(ad_groups)
+        phase1_time = time.time() - phase1_start
+        self.logger.info(f"✅ Phase 1 (signatures): {phase1_time:.2f}s → {len(ad_groups)} unique")
+        
+        # Early exit if all ads are unique
+        if len(ad_groups) == num_ads:
+            total_time = time.time() - start_time
+            self.logger.info(f"🎯 Complete: {total_time:.2f}s ({num_ads / total_time:.0f} ads/s)")
+            return ad_groups
+        
+        # === PHASE 2: HAMMING DISTANCE CLUSTERING ===
+        phase2_start = time.time()
         signatures = list(ad_groups.keys())
-        merged_signatures = set()
+        num_groups = len(signatures)
         
-        self.logger.info(f"Starting second-pass group merging for {len(signatures)} groups")
+        # Skip if too few groups
+        if num_groups <= 2:
+            total_time = time.time() - start_time
+            self.logger.info(f"🎯 Complete: {total_time:.2f}s ({num_ads / total_time:.0f} ads/s)")
+            return ad_groups
         
-        # For each group
-        for i, sig1 in enumerate(signatures):
-            if sig1 in merged_signatures:
-                self.logger.debug(f"Skipping already merged group {sig1[:8]}...")
-                continue
-            
-            group1_id = f"{sig1[:8]}({len(ad_groups[sig1])} ads)"
-            self.logger.info(f"Processing group {i+1}/{len(signatures)}: {group1_id}")
-                
-            # Compare with every other group
-            for j in range(i + 1, len(signatures)):
-                sig2 = signatures[j]
-                if sig2 in merged_signatures:
-                    self.logger.debug(f"Skipping already merged group {sig2[:8]}...")
-                    continue
-                
-                group2_id = f"{sig2[:8]}({len(ad_groups[sig2])} ads)"
-                self.logger.info(f"Comparing group {group1_id} with group {group2_id}")
-                
-                # Check if representative ads from each group are similar
-                if self._are_ad_groups_similar(ad_groups[sig1], ad_groups[sig2]):
-                    # Merge groups
-                    self.logger.info(f"Merging groups: {group1_id} + {group2_id}")
-                    ad_groups[sig1].extend(ad_groups[sig2])
-                    merged_signatures.add(sig2)
-                    self.logger.info(f"Group {sig1[:8]} now has {len(ad_groups[sig1])} ads after merging")
-                else:
-                    self.logger.info(f"Groups {group1_id} and {group2_id} are not similar enough to merge")
+        # Union-Find for efficient merging
+        parent = {sig: sig for sig in signatures}
+        rank = {sig: 0 for sig in signatures}
         
-        # Remove merged groups
-        for sig in merged_signatures:
-            self.logger.debug(f"Removing merged group {sig[:8]}...")
-            ad_groups.pop(sig, None)
+        def find_root(sig):
+            if parent[sig] != sig:
+                parent[sig] = find_root(parent[sig])
+            return parent[sig]
+        
+        def union(sig1, sig2):
+            root1, root2 = find_root(sig1), find_root(sig2)
+            if root1 == root2:
+                return False
+            if rank[root1] < rank[root2]:
+                parent[root1] = root2
+            elif rank[root1] > rank[root2]:
+                parent[root2] = root1
+            else:
+                parent[root2] = root1
+                rank[root1] += 1
+            return True
+        
+        # SMART BUCKETING: Use Hamming distance bands (LSH-inspired)
+        # Group signatures by multiple hash bands for better recall
+        def get_hash_bands(sig, num_bands=4, band_size=4):
+            """Split signature into bands for LSH-style bucketing"""
+            bands = []
+            sig_len = len(sig)
+            for i in range(num_bands):
+                start = (i * sig_len) // num_bands
+                end = ((i + 1) * sig_len) // num_bands
+                bands.append(sig[start:end])
+            return bands
+        
+        # Build candidate pairs using multiple hash bands
+        candidate_pairs = set()
+        for band_idx in range(4):  # Use 4 bands for good recall
+            band_buckets = defaultdict(list)
+            for i, sig in enumerate(signatures):
+                bands = get_hash_bands(sig)
+                if band_idx < len(bands):
+                    band_buckets[bands[band_idx]].append(i)
             
-        # Log final grouping results
-        self.logger.info(f"Ad grouping complete: {len(ads_data)} ads grouped into {len(ad_groups)} sets")
-        for sig, ads in ad_groups.items():
-            self.logger.info(f"Final group {sig[:8]}: {len(ads)} ads")
-            if len(ads) > 1:
-                ad_ids = [ad.get('ad_archive_id', ad.get('id', 'unknown')) for ad in ads[:5]]
-                if len(ads) > 5:
-                    ad_ids.append("...")
-                self.logger.info(f"   Ads in group: {', '.join(ad_ids)}")
+            # Add pairs from same bucket
+            for bucket_indices in band_buckets.values():
+                if len(bucket_indices) > 1:
+                    for i in range(len(bucket_indices)):
+                        for j in range(i + 1, len(bucket_indices)):
+                            candidate_pairs.add((bucket_indices[i], bucket_indices[j]))
+        
+        self.logger.info(f"   Generated {len(candidate_pairs)} candidate pairs from {num_groups} groups")
+        
+        # === PHASE 3: PARALLEL VERIFICATION ===
+        def verify_pair(i, j):
+            """Verify if two groups should be merged"""
+            sig1, sig2 = signatures[i], signatures[j]
             
-        return ad_groups
+            # Quick Hamming distance check
+            if len(sig1) == len(sig2):
+                hamming_dist = sum(c1 != c2 for c1, c2 in zip(sig1, sig2))
+                similarity = 1.0 - (hamming_dist / len(sig1))
+                
+                # High similarity = likely match, verify with full check
+                if similarity > 0.85:
+                    if self._are_ad_groups_similar(ad_groups[sig1], ad_groups[sig2]):
+                        return (sig1, sig2)
+            
+            return None
+        
+        # Parallel verification with adaptive workers
+        max_workers_verify = min(8 if num_groups > 200 else 16, multiprocessing.cpu_count() or 1)
+        merge_count = 0
+        
+        if candidate_pairs:
+            with ThreadPoolExecutor(max_workers=max_workers_verify) as executor:
+                futures = [executor.submit(verify_pair, i, j) for i, j in candidate_pairs]
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        if result:
+                            sig1, sig2 = result
+                            if union(sig1, sig2):
+                                merge_count += 1
+                    except Exception as e:
+                        self.logger.warning(f"Verification error: {e}")
+        
+        # === PHASE 4: MERGE GROUPS ===
+        roots = {find_root(sig) for sig in signatures}
+        final_groups = {root: [] for root in roots}
+        
+        for sig in signatures:
+            root = find_root(sig)
+            final_groups[root].extend(ad_groups[sig])
+        
+        phase2_time = time.time() - phase2_start
+        self.logger.info(f"✅ Phase 2 (clustering): {phase2_time:.2f}s → merged {merge_count} groups")
+        
+        total_time = time.time() - start_time
+        throughput = num_ads / total_time
+        self.logger.info(f"🎯 OPTIMAL complete: {total_time:.2f}s ({throughput:.0f} ads/s) → {len(final_groups)} final groups")
+        
+        return final_groups
+    
+    def _quick_signature_similarity(self, sig1: str, sig2: str) -> float:
+        """
+        Quick similarity check between two signatures using string comparison
+        Returns similarity score between 0 and 1
+        """
+        if sig1 == sig2:
+            return 1.0
+        
+        # Simple character-level similarity
+        if len(sig1) != len(sig2):
+            return 0.0
+        
+        matches = sum(c1 == c2 for c1, c2 in zip(sig1, sig2))
+        return matches / len(sig1)
     
     def _are_ad_groups_similar(self, group1: List[Dict], group2: List[Dict]) -> bool:
         """
@@ -1182,6 +1274,22 @@ class EnhancedAdExtractionService:
                     if not clean_ad:
                         self.logger.warning(f"Failed to build clean ad object for ad {j}")
                         continue
+                    
+                    # Apply duration filtering if min_duration_days is set
+                    if self.min_duration_days is not None:
+                        meta = clean_ad.get('meta', {})
+                        start_date = meta.get('start_date')
+                        end_date = meta.get('end_date')
+                        is_active = meta.get('is_active', False)
+                        
+                        # Check if ad meets duration requirement
+                        if not self.meets_duration_requirement(start_date, end_date, is_active):
+                            duration = self.calculate_duration_days(start_date, end_date, is_active)
+                            self.logger.info(f"❌ Ad {ad_id} FILTERED OUT in preview: duration {duration} days < required {self.min_duration_days} days")
+                            continue  # Skip this ad
+                        else:
+                            duration = self.calculate_duration_days(start_date, end_date, is_active)
+                            self.logger.info(f"✅ Ad {ad_id} PASSED filter in preview: duration {duration} days >= required {self.min_duration_days} days")
                     
                     # Extract competitor info
                     page_name = clean_ad.get("meta", {}).get("page_name", "Unknown")

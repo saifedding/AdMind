@@ -1,3 +1,4 @@
+from .category import Category
 from .competitor import Competitor
 from .ad import Ad
 from .ad_analysis import AdAnalysis
@@ -15,7 +16,7 @@ from .veo_video_generation import VeoVideoGeneration
 from .saved_image import SavedImage
 
 __all__ = [
-    "Competitor", "Ad", "AdAnalysis", "TaskStatus", "AdSet", "AppSetting", 
+    "Category", "Competitor", "Ad", "AdAnalysis", "TaskStatus", "AdSet", "AppSetting", 
     "VeoGeneration", "MergedVideo", "ApiUsage", "VideoStyleTemplate",
     "VeoScriptSession", "VeoCreativeBrief", "VeoPromptSegment", "VeoVideoGeneration", "SavedImage"
 ]

@@ -8,6 +8,7 @@ class CompetitorCreateDTO(BaseModel):
     name: str = Field(..., description="Competitor name", min_length=1, max_length=255)
     page_id: str = Field(..., description="Facebook page ID", min_length=1, max_length=100)
     is_active: bool = Field(True, description="Whether the competitor is active")
+    category_id: Optional[int] = Field(None, description="Category ID")
 
 
 class CompetitorUpdateDTO(BaseModel):
@@ -15,6 +16,7 @@ class CompetitorUpdateDTO(BaseModel):
     name: Optional[str] = Field(None, description="Competitor name", min_length=1, max_length=255)
     page_id: Optional[str] = Field(None, description="Facebook page ID", min_length=1, max_length=100)
     is_active: Optional[bool] = Field(None, description="Whether the competitor is active")
+    category_id: Optional[int] = Field(None, description="Category ID")
 
 
 class CompetitorResponseDTO(BaseModel):
@@ -24,6 +26,8 @@ class CompetitorResponseDTO(BaseModel):
     page_id: str
     page_url: Optional[str] = None
     is_active: bool
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
     ads_count: Optional[int] = Field(0, description="Number of ads for this competitor")
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -37,6 +41,8 @@ class CompetitorDetailResponseDTO(BaseModel):
     name: str
     page_id: str
     is_active: bool
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
     ads_count: int = Field(0, description="Total number of ads")
     active_ads_count: int = Field(0, description="Number of active ads")
     analyzed_ads_count: int = Field(0, description="Number of analyzed ads")
@@ -62,6 +68,7 @@ class CompetitorFilterParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number")
     page_size: int = Field(20, ge=1, le=1000, description="Number of items per page")
     is_active: Optional[bool] = Field(None, description="Filter by active status")
+    category_id: Optional[int] = Field(None, description="Filter by category ID")
     search: Optional[str] = Field(None, description="Search in competitor names")
     sort_by: Optional[str] = Field("created_at", description="Sort by field")
     sort_order: Optional[str] = Field("desc", description="Sort order (asc/desc)")

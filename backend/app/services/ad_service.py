@@ -59,9 +59,13 @@ class AdService:
             sort_order = filters.sort_order or "desc"
             query = self._apply_adset_sorting(query, sort_by, sort_order)
             
-            # Get total count before pagination - use a more efficient count query
-            count_query = query.statement.with_only_columns(func.count()).order_by(None)
+            # Get total count before pagination
+            # Use subquery to ensure joins are respected in count
+            from sqlalchemy import select
+            subquery = query.statement.alias()
+            count_query = select(func.count()).select_from(subquery)
             total_items = self.db.execute(count_query).scalar()
+            logger.info(f"📊 Total items after filtering: {total_items} (category_id={filters.category_id})")
             
             # Apply pagination
             offset = (filters.page - 1) * filters.page_size
@@ -117,11 +121,11 @@ class AdService:
             needs_analysis_join = False
             
             # Check which joins we need
-            if (filters.competitor_id or filters.competitor_name or filters.min_duration_days or 
-                filters.max_duration_days or filters.is_active or filters.search):
+            if (filters.competitor_id or filters.competitor_name or filters.category_id or 
+                filters.min_duration_days or filters.max_duration_days or filters.is_active or filters.search):
                 needs_ad_join = True
                 
-            if filters.competitor_name:
+            if filters.competitor_name or filters.category_id:
                 needs_competitor_join = True
                 
             if (filters.has_analysis is not None or filters.min_hook_score is not None or 
@@ -146,6 +150,16 @@ class AdService:
             
             if filters.competitor_name:
                 query = query.filter(Competitor.name.ilike(f"%{filters.competitor_name}%"))
+            
+            if filters.category_id is not None:
+                logger.info(f"🔍 Applying category filter: category_id={filters.category_id} (type: {type(filters.category_id).__name__})")
+                if filters.category_id == -1:
+                    # Special value -1 means "uncategorized"
+                    logger.info(f"   Filtering for uncategorized competitors")
+                    query = query.filter(Competitor.category_id.is_(None))
+                else:
+                    logger.info(f"   Filtering for category_id={filters.category_id}")
+                    query = query.filter(Competitor.category_id == filters.category_id)
             
             # Filter by has_analysis
             if filters.has_analysis is not None:

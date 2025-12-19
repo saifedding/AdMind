@@ -38,9 +38,11 @@ import {
   Play,
   Pause,
   Building2,
-  Sparkles
+  Sparkles,
+  FolderOpen
 } from 'lucide-react';
-import { AdFilterParams, getCompetitors, type Competitor } from '@/lib/api';
+import { AdFilterParams, getCompetitors, getCategories, type Competitor, type Category } from '@/lib/api';
+import { CategorySelect } from '@/components/CategorySelect';
 
 // Simple global store for competitors
 class CompetitorsStore {
@@ -130,6 +132,10 @@ export function AdFilters({
   // Competitors
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [loadingCompetitors, setLoadingCompetitors] = useState(false);
+  
+  // Categories
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   // Update internal state when currentFilters prop changes
   useEffect(() => {
@@ -146,14 +152,34 @@ export function AdFilters({
   }, [currentFilters]);
 
   useEffect(() => {
-    // Load competitors from global store
+    // Load categories
+    (async () => {
+      setLoadingCategories(true);
+      try {
+        const data = await getCategories();
+        console.log('Setting categories in component:', data);
+        setCategories(data);
+      } catch (e) {
+        console.error('Failed to load categories in component', e);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    })();
+  }, []);
+
+  // Load competitors when category changes
+  useEffect(() => {
     (async () => {
       setLoadingCompetitors(true);
       try {
-        const competitorsStore = CompetitorsStore.getInstance();
-        const data = await competitorsStore.getCompetitors();
-        console.log('Setting competitors in component:', data);
-        setCompetitors(data);
+        const response = await getCompetitors({ 
+          page: 1, 
+          page_size: 100,
+          category_id: filters.category_id 
+        });
+        console.log('Setting competitors in component:', response.data);
+        setCompetitors(response.data);
       } catch (e) {
         console.error('Failed to load competitors in component', e);
         setCompetitors([]);
@@ -161,7 +187,7 @@ export function AdFilters({
         setLoadingCompetitors(false);
       }
     })();
-  }, []);
+  }, [filters.category_id]);
 
   // Handle form submission
   const handleApplyFilters = () => {
@@ -246,6 +272,30 @@ export function AdFilters({
                     )}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Category Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4 text-photon-400" />
+                  <label className="text-sm font-medium text-foreground">Category</label>
+                </div>
+                <CategorySelect
+                  value={filters.category_id}
+                  onChange={(v) => {
+                    // Clear competitor selection when category changes
+                    const newFilters = { 
+                      ...filters, 
+                      category_id: v === null ? undefined : v,
+                      competitor_id: undefined 
+                    };
+                    setFilters(newFilters);
+                    onApplyFilters(newFilters);
+                  }}
+                  placeholder="All Categories"
+                  allowUncategorized={false}
+                  className="bg-background/50 border-border/50 hover:border-photon-400/50 transition-colors"
+                />
               </div>
 
               {/* Media Type */}

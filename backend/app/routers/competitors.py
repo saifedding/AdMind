@@ -41,6 +41,7 @@ async def get_competitors(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=1000, description="Number of items per page"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
     search: Optional[str] = Query(None, description="Search in competitor names and page IDs"),
     sort_by: Optional[str] = Query("created_at", description="Sort by field"),
     sort_order: Optional[str] = Query("desc", description="Sort order (asc/desc)"),
@@ -62,6 +63,7 @@ async def get_competitors(
             page=page,
             page_size=page_size,
             is_active=is_active,
+            category_id=category_id,
             search=search,
             sort_by=sort_by,
             sort_order=sort_order
@@ -363,6 +365,28 @@ async def update_competitor(
 
 class BulkDeleteRequest(BaseModel):
     competitor_ids: List[int]
+
+class BulkCategoryUpdateRequest(BaseModel):
+    competitor_ids: List[int]
+    category_id: Optional[int] = None
+
+@router.put("/bulk/category")
+async def bulk_update_category(
+    request: BulkCategoryUpdateRequest,
+    competitor_service: "CompetitorService" = Depends(get_competitor_service_dependency)
+) -> dict:
+    """
+    Bulk update category for multiple competitors.
+    Set category_id to null to remove category assignment.
+    """
+    try:
+        result = competitor_service.bulk_update_category(request.competitor_ids, request.category_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during bulk category update: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred during bulk category update: {str(e)}")
 
 @router.delete("/")
 async def bulk_delete_competitors(

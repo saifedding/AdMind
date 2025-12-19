@@ -352,6 +352,7 @@ export interface AdFilterParams {
   page_size?: number;
   competitor_id?: number;
   competitor_name?: string;
+  category_id?: number;
   media_type?: string;
   has_analysis?: boolean;
   min_hook_score?: number;
@@ -1017,6 +1018,7 @@ export const adsApi = {
   getCompetitorAds: (competitorId: number, limit?: number) => apiClient.getCompetitorAds(competitorId, limit),
   getCompetitors: (skip?: number, limit?: number, isActive?: boolean) => apiClient.getCompetitors(skip, limit, isActive),
   getCompetitor: (id: number) => apiClient.getCompetitor(id),
+  bulkUpdateCompetitorCategory: (competitorIds: number[], categoryId: number | null) => bulkUpdateCompetitorCategory(competitorIds, categoryId),
   getAdsInSet: (adSetId: number, page?: number, pageSize?: number) => apiClient.getAdsInSet(adSetId, page, pageSize),
   getAllAdSets: (page?: number, pageSize?: number, sortBy?: string, sortOrder?: string) => apiClient.getAllAdSets(page, pageSize, sortBy, sortOrder),
 
@@ -1584,6 +1586,8 @@ export interface Competitor {
   name: string;
   page_id: string;
   is_active: boolean;
+  category_id?: number | null;
+  category_name?: string | null;
   ads_count: number;
   created_at: string;
   updated_at: string;
@@ -1598,12 +1602,14 @@ export interface CompetitorCreate {
   name: string;
   page_id: string;
   is_active?: boolean;
+  category_id?: number | null;
 }
 
 export interface CompetitorUpdate {
   name?: string;
   page_id?: string;
   is_active?: boolean;
+  category_id?: number | null;
 }
 
 export interface PaginatedCompetitors {
@@ -1646,6 +1652,7 @@ export async function getCompetitors(params: {
   page?: number;
   page_size?: number;
   is_active?: boolean;
+  category_id?: number;
   search?: string;
   sort_by?: string;
   sort_order?: string;
@@ -1655,6 +1662,7 @@ export async function getCompetitors(params: {
   if (params.page) query.append('page', params.page.toString());
   if (params.page_size) query.append('page_size', params.page_size.toString());
   if (params.is_active !== undefined) query.append('is_active', params.is_active.toString());
+  if (params.category_id !== undefined) query.append('category_id', params.category_id.toString());
   if (params.search) query.append('search', params.search);
   if (params.sort_by) query.append('sort_by', params.sort_by);
   if (params.sort_order) query.append('sort_order', params.sort_order);
@@ -1754,6 +1762,21 @@ export async function bulkDeleteCompetitors(competitorIds: number[]): Promise<{ 
   return response.json();
 }
 
+export async function bulkUpdateCompetitorCategory(competitorIds: number[], categoryId: number | null): Promise<{ message: string; updated_count: number; category_id: number | null; category_name: string }> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/bulk/category`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ competitor_ids: competitorIds, category_id: categoryId }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to bulk update category');
+  }
+  return response.json();
+}
+
 export async function clearCompetitorAds(competitorId: number): Promise<{ message: string; deleted_count: number }> {
   const response = await fetch(`${API_BASE_URL}${API_PREFIX}/competitors/${competitorId}/ads`, {
     method: 'DELETE',
@@ -1797,6 +1820,128 @@ export async function searchCompetitors(query: string, limit: number = 50): Prom
 
   if (!response.ok) {
     throw new Error(`Failed to search competitors: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// ========================================
+// Category API
+// ========================================
+
+export interface Category {
+  id: number;
+  name: string;
+  competitor_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CategoryWithStats extends Category {
+  total_ads: number;
+  active_ads: number;
+}
+
+export interface CategoryCreate {
+  name: string;
+}
+
+export interface CategoryUpdate {
+  name: string;
+}
+
+// Get all categories
+export async function getCategories(): Promise<Category[]> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch categories: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get category by ID
+export async function getCategory(categoryId: number): Promise<CategoryWithStats> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories/${categoryId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Create new category
+export async function createCategory(categoryData: CategoryCreate): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(categoryData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to create category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Update category
+export async function updateCategory(categoryId: number, categoryData: CategoryUpdate): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories/${categoryId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(categoryData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || `Failed to update category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Delete category
+export async function deleteCategory(categoryId: number): Promise<{ message: string; competitors_affected: number }> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories/${categoryId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get category statistics
+export async function getCategoryStats(): Promise<CategoryWithStats[]> {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/categories/stats/overview`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch category stats: ${response.statusText}`);
   }
 
   return response.json();

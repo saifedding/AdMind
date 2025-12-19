@@ -1,238 +1,81 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { 
   ArrowLeft, 
   Users, 
   Activity, 
-  TrendingUp, 
   Eye, 
   Download,
-  Edit,
   Trash2,
   RefreshCw,
-  Calendar,
   Target,
   BarChart3,
-  Zap,
   AlertCircle,
-  Settings,
-  Globe,
-  Clock,
-  Filter
 } from 'lucide-react';
 import { 
-  getCompetitor, 
-  getCompetitorAds, 
-  scrapeCompetitorAds,
-  deleteCompetitor,
-  getScrapingStatus,
-  type CompetitorDetail,
-  type CompetitorScrapeRequest 
-} from '@/lib/api';
+  useCompetitorQuery,
+  useCompetitorAdsQuery,
+  useTaskStatusQuery,
+  useDeleteCompetitorMutation,
+} from '@/features/competitors/hooks/use-competitors-query';
+import { useTaskPolling, useTaskCompletionWatcher } from '@/features/competitors/hooks/use-task-polling';
+import { useCompetitorsStore } from '@/features/competitors/stores/competitors-store';
+import { ScrapeDialog } from '@/features/competitors/components/ScrapeDialog';
+import { TaskStatusDialog } from '@/features/competitors/components/TaskStatusDialog';
+import { RealTimeProgress } from '@/features/competitors/components/RealTimeProgress';
+import { DetailedScrapingLogs } from '@/features/competitors/components/DetailedScrapingLogs';
 import { AdCard } from '@/features/dashboard/components/AdCard';
 import { type AdWithAnalysis } from '@/types/ad';
 
-// Using AdWithAnalysis type from types/ad.ts instead of local interface
-
-interface CompetitorAdsResponse {
-  ads: {
-    data: AdWithAnalysis[];
-    total: number;
-    page: number;
-    page_size: number;
-    total_pages: number;
-    has_next: boolean;
-    has_previous: boolean;
-  };
-}
-
-interface ScrapeConfig {
-  countries: string[];
-  max_pages: number;
-  delay_between_requests: number;
-  active_status: 'active' | 'inactive' | 'all';
-  date_from?: string; // YYYY-MM-DD
-  date_to?: string;   // YYYY-MM-DD
-  min_duration_days?: number;
-}
-
-const COUNTRY_OPTIONS = [
-  { value: 'ALL', label: 'All Countries' },
-  { value: 'AE', label: 'United Arab Emirates' },
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'AU', label: 'Australia' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'FR', label: 'France' },
-  { value: 'ES', label: 'Spain' },
-  { value: 'IT', label: 'Italy' },
-  { value: 'BR', label: 'Brazil' },
-  { value: 'IN', label: 'India' },
-  { value: 'SG', label: 'Singapore' },
-  { value: 'HK', label: 'Hong Kong' },
-  { value: 'JP', label: 'Japan' },
-  { value: 'KR', label: 'South Korea' },
-];
-
-export default function CompetitorDetailPage() {
+export default function NewCompetitorDetailPage() {
   const params = useParams();
   const router = useRouter();
   const competitorId = parseInt(params.id as string);
   
-  const [competitor, setCompetitor] = useState<CompetitorDetail | null>(null);
-  const [ads, setAds] = useState<CompetitorAdsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [adsLoading, setAdsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [scrapeLoading, setScrapeLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [adsStatus, setAdsStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [minDurationDays, setMinDurationDays] = useState<number | undefined>(undefined);
-  const [showScrapeDialog, setShowScrapeDialog] = useState(false);
-  const [scrapeConfig, setScrapeConfig] = useState<ScrapeConfig>({
-    countries: ['ALL'],
-    max_pages: 50,
-    delay_between_requests: 2,
-    active_status: 'active',
-  });
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [taskStatus, setTaskStatus] = useState<any>(null);
 
-  useEffect(() => {
-    loadCompetitor();
-    loadAds();
-  }, [competitorId, currentPage]);
+  const { 
+    activeTaskId,
+    setScrapingCompetitor,
+    setScrapeDialogOpen,
+    setStatusDialogOpen 
+  } = useCompetitorsStore();
 
-  useEffect(() => {
-    let timer: any;
-    const poll = async () => {
-      if (!activeTaskId) return;
-      try {
-        const s = await getScrapingStatus(activeTaskId);
-        setTaskStatus(s);
-        if (s.state !== 'PENDING' && s.state !== 'PROGRESS') {
-          clearInterval(timer);
-        }
-      } catch {}
-    };
-    if (activeTaskId) {
-      poll();
-      timer = setInterval(poll, 2000);
+  // Queries
+  const { data: competitor, isLoading, error } = useCompetitorQuery(competitorId);
+  const { data: adsData, isLoading: adsLoading, refetch: refetchAds } = useCompetitorAdsQuery(
+    competitorId,
+    {
+      page: currentPage,
+      page_size: 12,
+      is_active: adsStatus === 'all' ? undefined : adsStatus === 'active',
+      min_duration_days: minDurationDays
     }
-    return () => { if (timer) clearInterval(timer); };
-  }, [activeTaskId]);
+  );
 
-  const loadCompetitor = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getCompetitor(competitorId);
-      setCompetitor(data);
-    } catch (err) {
-      setError(`Failed to load competitor: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Mutations
+  const deleteMutation = useDeleteCompetitorMutation();
 
-  const loadAds = async () => {
-    try {
-      setAdsLoading(true);
-      const data = await getCompetitorAds(competitorId, {
-        page: currentPage,
-        page_size: 12,
-        is_active: adsStatus === 'all' ? undefined : adsStatus === 'active',
-        min_duration_days: minDurationDays
-      });
-      setAds(data);
-    } catch (err) {
-      console.error('Failed to load ads:', err);
-    } finally {
-      setAdsLoading(false);
-    }
-  };
+  // Task status polling
+  const { data: taskStatus } = useTaskStatusQuery(activeTaskId, !!activeTaskId);
+  useTaskPolling(activeTaskId, !!activeTaskId);
+  useTaskCompletionWatcher(taskStatus);
 
-  const handleScrape = async () => {
-    if (!competitor) return;
-    
-    try {
-      setScrapeLoading(true);
-      
-      const scrapeRequest: CompetitorScrapeRequest = {
-        countries: scrapeConfig.countries,
-        max_pages: scrapeConfig.max_pages,
-        delay_between_requests: scrapeConfig.delay_between_requests,
-        active_status: scrapeConfig.active_status,
-        date_from: scrapeConfig.date_from,
-        date_to: scrapeConfig.date_to,
-        min_duration_days: scrapeConfig.min_duration_days,
-      };
-      
-      const result = await scrapeCompetitorAds(competitorId, scrapeRequest);
-      
-      // Store task in localStorage for tracking
-      const taskItem = {
-        id: result.task_id,
-        competitor_name: competitor.name,
-        competitor_page_id: competitor.page_id,
-        status: {
-          task_id: result.task_id,
-          state: 'PENDING' as const,
-          status: result.status,
-        },
-        created_at: new Date().toISOString(),
-        config: scrapeConfig,
-      };
-      
-      // Get existing tasks from localStorage
-      const existingTasks = localStorage.getItem('scrapingTasks');
-      const tasks = existingTasks ? JSON.parse(existingTasks) : [];
-      
-      // Add new task to the beginning of the array
-      tasks.unshift(taskItem);
-      
-      // Keep only the last 50 tasks to prevent localStorage from growing too large
-      if (tasks.length > 50) {
-        tasks.splice(50);
-      }
-      
-      // Save back to localStorage
-      localStorage.setItem('scrapingTasks', JSON.stringify(tasks));
-      
-      setActiveTaskId(result.task_id);
-      setShowStatusDialog(true);
-      
-      setShowScrapeDialog(false);
-      
-      // Reload data after a short delay
-      setTimeout(() => {
-        if (scrapeConfig.active_status === 'active') setAdsStatus('active');
-        else if (scrapeConfig.active_status === 'inactive') setAdsStatus('inactive');
-        else setAdsStatus('all');
-        setMinDurationDays(scrapeConfig.min_duration_days);
-        loadCompetitor();
-        loadAds();
-      }, 3000);
-    } catch (err) {
-      alert(`Failed to start scraping: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setScrapeLoading(false);
-    }
+  const handleScrape = (competitor: any) => {
+    setScrapingCompetitor(competitor);
+    setScrapeDialogOpen(true);
   };
 
   const handleDelete = async () => {
@@ -240,10 +83,10 @@ export default function CompetitorDetailPage() {
     
     if (confirm(`Are you sure you want to delete ${competitor.name}?`)) {
       try {
-        await deleteCompetitor(competitorId);
+        await deleteMutation.mutateAsync(competitorId);
         router.push('/competitors');
-      } catch (err) {
-        alert(`Failed to delete competitor: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } catch (error) {
+        console.error('Delete error:', error);
       }
     }
   };
@@ -256,29 +99,11 @@ export default function CompetitorDetailPage() {
     });
   };
 
-
-
-  const toggleCountry = (country: string) => {
-    setScrapeConfig(prev => {
-      let countries = [...prev.countries];
-      if (country === 'ALL') {
-        countries = countries.includes('ALL') ? [] : ['ALL'];
-      } else {
-        countries = countries.filter(c => c !== 'ALL');
-        if (countries.includes(country)) {
-          countries = countries.filter(c => c !== country);
-        } else {
-          countries.push(country);
-        }
-      }
-      if (countries.length === 0) {
-        countries = ['ALL'];
-      }
-      return { ...prev, countries };
-    });
+  const handleApplyFilters = () => {
+    refetchAds();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -303,7 +128,7 @@ export default function CompetitorDetailPage() {
             <CardContent className="p-6">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <span className="text-red-300">{error || 'Competitor not found'}</span>
+                <span className="text-red-300">{error?.message || 'Competitor not found'}</span>
               </div>
             </CardContent>
           </Card>
@@ -329,33 +154,22 @@ export default function CompetitorDetailPage() {
                 {competitor.name}
               </h1>
               <p className="text-muted-foreground mt-1">
-                Competitor Analysis & Performance Insights
+                Competitor Analysis & Performance Insights (New Architecture)
               </p>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      {activeTaskId && (
-        <Card className="border-border">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RefreshCw className={`h-4 w-4 ${taskStatus?.state==='SUCCESS' ? '' : 'animate-spin'}`} />
-              <div>
-                <div className="text-sm font-semibold">Scraping task</div>
-                <div className="text-xs text-muted-foreground">{taskStatus?.state || 'PENDING'}{taskStatus?.status ? ` • ${taskStatus.status}` : ''}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="border-border" onClick={() => setShowStatusDialog(true)}>View Progress</Button>
-              {taskStatus?.state==='SUCCESS' && (
-                <Badge variant="default" className="bg-green-500/20 text-green-400">Completed</Badge>
-              )}
-              {taskStatus?.state==='FAILURE' && (
-                <Badge variant="destructive">Failed</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          {/* Real-Time Progress */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RealTimeProgress 
+              taskStatus={taskStatus} 
+              isVisible={!!activeTaskId} 
+            />
+            <DetailedScrapingLogs 
+              taskStatus={taskStatus} 
+              isVisible={!!activeTaskId} 
+            />
+          </div>
           
           <div className="flex items-center gap-2">
             <Badge 
@@ -378,206 +192,22 @@ export default function CompetitorDetailPage() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => router.push(`/competitors/${competitorId}/edit`)}
-              className="border-border"
+              onClick={() => handleScrape(competitor)}
+              className="border-border bg-photon-500/10 text-photon-400 hover:bg-photon-500/20"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <Download className="h-4 w-4 mr-2" />
+              Configure Scrape
             </Button>
-            
-            <Dialog open={showScrapeDialog} onOpenChange={setShowScrapeDialog}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="border-border bg-photon-500/10 text-photon-400 hover:bg-photon-500/20"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Configure Scrape
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-photon-400" />
-                    Scraping Configuration
-                  </DialogTitle>
-                  <DialogDescription>
-                    Configure the parameters for scraping Facebook ads for {competitor.name}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-6">
-                  {/* Countries */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-photon-400" />
-                      <h3 className="text-lg font-semibold">Target Countries</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                      {COUNTRY_OPTIONS.map((country) => (
-                        <div key={country.value} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={country.value}
-                            checked={scrapeConfig.countries.includes(country.value)}
-                            onChange={() => toggleCountry(country.value)}
-                            className="rounded border-border"
-                          />
-                          <label htmlFor={country.value} className="text-sm">
-                            {country.label}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Scraping Parameters */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-photon-400" />
-                      <h3 className="text-lg font-semibold">Scraping Parameters</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="max_pages">Max Pages</Label>
-                        <Input
-                          id="max_pages"
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={scrapeConfig.max_pages}
-                          onChange={(e) => setScrapeConfig(prev => ({ ...prev, max_pages: parseInt(e.target.value) || 10 }))}
-                          className="bg-card border-border"
-                        />
-                        <p className="text-xs text-muted-foreground">Number of pages to scrape (1-100)</p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="delay_between_requests">Delay (seconds)</Label>
-                        <Input
-                          id="delay_between_requests"
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={scrapeConfig.delay_between_requests}
-                          onChange={(e) => setScrapeConfig(prev => ({ ...prev, delay_between_requests: parseInt(e.target.value) || 2 }))}
-                          className="bg-card border-border"
-                        />
-                        <p className="text-xs text-muted-foreground">Delay between requests (1-10 seconds)</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Active Status & Date Range */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-photon-400" />
-                      <h3 className="text-lg font-semibold">Ad Status & Date Range</h3>
-                    </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Active Only Switch */}
-                  <div className="space-y-2 flex flex-col">
-                    <Label htmlFor="active_only">Active Ads Only</Label>
-                    <Select
-                      value={scrapeConfig.active_status}
-                      onValueChange={(value) => setScrapeConfig(prev => ({ ...prev, active_status: value as 'active' | 'inactive' | 'all'}))}
-                    >
-                      <SelectTrigger id="active_only" className="bg-card border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active Only</SelectItem>
-                        <SelectItem value="inactive">Inactive Only</SelectItem>
-                        <SelectItem value="all">All</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Choose which ads to scrape.</p>
-                  </div>
-                  {/* Date range inputs */}
-                  <div className="space-y-2">
-                    <Label>Date Range</Label>
-                    <div className="flex gap-2">
-                      <Input type="date" value={scrapeConfig.date_from || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_from: e.target.value}))} className="bg-card border-border flex-1" />
-                      <span className="self-center">-</span>
-                      <Input type="date" value={scrapeConfig.date_to || ''} onChange={(e)=> setScrapeConfig(prev=>({...prev, date_to: e.target.value}))} className="bg-card border-border flex-1" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Leave blank for no date filtering.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="min_duration_days">Minimum Days Running</Label>
-                    <Input
-                      id="min_duration_days"
-                      type="number"
-                      min="1"
-                      value={scrapeConfig.min_duration_days ?? ''}
-                      onChange={(e) => setScrapeConfig(prev => ({ ...prev, min_duration_days: e.target.value ? parseInt(e.target.value) : undefined }))}
-                      className="bg-card border-border"
-                    />
-                    <p className="text-xs text-muted-foreground">Show ads that ran at least this many days.</p>
-                  </div>
-                </div>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="bg-card border border-border rounded-lg p-4">
-                    <h4 className="font-semibold mb-2">Scraping Summary</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>• Target: {competitor.name} ({competitor.page_id})</p>
-                      <p>• Countries: {scrapeConfig.countries.join(', ')}</p>
-                      <p>• Max pages: {scrapeConfig.max_pages} pages</p>
-                      <p>• Active status: {scrapeConfig.active_status}</p>
-                      <p>• Date range: {scrapeConfig.date_from || 'Any'} to {scrapeConfig.date_to || 'Any'}</p>
-                      <p>• Estimated ads: ~{scrapeConfig.max_pages * 30} ads</p>
-                      <p>• Estimated time: ~{Math.ceil((scrapeConfig.max_pages * scrapeConfig.delay_between_requests) / 60)} minutes</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3 pt-4">
-                    <Button 
-                      onClick={handleScrape} 
-                      disabled={scrapeLoading || scrapeConfig.countries.length === 0}
-                      className="flex-1 bg-photon-500 text-photon-950 hover:bg-photon-400"
-                    >
-                      {scrapeLoading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Starting Scrape...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Start Scraping
-                        </>
-                      )}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowScrapeDialog(false)}
-                      className="flex-1 border-border"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
             
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleDelete}
               className="border-border text-red-400 hover:text-red-300"
+              disabled={deleteMutation.isPending}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </div>
@@ -638,29 +268,36 @@ export default function CompetitorDetailPage() {
           </TabsList>
           
           <TabsContent value="ads" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Ad Gallery</h2>
-            <div className="flex items-center gap-2">
-              <Select value={adsStatus} onValueChange={(v)=> setAdsStatus(v as 'all'|'active'|'inactive')}>
-                <SelectTrigger className="w-40 bg-card border-border">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Ad Gallery (New Architecture)</h2>
               <div className="flex items-center gap-2">
-                <Label htmlFor="min_days" className="text-sm">Min days</Label>
-                <Input id="min_days" type="number" min={1} value={minDurationDays ?? ''} onChange={(e)=> setMinDurationDays(e.target.value ? parseInt(e.target.value) : undefined)} className="w-24 bg-card border-border" />
+                <Select value={adsStatus} onValueChange={(v) => setAdsStatus(v as 'all'|'active'|'inactive')}>
+                  <SelectTrigger className="w-40 bg-card border-border">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="min_days" className="text-sm">Min days</Label>
+                  <Input 
+                    id="min_days" 
+                    type="number" 
+                    min={1} 
+                    value={minDurationDays ?? ''} 
+                    onChange={(e) => setMinDurationDays(e.target.value ? parseInt(e.target.value) : undefined)} 
+                    className="w-24 bg-card border-border" 
+                  />
+                </div>
+                <Button variant="outline" onClick={handleApplyFilters} disabled={adsLoading} className="border-border">
+                  <RefreshCw className={`h-4 w-4 mr-2 ${adsLoading ? 'animate-spin' : ''}`} />
+                  Apply
+                </Button>
               </div>
-              <Button variant="outline" onClick={loadAds} disabled={adsLoading} className="border-border">
-                <RefreshCw className={`h-4 w-4 mr-2 ${adsLoading ? 'animate-spin' : ''}`} />
-                Apply
-              </Button>
             </div>
-          </div>
             
             {adsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -678,7 +315,7 @@ export default function CompetitorDetailPage() {
                   </div>
                 ))}
               </div>
-            ) : ads?.ads.data.length === 0 ? (
+            ) : adsData?.ads.data.length === 0 ? (
               <Card className="p-12 text-center">
                 <CardContent>
                   <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -686,7 +323,7 @@ export default function CompetitorDetailPage() {
                   <p className="text-muted-foreground mb-4">
                     This competitor doesn't have any ads yet.
                   </p>
-                  <Button onClick={() => setShowScrapeDialog(true)} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
+                  <Button onClick={() => handleScrape(competitor)} className="bg-photon-500 text-photon-950 hover:bg-photon-400">
                     <Download className="h-4 w-4 mr-2" />
                     Configure Scraping
                   </Button>
@@ -694,19 +331,10 @@ export default function CompetitorDetailPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {ads?.ads.data.map((ad) => {
-                  // The API already returns ads in the correct AdWithAnalysis format
-                  // Just ensure the competitor info is properly set
+                {adsData?.ads.data.map((ad: any) => {
                   const transformedAd = {
                     ...ad,
-                    competitor: ad.competitor || (competitor ? {
-                      id: competitor.id,
-                      name: competitor.name,
-                      page_id: competitor.page_id,
-                      is_active: competitor.is_active,
-                      created_at: competitor.created_at,
-                      updated_at: competitor.updated_at
-                    } : undefined),
+                    competitor: ad.competitor || competitor,
                     page_name: ad.page_name || competitor?.name,
                     is_analyzed: ad.is_analyzed || !!ad.analysis
                   } as AdWithAnalysis;
@@ -723,11 +351,11 @@ export default function CompetitorDetailPage() {
             )}
             
             {/* Pagination */}
-            {ads && ads.ads.total_pages > 1 && (
+            {adsData && adsData.ads.total_pages > 1 && (
               <div className="flex items-center justify-center gap-2 pt-6">
                 <Button
                   variant="outline"
-                  disabled={!ads.ads.has_previous}
+                  disabled={!adsData.ads.has_previous}
                   onClick={() => setCurrentPage(prev => prev - 1)}
                   className="border-border"
                 >
@@ -735,12 +363,12 @@ export default function CompetitorDetailPage() {
                 </Button>
                 
                 <span className="text-sm text-muted-foreground">
-                  Page {ads.ads.page} of {ads.ads.total_pages}
+                  Page {adsData.ads.page} of {adsData.ads.total_pages}
                 </span>
                 
                 <Button
                   variant="outline"
-                  disabled={!ads.ads.has_next}
+                  disabled={!adsData.ads.has_next}
                   onClick={() => setCurrentPage(prev => prev + 1)}
                   className="border-border"
                 >
@@ -844,26 +472,10 @@ export default function CompetitorDetailPage() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Scrape Task Progress</DialogTitle>
-              <DialogDescription>Task ID: {activeTaskId}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{taskStatus?.state || 'PENDING'}</Badge>
-                <span className="text-sm text-muted-foreground">{taskStatus?.status || ''}</span>
-              </div>
-              {taskStatus?.result && (
-                <div className="text-sm">
-                  <div>Total ads scraped: {taskStatus.result.total_ads_scraped ?? taskStatus.result?.database_stats?.total_processed ?? 0}</div>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Dialogs */}
+        <ScrapeDialog />
+        <TaskStatusDialog />
       </div>
     </DashboardLayout>
   );
-} 
+}

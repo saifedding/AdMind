@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 from typing import Dict, List, Optional
 import json
+import time
 
 from app.celery_worker import celery_app
 from app.database import get_db
@@ -219,12 +220,38 @@ def scrape_competitor_ads_task(
                     'countries': countries,
                     'max_pages': max_pages,
                     'active_status': active_status
-                }
+                },
+                'current_page': 0,
+                'ads_found': 0,
+                'new_ads': 0,
+                'updated_ads': 0,
+                'filtered_ads': 0
             }
         )
             
-        # Scrape ads
-        all_ads_data, all_json_responses, enhanced_data, stats = scraper_service.scrape_ads(scraper_config)
+        # Scrape ads with real-time progress updates
+        all_ads_data, all_json_responses, enhanced_data, stats = scraper_service.scrape_ads_with_progress(
+            scraper_config, 
+            progress_callback=lambda page, ads_found, new_ads, updated_ads, filtered_ads, message: self.update_state(
+                state='PROGRESS',
+                meta={
+                    'current_step': 'Scraping ads',
+                    'progress': min(20 + (page * (60 / max_pages)), 80),
+                    'competitor_page_id': competitor_page_id,
+                    'message': message,
+                    'current_page': page,
+                    'ads_found': ads_found,
+                    'new_ads': new_ads,
+                    'updated_ads': updated_ads,
+                    'filtered_ads': filtered_ads,
+                    'config': {
+                        'countries': countries,
+                        'max_pages': max_pages,
+                        'active_status': active_status
+                    }
+                }
+            )
+        )
         
         # Update progress after scraping
         self.update_state(

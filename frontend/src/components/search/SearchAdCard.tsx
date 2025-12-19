@@ -40,6 +40,12 @@ interface SearchAdCardProps {
     targeting?: any;
     lead_form?: any;
     meta?: any;
+    variant_count?: number;
+    variants?: Array<{
+      ad_archive_id: string;
+      duration_days?: number;
+      is_active: boolean;
+    }>;
   };
   isSelected: boolean;
   onSelectionChange: (adId: string, selected: boolean) => void;
@@ -788,6 +794,17 @@ export function SearchAdCard({ ad, isSelected, onSelectionChange }: SearchAdCard
 
       {/* Metadata Tags */}
       <div className="p-4 border-t border-white/5 flex flex-wrap gap-2">
+        {/* Variant Count Badge - Show if there are multiple variants */}
+        {ad.variant_count && ad.variant_count > 1 && (
+          <span 
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-medium"
+            title={`This ad has ${ad.variant_count} variants. Showing the longest-running version.`}
+          >
+            <Layers className="h-3 w-3" />
+            {ad.variant_count} variants
+          </span>
+        )}
+        
         <span className={cn(
           "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border",
           ad.is_active 

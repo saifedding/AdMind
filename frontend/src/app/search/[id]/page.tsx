@@ -88,6 +88,8 @@ export default function SearchAdDetailPage() {
   const [competitorPageId, setCompetitorPageId] = useState('');
   const [notes, setNotes] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
+  const [playingVideos, setPlayingVideos] = useState<{ [key: number]: boolean }>({});
+  const [videoQuality, setVideoQuality] = useState<{ [key: number]: 'hd' | 'sd' }>({});
 
   // Helper function to extract page ID from ad data
   const getPageIdFromAd = (adData: SearchAdDetail) => {
@@ -103,29 +105,24 @@ export default function SearchAdDetailPage() {
         setLoading(true);
         setError(null);
         
-        // First, try to get from localStorage (search results cache)
-        const cachedSearchResults = localStorage.getItem('searchResults');
-        if (cachedSearchResults) {
-          try {
-            const searchData = JSON.parse(cachedSearchResults);
-            const foundAd = searchData.ads_preview?.find((ad: any) => ad.ad_archive_id === id);
-            
-            if (foundAd) {
-              setAd(foundAd);
-              // Pre-populate competitor info if available
-              setCompetitorName(foundAd.advertiser || foundAd.page_name || '');
-              // Extract page_id from multiple possible locations in the response
-              const pageId = foundAd.page_id || 
-                           foundAd.meta?.page_id || 
-                           foundAd.meta?.snapshot?.page_id || 
-                           '';
-              setCompetitorPageId(pageId);
-              setLoading(false);
-              return;
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse cached search results:', parseError);
+        // First, try to get from IndexedDB (search results cache)
+        try {
+          const { searchStorage } = await import('@/lib/search-storage');
+          const foundAd = await searchStorage.findAdInResults(id);
+          
+          if (foundAd) {
+            setAd(foundAd);
+            setCompetitorName(foundAd.advertiser || foundAd.page_name || '');
+            const pageId = foundAd.page_id || 
+                         foundAd.meta?.page_id || 
+                         foundAd.meta?.snapshot?.page_id || 
+                         '';
+            setCompetitorPageId(pageId);
+            setLoading(false);
+            return;
           }
+        } catch (dbError) {
+          console.warn('Failed to load from IndexedDB:', dbError);
         }
         
         // If not found in cache, try to fetch from recent searches in sessionStorage
@@ -230,14 +227,22 @@ export default function SearchAdDetailPage() {
       }
 
       const result = await response.json();
-      setSaveSuccess(true);
       
-      // Show success message
-      setTimeout(() => setSaveSuccess(false), 3000);
+      if (result.success) {
+        setSaveSuccess(true);
+        
+        // Show success message and redirect
+        setTimeout(() => {
+          router.push('/saved');
+        }, 1500);
+      } else {
+        alert(result.message || 'Failed to save ad to database');
+      }
       
     } catch (error) {
       console.error('Error saving ad:', error);
-      alert('Failed to save ad to database');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save ad to database';
+      alert(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -345,6 +350,34 @@ export default function SearchAdDetailPage() {
     } catch (error) {
       console.error('Failed to copy link:', error);
       alert('Failed to copy link');
+    }
+  };
+
+  const handlePlayVideo = (idx: number, quality: 'hd' | 'sd') => {
+    setPlayingVideos(prev => ({ ...prev, [idx]: true }));
+    setVideoQuality(prev => ({ ...prev, [idx]: quality }));
+  };
+
+  const handleDownloadVideo = async (url: string, filename: string) => {
+    try {
+      // Try to download using fetch and blob
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch (error) {
+      // Fallback: open in new tab
+      console.warn('Direct download failed, opening in new tab:', error);
+      window.open(url, '_blank');
     }
   };
 
@@ -465,12 +498,12 @@ export default function SearchAdDetailPage() {
             {/* Show search results indicator if available */}
             {(() => {
               try {
-                const cachedResults = localStorage.getItem('searchResults');
+                const cachedResults = localStorage.getItem('searchState');
                 if (cachedResults) {
                   const results = JSON.parse(cachedResults);
                   return (
                     <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                      {results.ads_preview?.length || 0} results cached
+                      {results.searchResult?.ads_preview?.length || 0} results cached
                     </span>
                   );
                 }
@@ -562,16 +595,15 @@ export default function SearchAdDetailPage() {
                   const pageId = ad.page_id || ad.meta?.page_id || ad.meta?.snapshot?.page_id;
                   if (pageId) {
                     setIsNavigating(true);
-                    // Add timestamp to force new search
-                    const timestamp = Date.now();
-                    router.push(`/search?type=page&q=${encodeURIComponent(pageId)}&auto=true&t=${timestamp}`);
+                    // Navigate to search page with pre-filled form (no auto-search)
+                    router.push(`/search?type=page&q=${encodeURIComponent(pageId)}`);
                   } else {
                     alert('No Page ID available for this advertiser');
                   }
                 }}
                 disabled={isNavigating}
                 className="text-2xl font-bold hover:text-primary transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Click to search all ads from this page"
+                title="Click to pre-fill search form for this page"
               >
                 {ad.advertiser || ad.page_name || 'Unknown Advertiser'}
               </button>
@@ -654,6 +686,289 @@ export default function SearchAdDetailPage() {
           </div>
         </div>
 
+        {/* Page Details & Actions Card */}
+        {ad.meta?.snapshot && (
+          <Card className="border-neutral-800 bg-gradient-to-br from-neutral-900/50 to-neutral-900/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-400" />
+                Page Details & Actions
+              </CardTitle>
+              <CardDescription>
+                Information about the advertiser and available actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Page Information */}
+              <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-border/30">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="size-12 ring-2 ring-border/20">
+                      <AvatarImage 
+                        src={ad.meta.snapshot.page_profile_picture_url} 
+                        alt={ad.meta.snapshot.page_name} 
+                        className="object-cover" 
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-photon-900 to-photon-800 text-photon-200">
+                        {ad.meta.snapshot.page_name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{ad.meta.snapshot.page_name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {ad.meta.page_categories?.join(', ') || 'No category'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between py-2 border-b border-border/30">
+                      <span className="text-muted-foreground">Page ID</span>
+                      <span className="font-mono text-xs">{ad.meta.snapshot.page_id}</span>
+                    </div>
+                    
+                    {ad.meta.page_like_count && (
+                      <div className="flex items-center justify-between py-2 border-b border-border/30">
+                        <span className="text-muted-foreground">Page Likes</span>
+                        <span className="font-semibold text-blue-400">
+                          {ad.meta.page_like_count.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {ad.meta.snapshot.page_categories && (
+                      <div className="flex items-center justify-between py-2 border-b border-border/30">
+                        <span className="text-muted-foreground">Categories</span>
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {ad.meta.snapshot.page_categories.map((cat: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {cat}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {ad.meta.publisher_platform && (
+                      <div className="flex items-center justify-between py-2 border-b border-border/30">
+                        <span className="text-muted-foreground">Platforms</span>
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {ad.meta.publisher_platform.map((platform: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {platform}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="text-sm">
+                    <Label className="text-muted-foreground mb-2 block">Page URL</Label>
+                    <a 
+                      href={ad.meta.snapshot.page_profile_uri} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 break-all"
+                    >
+                      {ad.meta.snapshot.page_profile_uri}
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    </a>
+                  </div>
+                  
+                  {ad.meta.cta_type && (
+                    <div className="text-sm">
+                      <Label className="text-muted-foreground mb-2 block">Call to Action</Label>
+                      <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
+                        {ad.meta.cta_text || ad.meta.cta_type}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {ad.meta.display_format && (
+                    <div className="text-sm">
+                      <Label className="text-muted-foreground mb-2 block">Display Format</Label>
+                      <Badge variant="outline">
+                        {ad.meta.display_format}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {ad.meta.start_date && (
+                    <div className="text-sm">
+                      <Label className="text-muted-foreground mb-2 block">Campaign Duration</Label>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span>{formatDate(ad.meta.start_date)}</span>
+                        {ad.meta.end_date && (
+                          <>
+                            <span className="text-muted-foreground">→</span>
+                            <span>{formatDate(ad.meta.end_date)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions Section */}
+              <div>
+                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-purple-400" />
+                  Quick Actions
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Add for Scraping */}
+                  <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Building2 className="h-5 w-5 text-blue-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm mb-1">Add for Scraping</h4>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Add this advertiser to your competitors list for automated monitoring
+                        </p>
+                        <div className="space-y-2">
+                          <Input
+                            value={competitorName}
+                            onChange={(e) => setCompetitorName(e.target.value)}
+                            placeholder="Competitor name"
+                            className="h-8 text-xs"
+                          />
+                          <Input
+                            value={competitorPageId}
+                            onChange={(e) => setCompetitorPageId(e.target.value)}
+                            placeholder="Page ID (optional)"
+                            className="h-8 text-xs"
+                          />
+                          <Button
+                            onClick={handleAddCompetitor}
+                            disabled={isAddingCompetitor || !competitorName}
+                            size="sm"
+                            className="w-full"
+                          >
+                            {isAddingCompetitor ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Adding...
+                              </>
+                            ) : competitorSuccess ? (
+                              <>
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Added!
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add for Scraping
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save to Database */}
+                  <div className="p-4 bg-green-500/5 border border-green-500/20 rounded-lg space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Save className="h-5 w-5 text-green-400 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm mb-1">Save to Database</h4>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Save this ad to your database for tracking
+                        </p>
+                        <div className="space-y-2">
+                          <Input
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Add notes (optional)"
+                            className="h-8 text-xs"
+                          />
+                          <Button
+                            onClick={handleSaveToDatabase}
+                            disabled={isSaving || saveSuccess}
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                          >
+                            {isSaving ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Saving...
+                              </>
+                            ) : saveSuccess ? (
+                              <>
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Redirecting to Saved Ads...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-3 w-3 mr-1" />
+                                Save Ad
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadAd}
+                    className="text-xs"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyLink}
+                    className="text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy Link
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`, '_blank')}
+                    className="text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Facebook
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const pageId = ad.page_id || ad.meta?.page_id || ad.meta?.snapshot?.page_id;
+                      if (pageId) {
+                        router.push(`/search?type=page&q=${encodeURIComponent(pageId)}`);
+                      }
+                    }}
+                    disabled={!ad.page_id && !ad.meta?.page_id && !ad.meta?.snapshot?.page_id}
+                    className="text-xs"
+                  >
+                    <Search className="h-3 w-3 mr-1" />
+                    All Ads
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Ad Preview Card */}
         <Card className="border-neutral-800">
           <CardHeader>
@@ -672,6 +987,383 @@ export default function SearchAdDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Ad Content Details */}
+        {(ad.meta?.title || ad.meta?.body?.text || ad.meta?.caption || ad.meta?.link_url) && (
+          <Card className="border-neutral-800">
+            <CardHeader>
+              <CardTitle>Ad Content</CardTitle>
+              <CardDescription>
+                Text and link content from the ad
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {ad.meta.title && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Headline</Label>
+                  <p className="text-lg font-semibold">{ad.meta.title}</p>
+                </div>
+              )}
+              
+              {ad.meta.body?.text && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Body Text</Label>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{ad.meta.body.text}</p>
+                </div>
+              )}
+              
+              {ad.meta.caption && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Caption</Label>
+                  <p className="text-sm text-muted-foreground">{ad.meta.caption}</p>
+                </div>
+              )}
+              
+              {ad.meta.link_url && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Link URL</Label>
+                  <a 
+                    href={ad.meta.link_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 text-sm break-all"
+                  >
+                    {ad.meta.link_url}
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                  </a>
+                </div>
+              )}
+              
+              {ad.meta.link_description && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Link Description</Label>
+                  <p className="text-sm text-muted-foreground">{ad.meta.link_description}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Extra Texts */}
+        {ad.meta?.extra_texts && ad.meta.extra_texts.length > 0 && (
+          <Card className="border-neutral-800">
+            <CardHeader>
+              <CardTitle>Additional Text Content</CardTitle>
+              <CardDescription>
+                All text variations and form fields from the ad
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {ad.meta.extra_texts.map((textObj: any, idx: number) => (
+                  <div 
+                    key={idx} 
+                    className="p-3 bg-neutral-900/50 rounded-lg border border-border/30 text-sm"
+                  >
+                    {textObj.text}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Extra Links */}
+        {ad.meta?.extra_links && ad.meta.extra_links.length > 0 && (
+          <Card className="border-neutral-800">
+            <CardHeader>
+              <CardTitle>Additional Links</CardTitle>
+              <CardDescription>
+                All links found in the ad
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {ad.meta.extra_links.map((link: string, idx: number) => (
+                  <a 
+                    key={idx}
+                    href={link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 bg-neutral-900/50 rounded-lg border border-border/30 hover:border-blue-500/50 transition-colors text-sm text-blue-400 hover:text-blue-300 break-all"
+                  >
+                    <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                    {link}
+                  </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Extra Images */}
+        {ad.meta?.extra_images && ad.meta.extra_images.length > 0 && (
+          <Card className="border-neutral-800">
+            <CardHeader>
+              <CardTitle>Additional Images</CardTitle>
+              <CardDescription>
+                All images from the ad creative
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {ad.meta.extra_images.map((img: any, idx: number) => (
+                  <a
+                    key={idx}
+                    href={img.original_image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative aspect-square rounded-lg overflow-hidden border border-border/30 hover:border-blue-500/50 transition-colors"
+                  >
+                    <img 
+                      src={img.resized_image_url || img.original_image_url} 
+                      alt={`Ad image ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                      <ExternalLink className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Videos */}
+        {ad.meta?.videos && ad.meta.videos.length > 0 && (
+          <Card className="border-neutral-800 bg-gradient-to-br from-red-900/10 to-neutral-900/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PlayCircle className="h-5 w-5 text-red-400" />
+                Video Content
+              </CardTitle>
+              <CardDescription>
+                Video creatives from the ad - {ad.meta.videos.length} video{ad.meta.videos.length > 1 ? 's' : ''}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {ad.meta.videos.map((video: any, idx: number) => {
+                  const isPlaying = playingVideos[idx];
+                  const quality = videoQuality[idx] || 'hd';
+                  const videoUrl = quality === 'hd' && video.video_hd_url ? video.video_hd_url : video.video_sd_url;
+                  
+                  return (
+                    <div key={idx} className="space-y-3 p-4 bg-neutral-900/50 rounded-lg border border-border/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-semibold">Video {idx + 1}</Label>
+                        <Badge variant="outline" className="text-xs">
+                          <PlayCircle className="h-3 w-3 mr-1" />
+                          {video.video_hd_url ? 'HD Available' : 'SD Only'}
+                        </Badge>
+                      </div>
+                      
+                      {/* Video Player or Preview */}
+                      <div className="relative aspect-video rounded-lg overflow-hidden border border-border/30 bg-black">
+                        {isPlaying ? (
+                          <video
+                            key={videoUrl}
+                            controls
+                            autoPlay
+                            className="w-full h-full"
+                            poster={video.video_preview_image_url}
+                          >
+                            <source src={videoUrl} type="video/mp4" />
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : (
+                          <button
+                            onClick={() => handlePlayVideo(idx, video.video_hd_url ? 'hd' : 'sd')}
+                            className="w-full h-full group cursor-pointer"
+                          >
+                            <img 
+                              src={video.video_preview_image_url} 
+                              alt={`Video preview ${idx + 1}`}
+                              className="w-full h-full object-contain"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="bg-red-500/20 backdrop-blur-sm rounded-full p-4 mb-3 group-hover:bg-red-500/30 transition-colors">
+                                  <PlayCircle className="h-16 w-16 text-white group-hover:scale-110 transition-transform" />
+                                </div>
+                                <p className="text-white text-sm font-medium">Click to Play Video</p>
+                                <p className="text-white/70 text-xs mt-1">
+                                  {video.video_hd_url ? 'HD Quality' : 'SD Quality'}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Quality Selection and Actions */}
+                      <div className="space-y-3">
+                        {/* Quality Selector */}
+                        {video.video_hd_url && video.video_sd_url && (
+                          <div className="flex items-center gap-2 p-2 bg-neutral-900/70 rounded-lg border border-border/20">
+                            <Label className="text-xs text-muted-foreground">Quality:</Label>
+                            <div className="flex gap-2 flex-1">
+                              <Button
+                                variant={quality === 'hd' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => {
+                                  setVideoQuality(prev => ({ ...prev, [idx]: 'hd' }));
+                                  if (isPlaying) {
+                                    setPlayingVideos(prev => ({ ...prev, [idx]: false }));
+                                    setTimeout(() => setPlayingVideos(prev => ({ ...prev, [idx]: true })), 100);
+                                  }
+                                }}
+                                className={cn(
+                                  "flex-1 text-xs",
+                                  quality === 'hd' 
+                                    ? "bg-blue-500 hover:bg-blue-600" 
+                                    : "bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-400"
+                                )}
+                              >
+                                HD
+                              </Button>
+                              <Button
+                                variant={quality === 'sd' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => {
+                                  setVideoQuality(prev => ({ ...prev, [idx]: 'sd' }));
+                                  if (isPlaying) {
+                                    setPlayingVideos(prev => ({ ...prev, [idx]: false }));
+                                    setTimeout(() => setPlayingVideos(prev => ({ ...prev, [idx]: true })), 100);
+                                  }
+                                }}
+                                className={cn(
+                                  "flex-1 text-xs",
+                                  quality === 'sd' 
+                                    ? "bg-purple-500 hover:bg-purple-600" 
+                                    : "bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-400"
+                                )}
+                              >
+                                SD
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Play/Replay Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (isPlaying) {
+                                setPlayingVideos(prev => ({ ...prev, [idx]: false }));
+                                setTimeout(() => setPlayingVideos(prev => ({ ...prev, [idx]: true })), 100);
+                              } else {
+                                handlePlayVideo(idx, quality);
+                              }
+                            }}
+                            className="bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-400"
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            {isPlaying ? 'Replay' : 'Play Inline'}
+                          </Button>
+                          
+                          {/* Open in New Tab */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(videoUrl, '_blank')}
+                            className="bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-400"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Open in Tab
+                          </Button>
+                          
+                          {/* Download HD */}
+                          {video.video_hd_url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadVideo(
+                                video.video_hd_url,
+                                `video-${ad.ad_archive_id}-hd-${idx + 1}.mp4`
+                              )}
+                              className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20 text-green-400"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download HD
+                            </Button>
+                          )}
+                          
+                          {/* Download SD */}
+                          {video.video_sd_url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadVideo(
+                                video.video_sd_url,
+                                `video-${ad.ad_archive_id}-sd-${idx + 1}.mp4`
+                              )}
+                              className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20 text-green-400"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download SD
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Video URLs for reference */}
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                          View Video URLs
+                        </summary>
+                        <div className="mt-2 space-y-2">
+                          {video.video_hd_url && (
+                            <div className="p-2 bg-black/40 rounded border border-border/30">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-muted-foreground">HD URL:</p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(video.video_hd_url);
+                                    alert('HD URL copied!');
+                                  }}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <p className="break-all text-blue-400 text-xs">{video.video_hd_url}</p>
+                            </div>
+                          )}
+                          {video.video_sd_url && (
+                            <div className="p-2 bg-black/40 rounded border border-border/30">
+                              <div className="flex items-center justify-between mb-1">
+                                <p className="text-muted-foreground">SD URL:</p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(video.video_sd_url);
+                                    alert('SD URL copied!');
+                                  }}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <p className="break-all text-purple-400 text-xs">{video.video_sd_url}</p>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -911,36 +1603,104 @@ export default function SearchAdDetailPage() {
           </Card>
         </div>
 
-        {/* Technical Details */}
-        {ad.targeting && (
-          <Card className="border-neutral-800">
+        {/* Targeting Information */}
+        {ad.targeting && Object.keys(ad.targeting).length > 0 && (
+          <Card className="border-neutral-800 bg-gradient-to-br from-purple-900/10 to-neutral-900/30">
             <CardHeader>
-              <CardTitle>Targeting Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-purple-400" />
+                Targeting Information
+              </CardTitle>
               <CardDescription>
-                Available targeting data from Facebook Ad Library
+                Audience targeting data from Facebook Ad Library
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <pre className="text-xs whitespace-pre-wrap break-all max-h-[300px] overflow-auto bg-black/40 p-4 rounded-lg border border-border/30">
-                {JSON.stringify(ad.targeting, null, 2)}
-              </pre>
+              {Object.keys(ad.targeting).length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(ad.targeting).map(([key, value], idx) => (
+                    <div 
+                      key={idx}
+                      className="p-3 bg-neutral-900/50 rounded-lg border border-border/30"
+                    >
+                      <Label className="text-muted-foreground text-xs mb-1 block capitalize">
+                        {key.replace(/_/g, ' ')}
+                      </Label>
+                      <p className="text-sm">
+                        {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No targeting information available</p>
+              )}
+              
+              <details className="text-xs mt-4">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                  View Raw Data
+                </summary>
+                <pre className="mt-2 whitespace-pre-wrap break-all max-h-[200px] overflow-auto bg-black/40 p-4 rounded-lg border border-border/30">
+                  {JSON.stringify(ad.targeting, null, 2)}
+                </pre>
+              </details>
             </CardContent>
           </Card>
         )}
 
         {/* Lead Form */}
         {ad.lead_form && (
-          <Card className="border-neutral-800">
+          <Card className="border-neutral-800 bg-gradient-to-br from-green-900/10 to-neutral-900/30">
             <CardHeader>
-              <CardTitle>Lead Form</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                Lead Form
+              </CardTitle>
               <CardDescription>
                 Lead generation form attached to this ad
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <pre className="text-xs whitespace-pre-wrap break-all max-h-[300px] overflow-auto bg-black/40 p-4 rounded-lg border border-border/30">
-                {JSON.stringify(ad.lead_form, null, 2)}
-              </pre>
+            <CardContent className="space-y-4">
+              {ad.lead_form.standalone_fields && ad.lead_form.standalone_fields.length > 0 && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-2 block">Form Fields</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ad.lead_form.standalone_fields.map((field: string, idx: number) => (
+                      <Badge 
+                        key={idx} 
+                        className="bg-green-500/10 text-green-400 border-green-500/20"
+                      >
+                        {field}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {ad.lead_form.questions && Object.keys(ad.lead_form.questions).length > 0 && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-2 block">Custom Questions</Label>
+                  <div className="space-y-2">
+                    {Object.entries(ad.lead_form.questions).map(([key, value], idx) => (
+                      <div 
+                        key={idx}
+                        className="p-3 bg-neutral-900/50 rounded-lg border border-border/30 text-sm"
+                      >
+                        <span className="font-medium">{key}:</span> {JSON.stringify(value)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                  View Raw Data
+                </summary>
+                <pre className="mt-2 whitespace-pre-wrap break-all max-h-[200px] overflow-auto bg-black/40 p-4 rounded-lg border border-border/30">
+                  {JSON.stringify(ad.lead_form, null, 2)}
+                </pre>
+              </details>
             </CardContent>
           </Card>
         )}

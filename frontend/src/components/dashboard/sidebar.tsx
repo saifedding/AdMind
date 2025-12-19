@@ -29,7 +29,8 @@ import {
   Heart,
   FolderHeart,
   Video,
-  ImageIcon
+  ImageIcon,
+  FolderOpen
 } from "lucide-react";
 
 const navigationGroups = [
@@ -85,6 +86,12 @@ const navigationGroups = [
         name: "Competitors",
         href: "/competitors",
         icon: Target,
+        current: false
+      },
+      {
+        name: "Categories",
+        href: "/categories",
+        icon: FolderOpen,
         current: false
       },
       {

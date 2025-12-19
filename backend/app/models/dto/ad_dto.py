@@ -182,6 +182,7 @@ class AdFilterParams(BaseModel):
     limit: int = 20  # Alias for page_size
     competitor_id: Optional[int] = None
     competitor_name: Optional[str] = None
+    category_id: Optional[int] = None
     media_type: Optional[str] = None
     has_analysis: Optional[bool] = None
     min_hook_score: Optional[float] = None

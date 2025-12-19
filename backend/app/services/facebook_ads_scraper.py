@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import re
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 from app.models import Ad, Competitor
 from app.database import get_db
@@ -147,19 +149,35 @@ class FacebookAdsScraperService:
 
     def build_variables(self, config: FacebookAdsScraperConfig) -> str:
         """Build the variables JSON object from config"""
+        # Determine the country field (singular) - use "ALL" if countries contains "ALL", otherwise use first country
+        country_singular = "ALL" if "ALL" in config.countries else (config.countries[0] if config.countries else "ALL")
+        
+        # Format countries array - Facebook API expects ["ALL"] for multi-country searches
+        # When multiple countries are specified, use ["ALL"] instead of individual country codes
+        countries_array = ["ALL"] if len(config.countries) > 1 else config.countries
+        
+        # Format startDate as object with min/max if provided, otherwise None
+        start_date_obj = None
+        if config.start_date or config.end_date:
+            start_date_obj = {
+                "min": config.start_date,  # Minimum start date (ads started after this)
+                "max": config.end_date      # Maximum start date (ads started before this)
+            }
+        
         variables = {
-            "activeStatus": config.active_status,
+            "activeStatus": config.active_status.upper(),  # Ensure uppercase (ALL, ACTIVE, INACTIVE)
             "adType": config.ad_type,
             "bylines": [],
             "collationToken": config.collation_token,
             "contentLanguages": [],
-            "countries": config.countries,
+            "countries": countries_array,  # Use ["ALL"] for multi-country searches
+            "country": country_singular,  # Add singular country field for Facebook API
             "cursor": config.cursor,
             "excludedIDs": None,
             "first": config.first,
             "isTargetedCountry": config.is_targeted_country,
             "location": None,
-            "mediaType": config.media_type,
+            "mediaType": config.media_type.upper(),  # Ensure uppercase (ALL, VIDEO, IMAGE)
             "multiCountryFilterMode": None,
             "pageIDs": config.page_ids,
             "potentialReachInput": None,
@@ -170,7 +188,7 @@ class FacebookAdsScraperService:
             "sessionID": config.session_id,
             "sortData": None,
             "source": None,
-            "startDate": config.start_date,
+            "startDate": start_date_obj,  # Use object format with min/max
             "v": "608791",
             "viewAllPageID": config.view_all_page_id
         }
@@ -181,7 +199,8 @@ class FacebookAdsScraperService:
             logger.info(f"  - viewAllPageID: {config.view_all_page_id}")
             logger.info(f"  - first: {config.first}")
             logger.info(f"  - activeStatus: {config.active_status}")
-            logger.info(f"  - countries: {config.countries}")
+            logger.info(f"  - countries (sent to API): {countries_array}")
+            logger.info(f"  - country (singular): {country_singular}")
             logger.info(f"  - searchType: {config.search_type}")
         
         return json.dumps(variables, separators=(',', ':'))
@@ -253,6 +272,214 @@ class FacebookAdsScraperService:
             logger.error(f"JSON decode error: {e}")
             logger.error(f"Response text that failed to parse: {response.text[:1000]}")
             return None
+
+    def scrape_ads_with_progress(self, config: FacebookAdsScraperConfig, progress_callback=None) -> Tuple[List[Dict], List[Dict], Dict, Dict]:
+        """
+        Scrape Facebook Ads with real-time progress updates
+        
+        Args:
+            config: Scraper configuration
+            progress_callback: Function to call with progress updates
+        
+        Returns:
+            Tuple of (all_ads_data, all_json_responses, enhanced_data, stats)
+        """
+        logger.info(f"Starting data collection for {config.view_all_page_id} with real-time progress updates")
+        
+        try:
+            all_json_responses = []
+            page_count = 0
+            enhanced_data = {}
+            
+            # Initialize cumulative stats
+            cumulative_stats = {
+                "total_processed": 0,
+                "created": 0,
+                "updated": 0,
+                "errors": 0,
+                'competitors_created': 0,
+                'competitors_updated': 0,
+                'campaigns_processed': 0,
+                'ads_filtered_by_duration': 0
+            }
+            
+            while True:
+                page_count += 1
+                if config.max_pages and page_count > config.max_pages:
+                    logger.info(f"Reached max pages limit of {config.max_pages}.")
+                    if progress_callback:
+                        progress_callback(
+                            page_count - 1, 
+                            cumulative_stats['total_processed'],
+                            cumulative_stats['created'],
+                            cumulative_stats['updated'],
+                            cumulative_stats['ads_filtered_by_duration'],
+                            f"✅ Completed scraping {config.max_pages} pages"
+                        )
+                    break
+
+                logger.info(f"Scraping page {page_count}")
+                
+                # Send progress update for page start
+                if progress_callback:
+                    progress_callback(
+                        page_count, 
+                        cumulative_stats['total_processed'],
+                        cumulative_stats['created'],
+                        cumulative_stats['updated'],
+                        cumulative_stats['ads_filtered_by_duration'],
+                        f"📄 Scraping page {page_count}..."
+                    )
+                
+                response_data = self.fetch_ads_page(config)
+
+                if not response_data:
+                    logger.warning(f"No response data on page {page_count}. Stopping scrape.")
+                    if progress_callback:
+                        progress_callback(
+                            page_count, 
+                            cumulative_stats['total_processed'],
+                            cumulative_stats['created'],
+                            cumulative_stats['updated'],
+                            cumulative_stats['ads_filtered_by_duration'],
+                            f"⚠️ No data on page {page_count}, stopping"
+                        )
+                    break
+                
+                all_json_responses.append(response_data)
+                
+                try:
+                    # Check if response contains errors instead of data
+                    if 'errors' in response_data:
+                        error_details = response_data['errors'][0] if response_data['errors'] else {}
+                        error_msg = error_details.get('message', 'Unknown Facebook API error')
+                        error_code = error_details.get('code', 'N/A')
+                        logger.error(f"Facebook API Error on page {page_count}: {error_msg} (Code: {error_code})")
+                        cumulative_stats['errors'] += 1
+                        if progress_callback:
+                            progress_callback(
+                                page_count, 
+                                cumulative_stats['total_processed'],
+                                cumulative_stats['created'],
+                                cumulative_stats['updated'],
+                                cumulative_stats['ads_filtered_by_duration'],
+                                f"❌ API Error on page {page_count}: {error_msg}"
+                            )
+                        break
+                    
+                    search_results = response_data['data']['ad_library_main']['search_results_connection']
+                    edges = search_results.get('edges', [])
+                    page_info = search_results.get('page_info', {})
+
+                    if not edges:
+                        logger.info("No ads found on this page. Stopping scrape.")
+                        if progress_callback:
+                            progress_callback(
+                                page_count, 
+                                cumulative_stats['total_processed'],
+                                cumulative_stats['created'],
+                                cumulative_stats['updated'],
+                                cumulative_stats['ads_filtered_by_duration'],
+                                f"ℹ️ No ads found on page {page_count}, stopping"
+                            )
+                        break
+                    
+                    logger.info(f"Page {page_count}: Found {len(edges)} ad groups. Processing with enhanced extraction.")
+                    
+                    # Send progress update for processing
+                    if progress_callback:
+                        progress_callback(
+                            page_count, 
+                            cumulative_stats['total_processed'],
+                            cumulative_stats['created'],
+                            cumulative_stats['updated'],
+                            cumulative_stats['ads_filtered_by_duration'],
+                            f"🔍 Processing {len(edges)} ads from page {page_count}..."
+                        )
+
+                    enhanced_data, _ = self.enhanced_extractor.process_raw_responses([response_data])
+                    
+                    extraction_stats = self.enhanced_extractor.save_enhanced_ads_to_database(enhanced_data)
+                    
+                    # Update cumulative stats
+                    cumulative_stats['total_processed'] += extraction_stats.get('total_ads_processed', 0)
+                    cumulative_stats['created'] += extraction_stats.get('new_ads_created', 0)
+                    cumulative_stats['updated'] += extraction_stats.get('existing_ads_updated', 0)
+                    cumulative_stats['errors'] += extraction_stats.get('errors', 0)
+                    cumulative_stats['competitors_updated'] += extraction_stats.get('competitors_processed', 0)
+                    cumulative_stats['ads_filtered_by_duration'] += extraction_stats.get('ads_filtered_by_duration', 0)
+                    
+                    # Send progress update with results
+                    if progress_callback:
+                        progress_callback(
+                            page_count, 
+                            cumulative_stats['total_processed'],
+                            cumulative_stats['created'],
+                            cumulative_stats['updated'],
+                            cumulative_stats['ads_filtered_by_duration'],
+                            f"✅ Page {page_count}: +{extraction_stats.get('new_ads_created', 0)} new, +{extraction_stats.get('existing_ads_updated', 0)} updated"
+                        )
+
+                    has_next_page = page_info.get('has_next_page', False)
+                    end_cursor = page_info.get('end_cursor')
+
+                    if not has_next_page:
+                        logger.info("No more pages available. Finished.")
+                        if progress_callback:
+                            progress_callback(
+                                page_count, 
+                                cumulative_stats['total_processed'],
+                                cumulative_stats['created'],
+                                cumulative_stats['updated'],
+                                cumulative_stats['ads_filtered_by_duration'],
+                                f"🏁 Finished scraping - no more pages available"
+                            )
+                        break
+                    
+                    config.cursor = end_cursor
+                    
+                    if config.delay_between_requests > 0:
+                        logger.info(f"Waiting {config.delay_between_requests} seconds...")
+                        if progress_callback:
+                            progress_callback(
+                                page_count, 
+                                cumulative_stats['total_processed'],
+                                cumulative_stats['created'],
+                                cumulative_stats['updated'],
+                                cumulative_stats['ads_filtered_by_duration'],
+                                f"⏳ Waiting {config.delay_between_requests}s before next page..."
+                            )
+                        time.sleep(config.delay_between_requests)
+
+                except (KeyError, TypeError) as e:
+                    logger.error(f"Error parsing response data on page {page_count}: {e}")
+                    cumulative_stats['errors'] += 1
+                    if progress_callback:
+                        progress_callback(
+                            page_count, 
+                            cumulative_stats['total_processed'],
+                            cumulative_stats['created'],
+                            cumulative_stats['updated'],
+                            cumulative_stats['ads_filtered_by_duration'],
+                            f"❌ Error parsing page {page_count}: {str(e)}"
+                        )
+                    break
+            
+            logger.info(f"Scraping completed. Final stats: {cumulative_stats}")
+            return [], all_json_responses, enhanced_data, cumulative_stats
+            
+        except Exception as e:
+            logger.error(f"Error in scrape_ads_with_progress: {str(e)}")
+            if progress_callback:
+                progress_callback(
+                    page_count, 
+                    cumulative_stats.get('total_processed', 0),
+                    cumulative_stats.get('created', 0),
+                    cumulative_stats.get('updated', 0),
+                    cumulative_stats.get('ads_filtered_by_duration', 0),
+                    f"💥 Fatal error: {str(e)}"
+                )
+            raise
 
     def scrape_ads(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict]:
         """
@@ -385,17 +612,157 @@ class FacebookAdsScraperService:
             logger.error(f"Error in ads scraping: {str(e)}")
             raise 
 
-    def scrape_ads_preview_only(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict, Optional[str], bool]:
+    def scrape_ads_preview_only(self, config: FacebookAdsScraperConfig, use_parallel: bool = True) -> Tuple[List[Dict], List[Dict], Dict, Dict, Optional[str], bool]:
         """
         Scrape Facebook Ads for preview only - no database saving, no competitor creation
         
         Args:
             config: Scraper configuration
+            use_parallel: Whether to use parallel fetching (default: True for faster results)
         
         Returns:
             Tuple of (all_ads_data, all_json_responses, enhanced_data, stats, next_cursor, has_next_page)
         """
-        logger.info(f"Starting preview-only data collection for {config.view_all_page_id}")
+        # Use parallel scraping if max_pages > 1 and use_parallel is True
+        logger.info(f"scrape_ads_preview_only called: use_parallel={use_parallel}, max_pages={config.max_pages}")
+        if use_parallel and config.max_pages and config.max_pages > 1:
+            logger.info(f"Using PARALLEL scraping for {config.max_pages} pages")
+            return self._scrape_ads_preview_parallel(config)
+        else:
+            logger.info(f"Using SEQUENTIAL scraping (use_parallel={use_parallel}, max_pages={config.max_pages})")
+            return self._scrape_ads_preview_sequential(config)
+    
+    def _scrape_ads_preview_parallel(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict, Optional[str], bool]:
+        """
+        Parallel version of preview scraping - fetches multiple pages concurrently
+        """
+        logger.info(f"Starting PARALLEL preview scraping for {config.view_all_page_id} (max {config.max_pages} pages)")
+        
+        try:
+            all_json_responses = []
+            enhanced_data = {}
+            response_lock = threading.Lock()
+            
+            stats = {
+                "total_processed": 0,
+                "created": 0,
+                "updated": 0,
+                "errors": 0,
+                'competitors_created': 0,
+                'competitors_updated': 0,
+                'campaigns_processed': 0
+            }
+            
+            # First, fetch the first page to get the initial cursor
+            logger.info("Fetching first page to establish pagination...")
+            first_response = self.fetch_ads_page(config)
+            
+            if not first_response:
+                logger.error("Failed to fetch first page - no response")
+                return [], [], {}, stats, None, False
+            
+            if 'errors' in first_response:
+                logger.error(f"Failed to fetch first page - API errors: {first_response.get('errors')}")
+                return [], [], {}, stats, None, False
+            
+            logger.info("First page fetched successfully, adding to responses")
+            all_json_responses.append(first_response)
+            
+            # Get cursors for parallel fetching
+            cursors = [None]  # First page has no cursor
+            try:
+                search_results = first_response['data']['ad_library_main']['search_results_connection']
+                page_info = search_results.get('page_info', {})
+                
+                # Collect cursors by fetching pages sequentially until we have enough
+                current_cursor = page_info.get('end_cursor')
+                has_next = page_info.get('has_next_page', False)
+                
+                # Collect cursors for remaining pages (up to max_pages - 1)
+                # Create a copy of config by copying its attributes manually (can't use __dict__ due to headers)
+                temp_config = config
+                for i in range(1, config.max_pages):  # Fetch all requested pages
+                    if not has_next or not current_cursor:
+                        logger.info(f"No more pages available after page {i}")
+                        break
+                    
+                    cursors.append(current_cursor)
+                    
+                    # Fetch next page to get next cursor
+                    temp_config.cursor = current_cursor
+                    temp_response = self.fetch_ads_page(temp_config)
+                    if not temp_response or 'errors' in temp_response:
+                        logger.warning(f"Failed to fetch page {i+1}")
+                        break
+                    
+                    all_json_responses.append(temp_response)
+                    
+                    # Check if response has data
+                    try:
+                        search_results = temp_response['data']['ad_library_main']['search_results_connection']
+                        edges = search_results.get('edges', [])
+                        page_info = search_results.get('page_info', {})
+                        current_cursor = page_info.get('end_cursor')
+                        has_next = page_info.get('has_next_page', False)
+                        
+                        logger.info(f"Fetched page {i+1}/{config.max_pages}: {len(edges)} raw ads from Facebook")
+                    except (KeyError, TypeError) as e:
+                        logger.error(f"Error parsing page {i+1}: {e}")
+                        break
+                    
+                    # Small delay to avoid rate limiting
+                    if i < config.max_pages - 1 and has_next:
+                        time.sleep(0.5)
+                
+                logger.info(f"Collected {len(all_json_responses)} pages total from Facebook")
+                
+            except (KeyError, TypeError) as e:
+                logger.error(f"Error collecting cursors: {e}")
+            
+            # Process all collected responses
+            for response_data in all_json_responses:
+                try:
+                    page_enhanced_data = self.enhanced_extractor.transform_raw_data_to_enhanced_format([response_data])
+                    
+                    with response_lock:
+                        for competitor_name, ads_list in page_enhanced_data.items():
+                            if competitor_name not in enhanced_data:
+                                enhanced_data[competitor_name] = []
+                            enhanced_data[competitor_name].extend(ads_list)
+                        
+                        page_ad_count = sum(len(ads_list) for ads_list in page_enhanced_data.values())
+                        stats['total_processed'] += page_ad_count
+                        stats['competitors_updated'] += len(page_enhanced_data)
+                except Exception as e:
+                    logger.error(f"Error processing response: {e}")
+                    stats['errors'] += 1
+            
+            logger.info(f"Parallel preview scraping complete. Final stats: {stats}")
+            
+            # Extract pagination info from the last response
+            next_cursor = None
+            has_next_page = False
+            if all_json_responses:
+                try:
+                    last_response = all_json_responses[-1]
+                    search_results = last_response['data']['ad_library_main']['search_results_connection']
+                    page_info = search_results.get('page_info', {})
+                    next_cursor = page_info.get('end_cursor')
+                    has_next_page = page_info.get('has_next_page', False)
+                except (KeyError, TypeError):
+                    logger.warning("Could not extract pagination info from response")
+            
+            return [], all_json_responses, enhanced_data, stats, next_cursor, has_next_page
+        
+        except Exception as e:
+            logger.error(f"Error in parallel preview scraping: {str(e)}")
+            raise
+    
+    def _scrape_ads_preview_sequential(self, config: FacebookAdsScraperConfig) -> Tuple[List[Dict], List[Dict], Dict, Dict, Optional[str], bool]:
+        """
+        Sequential version of preview scraping (original implementation)
+        """
+        logger.info(f"Starting SEQUENTIAL preview scraping for {config.view_all_page_id}")
         
         try:
             all_json_responses = []
@@ -447,36 +814,6 @@ class FacebookAdsScraperService:
                         break
                     
                     logger.info(f"Page {page_count}: Found {len(edges)} ad groups. Processing for preview only.")
-                    
-                    # Debug logging for page searches to understand the issue
-                    if config.search_type == "page":
-                        logger.info(f"DEBUG - Page search results (preview):")
-                        logger.info(f"  - Requested 'first': {config.first}")
-                        logger.info(f"  - Actual edges returned: {len(edges)}")
-                        logger.info(f"  - Page info: {page_info}")
-                        
-                        # Log first few ad archive IDs to verify we're getting different ads
-                        if edges:
-                            ad_ids = []
-                            for i, edge in enumerate(edges[:5]):  # First 5 ads
-                                try:
-                                    ad_archive_id = edge.get('node', {}).get('ad_archive_id')
-                                    if ad_archive_id:
-                                        ad_ids.append(ad_archive_id)
-                                except:
-                                    pass
-                            logger.info(f"  - Sample ad archive IDs: {ad_ids}")
-                        
-                        # Check if we're getting the same ad repeated
-                        unique_ad_ids = set()
-                        for edge in edges:
-                            try:
-                                ad_archive_id = edge.get('node', {}).get('ad_archive_id')
-                                if ad_archive_id:
-                                    unique_ad_ids.add(ad_archive_id)
-                            except:
-                                pass
-                        logger.info(f"  - Unique ads in this page: {len(unique_ad_ids)} out of {len(edges)} total")
 
                     # Process raw responses but don't save to database
                     page_enhanced_data = self.enhanced_extractor.transform_raw_data_to_enhanced_format([response_data])
@@ -510,7 +847,7 @@ class FacebookAdsScraperService:
                     stats['errors'] += 1
                     break
             
-            logger.info(f"Preview scraping complete. Final stats: {stats}")
+            logger.info(f"Sequential preview scraping complete. Final stats: {stats}")
             
             # Extract pagination info from the last response
             next_cursor = None
@@ -528,5 +865,5 @@ class FacebookAdsScraperService:
             return [], all_json_responses, enhanced_data, stats, next_cursor, has_next_page
         
         except Exception as e:
-            logger.error(f"Error in preview ads scraping: {str(e)}")
+            logger.error(f"Error in sequential preview scraping: {str(e)}")
             raise 

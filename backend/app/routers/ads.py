@@ -131,6 +131,7 @@ async def get_ads(
     page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     competitor_id: Optional[int] = Query(None, description="Filter by competitor ID"),
     competitor_name: Optional[str] = Query(None, description="Filter by competitor name"),
+    category_id: Optional[int] = Query(None, description="Filter by competitor category ID"),
     media_type: Optional[str] = Query(None, description="Filter by media type"),
     has_analysis: Optional[bool] = Query(None, description="Filter by analysis availability"),
     min_hook_score: Optional[float] = Query(None, ge=0, le=10, description="Minimum hook score"),
@@ -161,6 +162,7 @@ async def get_ads(
             page_size=page_size,
             competitor_id=competitor_id,
             competitor_name=competitor_name,
+            category_id=category_id,
             media_type=media_type,
             has_analysis=has_analysis,
             min_hook_score=min_hook_score,
@@ -710,6 +712,7 @@ class AdLibrarySearchResponse(BaseModel):
     countries: List[str]
     total_ads_found: int
     total_ads_saved: int
+    total_unique_ads: int = Field(default=0, description="Number of unique ads after deduplication")
     pages_scraped: int
     stats: Dict[str, Any]
     ads_preview: List[Dict[str, Any]] = Field(default_factory=list)
@@ -765,6 +768,15 @@ async def search_ad_library(
         
         logger.info(f"Starting Ad Library search: type={search_type}, query='{search_query}', countries={request.countries}")
         
+        # Calculate end_date based on min_duration_days if provided
+        # If user wants ads running for at least X days, they must have started at least X days ago
+        end_date = None
+        if request.min_duration_days:
+            from datetime import datetime, timedelta
+            end_date_obj = datetime.utcnow() - timedelta(days=request.min_duration_days)
+            end_date = end_date_obj.strftime('%Y-%m-%d')
+            logger.info(f"Calculated end_date={end_date} for min_duration_days={request.min_duration_days}")
+        
         # Create scraper service with duration filter
         scraper_service = FacebookAdsScraperService(db, request.min_duration_days)
         
@@ -784,7 +796,8 @@ async def search_ad_library(
             media_type=request.media_type,
             save_json=False,
             cursor=request.cursor,  # Add cursor support for pagination
-            first=first_value  # Use higher value for page searches
+            first=first_value,  # Use higher value for page searches
+            end_date=end_date  # Set end_date to filter ads that started before this date
         )
         
         # Perform the search
@@ -799,47 +812,135 @@ async def search_ad_library(
             # Preview-only mode - scrape but don't save to database
             all_ads_data, all_json_responses, enhanced_data, stats, next_cursor, has_next_page = scraper_service.scrape_ads_preview_only(scraper_config)
         
-        # Calculate search time
+        # Prepare ads preview with deduplication (group similar ads like backend scraping does)
+        ads_preview = []
+        deduplication_time = 0
+        
+        if enhanced_data:
+            # COLLECT ALL ADS FROM ALL COMPETITORS FIRST
+            all_ads_combined = []
+            advertiser_map = {}  # Map ad_archive_id to advertiser name
+            
+            for competitor_name, ads_list in enhanced_data.items():
+                for ad in ads_list:
+                    all_ads_combined.append(ad)
+                    ad_id = ad.get("ad_archive_id")
+                    if ad_id:
+                        advertiser_map[ad_id] = competitor_name
+            
+            total_ads_before_dedup = len(all_ads_combined)
+            logger.info(f"Collected {total_ads_before_dedup} total ads from {len(enhanced_data)} competitors")
+            
+            # DEDUPLICATE ALL ADS ONCE (not per competitor)
+            dedup_start = datetime.utcnow()
+            extraction_service = EnhancedAdExtractionService(db, request.min_duration_days)
+            ad_groups = extraction_service._group_ads_into_sets(all_ads_combined)
+            dedup_end = datetime.utcnow()
+            deduplication_time = (dedup_end - dedup_start).total_seconds()
+            
+            logger.info(f"✅ Deduplication complete: {total_ads_before_dedup} ads → {len(ad_groups)} unique groups in {deduplication_time:.2f}s ({total_ads_before_dedup / deduplication_time:.0f} ads/s)")
+            
+            # Helper function to calculate ad duration
+            def get_ad_duration(ad):
+                """Calculate duration in days for an ad"""
+                meta = ad.get("meta", {})
+                start_date_str = meta.get("start_date")
+                end_date_str = meta.get("end_date")
+                is_active = meta.get("is_active", False)
+                
+                if not start_date_str:
+                    return 0
+                
+                try:
+                    from datetime import datetime
+                    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+                    
+                    if end_date_str:
+                        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                    else:
+                        # If still active, use current date
+                        end_date = datetime.now()
+                    
+                    duration = (end_date - start_date).days
+                    
+                    # Prefer active ads over inactive ones with same duration
+                    if is_active:
+                        duration += 0.1
+                    
+                    return duration
+                except (ValueError, TypeError):
+                    return 0
+            
+            # For each group, select the best ad (longest running) as representative
+            for content_signature, grouped_ads in ad_groups.items():
+                # Select the best ad from this group
+                best_ad = max(grouped_ads, key=get_ad_duration, default=grouped_ads[0])
+                variant_count = len(grouped_ads)
+                
+                # Get advertiser name from the best ad
+                best_ad_id = best_ad.get("ad_archive_id")
+                competitor_name = advertiser_map.get(best_ad_id, "Unknown")
+                
+                # Prepare meta object with media URLs
+                meta_data = best_ad.get("meta", {})
+                meta_data.update({
+                    "image_urls": best_ad.get("image_urls", []),
+                    "video_urls": best_ad.get("video_urls", []),
+                    "primary_media_url": best_ad.get("primary_media_url", ""),
+                    "main_image_urls": best_ad.get("main_image_urls", []),
+                    "main_video_urls": best_ad.get("main_video_urls", []),
+                    "media_url": best_ad.get("media_url", ""),
+                    "video_preview_image_url": best_ad.get("video_preview_image_url", "")
+                })
+                
+                preview = {
+                    "ad_archive_id": best_ad.get("ad_archive_id"),
+                    "advertiser": competitor_name,
+                    "media_type": best_ad.get("media_type", "unknown"),
+                    "is_active": best_ad.get("meta", {}).get("is_active", False),
+                    "start_date": best_ad.get("meta", {}).get("start_date"),
+                    "duration_days": best_ad.get("duration_days"),
+                    "creatives_count": len(best_ad.get("creatives", [])),
+                    "has_targeting": bool(best_ad.get("targeting")),
+                    "has_lead_form": bool(best_ad.get("lead_form")),
+                    "creatives": best_ad.get("creatives", []),
+                    "targeting": best_ad.get("targeting", {}),
+                    "lead_form": best_ad.get("lead_form", {}),
+                    "meta": meta_data,
+                    "variant_count": variant_count,  # Add variant count to show how many similar ads exist
+                    "variants": [  # Include all variant ad_archive_ids for reference
+                        {
+                            "ad_archive_id": variant.get("ad_archive_id"),
+                            "duration_days": variant.get("duration_days"),
+                            "is_active": variant.get("meta", {}).get("is_active", False),
+                            "advertiser": advertiser_map.get(variant.get("ad_archive_id"), "Unknown")
+                        }
+                        for variant in grouped_ads
+                    ]
+                }
+                ads_preview.append(preview)
+        
+        # Calculate total search time (from API call start to end)
         end_time = datetime.utcnow()
         search_duration = (end_time - start_time).total_seconds()
-        
-        # Prepare ads preview (all found ads for display)
-        ads_preview = []
-        if enhanced_data:
-            for competitor_name, ads_list in enhanced_data.items():
-                for ad in ads_list:  # Include all ads, not just first 5
-                    # Prepare meta object with media URLs
-                    meta_data = ad.get("meta", {})
-                    meta_data.update({
-                        "image_urls": ad.get("image_urls", []),
-                        "video_urls": ad.get("video_urls", []),
-                        "primary_media_url": ad.get("primary_media_url", ""),
-                        "main_image_urls": ad.get("main_image_urls", []),
-                        "main_video_urls": ad.get("main_video_urls", []),
-                        "media_url": ad.get("media_url", ""),
-                        "video_preview_image_url": ad.get("video_preview_image_url", "")
-                    })
-                    
-                    preview = {
-                        "ad_archive_id": ad.get("ad_archive_id"),
-                        "advertiser": competitor_name,
-                        "media_type": ad.get("media_type", "unknown"),
-                        "is_active": ad.get("meta", {}).get("is_active", False),
-                        "start_date": ad.get("meta", {}).get("start_date"),
-                        "duration_days": ad.get("duration_days"),
-                        "creatives_count": len(ad.get("creatives", [])),
-                        "has_targeting": bool(ad.get("targeting")),
-                        "has_lead_form": bool(ad.get("lead_form")),
-                        "creatives": ad.get("creatives", []),
-                        "targeting": ad.get("targeting", {}),
-                        "lead_form": ad.get("lead_form", {}),
-                        "meta": meta_data
-                    }
-                    ads_preview.append(preview)
         
         # Prepare response
         total_ads_found = stats.get('total_processed', 0)
         total_ads_saved = stats.get('created', 0) + stats.get('updated', 0) if request.save_to_database else 0
+        total_unique_ads = len(ads_preview)  # After deduplication
+        
+        # Build detailed message with timing breakdown
+        message_parts = [
+            f"Found {total_ads_found} ads ({total_unique_ads} unique after deduplication)",
+            f"Total time: {search_duration:.2f}s"
+        ]
+        
+        if deduplication_time > 0:
+            throughput = total_ads_found / deduplication_time if deduplication_time > 0 else 0
+            message_parts.append(f"Deduplication: {deduplication_time:.2f}s ({throughput:.0f} ads/s)")
+        
+        if request.save_to_database:
+            message_parts.append(f"Saved {total_ads_saved} to database")
         
         response = AdLibrarySearchResponse(
             success=True,
@@ -848,17 +949,17 @@ async def search_ad_library(
             countries=request.countries,
             total_ads_found=total_ads_found,
             total_ads_saved=total_ads_saved,
+            total_unique_ads=total_unique_ads,
             pages_scraped=len(all_json_responses),
             stats=stats,
             ads_preview=ads_preview,
-            message=f"Found {total_ads_found} ads in {search_duration:.1f}s" + 
-                   (f", saved {total_ads_saved} to database" if request.save_to_database else ""),
-            search_time=f"{search_duration:.1f}s",
+            message=" | ".join(message_parts),
+            search_time=f"{search_duration:.2f}s",
             next_cursor=next_cursor,
             has_next_page=has_next_page
         )
         
-        logger.info(f"Search completed: {response.message}")
+        logger.info(f"🎯 Search completed: {response.message}")
         return response
         
     except HTTPException:
@@ -4244,22 +4345,19 @@ async def save_search_ad(
             
             if existing_competitor:
                 competitor_id = existing_competitor.id
-            else:
+            elif request.competitor_page_id:  # Only create if we have a page_id
                 # Create new competitor
                 new_competitor = Competitor(
                     name=request.competitor_name,
                     page_id=request.competitor_page_id,
-                    page_name=request.competitor_name,
-                    notes=request.notes or f"Added from search ad {request.ad_archive_id}",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    is_active=True
                 )
                 db.add(new_competitor)
                 db.flush()  # Get the ID without committing
                 competitor_id = new_competitor.id
         
         # Fetch the ad details from Facebook Ad Library
-        scraper_service = FacebookAdsScraperService()
+        scraper_service = FacebookAdsScraperService(db)
         
         # Search for the specific ad by archive ID
         search_config = FacebookAdsScraperConfig(
@@ -4273,12 +4371,15 @@ async def save_search_ad(
             query_string=request.ad_archive_id  # Search by archive ID
         )
         
-        # Perform the search
-        search_results = scraper_service.search_ads(search_config)
+        # Perform the search using preview-only method (doesn't save to DB)
+        ads_preview, ads_full, stats, errors, next_cursor, has_more = scraper_service.scrape_ads_preview_only(
+            search_config, 
+            use_parallel=False
+        )
         
         # Find the specific ad in results
         target_ad = None
-        for ad_data in search_results.get('ads_preview', []):
+        for ad_data in ads_preview:
             if ad_data.get('ad_archive_id') == request.ad_archive_id:
                 target_ad = ad_data
                 break

@@ -10,6 +10,7 @@ interface SearchResult {
   countries: string[];
   total_ads_found: number;
   total_ads_saved: number;
+  total_unique_ads?: number;
   pages_scraped: number;
   stats: {
     total_processed: number;
@@ -36,9 +37,17 @@ interface SearchResult {
     targeting?: any;
     lead_form?: any;
     meta?: any;
+    variant_count?: number;
+    variants?: Array<{
+      ad_archive_id: string;
+      duration_days?: number;
+      is_active: boolean;
+    }>;
   }>;
   message: string;
   search_time: string;
+  next_cursor?: string | null;
+  has_next_page?: boolean;
 }
 
 interface SearchResultsProps {
@@ -59,8 +68,13 @@ export function SearchResults({ searchResult, selectedAds, onAdSelection, onLoad
           </h3>
           <div className="flex items-center gap-2 text-xs">
             <span className="bg-green-500/20 border border-green-500/30 px-2 py-1 rounded-full text-green-400 font-medium">
-              ✓ {searchResult.ads_preview.length} ads found
+              ✓ {searchResult.ads_preview.length} unique ads
             </span>
+            {searchResult.total_unique_ads && searchResult.total_ads_found > searchResult.total_unique_ads && (
+              <span className="bg-orange-500/20 border border-orange-500/30 px-2 py-1 rounded-full text-orange-400 font-medium" title="Duplicates removed">
+                🔗 {searchResult.total_ads_found - searchResult.total_unique_ads} variants hidden
+              </span>
+            )}
             <span className="bg-blue-500/20 border border-blue-500/30 px-2 py-1 rounded-full text-blue-400 font-medium">
               📄 {searchResult.pages_scraped} pages
             </span>
@@ -101,22 +115,42 @@ export function SearchResults({ searchResult, selectedAds, onAdSelection, onLoad
         </div>
       )}
 
-      {onLoadMore && searchResult.ads_preview.length > 0 && (
-        <div className="flex justify-center mt-8">
+      {onLoadMore && searchResult.ads_preview.length > 0 && searchResult.has_next_page && (
+        <div className="flex flex-col items-center gap-3 mt-8">
           <button 
             onClick={onLoadMore}
             disabled={isLoadingMore}
-            className="flex items-center justify-center px-6 py-3 rounded-full bg-card-background border border-border hover:border-primary/50 text-foreground font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 hover:border-primary/50 text-foreground font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {isLoadingMore ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                Loading More...
+                Loading More Ads...
               </>
             ) : (
-              'Load More Results'
+              <>
+                <span>Load More Results</span>
+                <span className="ml-2 text-xs text-primary">(+3 pages)</span>
+              </>
             )}
           </button>
+          <p className="text-xs text-muted-foreground">
+            Showing {searchResult.ads_preview.length} unique ads • More available
+          </p>
+        </div>
+      )}
+      
+      {/* Show "No more results" message when there are no more pages */}
+      {searchResult.ads_preview.length > 0 && !searchResult.has_next_page && (
+        <div className="flex flex-col items-center gap-2 mt-8">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-px w-12 bg-border"></div>
+            <span>End of results</span>
+            <div className="h-px w-12 bg-border"></div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Showing all {searchResult.ads_preview.length} unique ads
+          </p>
         </div>
       )}
     </section>

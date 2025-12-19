@@ -7,6 +7,7 @@ interface SearchResult {
   countries: string[];
   total_ads_found: number;
   total_ads_saved: number;
+  total_unique_ads: number;
   pages_scraped: number;
   stats: {
     total_processed: number;
@@ -51,7 +52,7 @@ export function SearchStats({ searchResult, selectedAdsCount }: SearchStatsProps
             {searchResult.search_type === 'page' ? 'Page Search' : 'Keyword Search'}
           </span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
           <div>
             <p className="text-muted-foreground">Query</p>
             <p className="text-foreground font-mono truncate">{searchResult.query}</p>
@@ -70,13 +71,21 @@ export function SearchStats({ searchResult, selectedAdsCount }: SearchStatsProps
               {activeAds > 0 && inactiveAds > 0 ? 'Mixed' : activeAds > 0 ? 'Active' : 'Inactive'}
             </p>
           </div>
+          {searchResult.total_unique_ads && searchResult.total_ads_found > searchResult.total_unique_ads && (
+            <div>
+              <p className="text-muted-foreground">Deduplication</p>
+              <p className="text-foreground">
+                {searchResult.total_ads_found - searchResult.total_unique_ads} variants hidden
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="flex flex-col gap-1 rounded-lg p-5 border border-border bg-card-background">
-          <p className="text-iridium-300 text-sm font-medium font-body">Total Ads Found</p>
+          <p className="text-iridium-300 text-sm font-medium font-body">Unique Ads</p>
           <div className="flex items-end gap-2">
             <p className="text-foreground text-2xl font-bold leading-none font-display">{searchResult.ads_preview.length}</p>
             <span className="text-blue-400 text-xs font-bold mb-0.5">
@@ -85,6 +94,9 @@ export function SearchStats({ searchResult, selectedAdsCount }: SearchStatsProps
           </div>
           <div className="text-xs text-muted-foreground mt-1">
             {activeAds} active • {inactiveAds} inactive
+            {searchResult.total_unique_ads && searchResult.total_ads_found > searchResult.total_unique_ads && (
+              <span className="text-cyan-400"> • {searchResult.total_ads_found - searchResult.total_unique_ads} duplicates removed</span>
+            )}
           </div>
         </div>
         

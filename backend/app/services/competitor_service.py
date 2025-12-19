@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_
 from fastapi import HTTPException
 import logging
@@ -7,6 +7,7 @@ from datetime import datetime
 import math
 
 from app.models.competitor import Competitor
+from app.models.category import Category
 from app.models.ad import Ad
 from app.models.ad_analysis import AdAnalysis
 from app.models.dto.competitor_dto import (
@@ -46,7 +47,8 @@ class CompetitorService:
             competitor = Competitor(
                 name=competitor_data.name,
                 page_id=competitor_data.page_id,
-                is_active=competitor_data.is_active
+                is_active=competitor_data.is_active,
+                category_id=competitor_data.category_id
             )
             
             self.db.add(competitor)
@@ -70,12 +72,19 @@ class CompetitorService:
     def get_competitors(self, filters: CompetitorFilterParams) -> PaginatedCompetitorResponseDTO:
         """Get paginated list of competitors with filtering"""
         try:
-            # Build base query
-            query = self.db.query(Competitor)
+            # Build base query with category relationship
+            query = self.db.query(Competitor).options(joinedload(Competitor.category))
             
             # Apply filters
             if filters.is_active is not None:
                 query = query.filter(Competitor.is_active == filters.is_active)
+            
+            if filters.category_id is not None:
+                if filters.category_id == -1:
+                    # Special value -1 means "uncategorized"
+                    query = query.filter(Competitor.category_id.is_(None))
+                else:
+                    query = query.filter(Competitor.category_id == filters.category_id)
             
             if filters.search:
                 search_term = f"%{filters.search}%"
@@ -127,9 +136,10 @@ class CompetitorService:
             # Build response
             competitor_data = []
             for competitor in competitors:
-                # Create DTO from ORM and set ads_count explicitly
+                # Create DTO from ORM and set ads_count and category_name explicitly
                 dto = CompetitorResponseDTO.model_validate(competitor)
                 dto.ads_count = ads_counts.get(competitor.id, 0)
+                dto.category_name = competitor.category.name if competitor.category else None
                 competitor_data.append(dto)
             
             # Calculate pagination info
@@ -154,7 +164,9 @@ class CompetitorService:
     def get_competitor_by_id(self, competitor_id: int) -> CompetitorDetailResponseDTO:
         """Get detailed information about a specific competitor"""
         try:
-            competitor = self.db.query(Competitor).filter(
+            competitor = self.db.query(Competitor).options(
+                joinedload(Competitor.category)
+            ).filter(
                 Competitor.id == competitor_id
             ).first()
             
@@ -180,6 +192,7 @@ class CompetitorService:
             dto.ads_count = total_ads
             dto.active_ads_count = active_ads
             dto.analyzed_ads_count = analyzed_ads
+            dto.category_name = competitor.category.name if competitor.category else None
             return dto
             
         except HTTPException:
@@ -268,6 +281,60 @@ class CompetitorService:
                 detail=f"An error occurred during bulk deletion: {str(e)}"
             )
     
+    def bulk_update_category(self, competitor_ids: List[int], category_id: Optional[int]) -> dict:
+        """
+        Bulk update category for multiple competitors.
+        Set category_id to None to remove category assignment.
+        """
+        if not competitor_ids:
+            raise HTTPException(status_code=400, detail="No competitor IDs provided")
+        
+        try:
+            # Validate category exists if provided
+            if category_id is not None:
+                category = self.db.query(Category).filter(Category.id == category_id).first()
+                if not category:
+                    raise HTTPException(status_code=404, detail=f"Category with ID {category_id} not found")
+            
+            # Get competitors to update
+            competitors = self.db.query(Competitor).filter(
+                Competitor.id.in_(competitor_ids)
+            ).all()
+            
+            if not competitors:
+                raise HTTPException(status_code=404, detail="No competitors found with provided IDs")
+            
+            # Update category for all competitors
+            updated_count = self.db.query(Competitor).filter(
+                Competitor.id.in_(competitor_ids)
+            ).update(
+                {'category_id': category_id, 'updated_at': datetime.utcnow()},
+                synchronize_session=False
+            )
+            
+            self.db.commit()
+            
+            category_name = "None" if category_id is None else self.db.query(Category).filter(Category.id == category_id).first().name
+            
+            logger.info(f"Bulk category update completed. Updated {updated_count} competitors to category: {category_name}")
+            
+            return {
+                "message": f"Successfully updated category for {updated_count} competitor(s)",
+                "updated_count": updated_count,
+                "category_id": category_id,
+                "category_name": category_name
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error during bulk category update: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred during bulk category update: {str(e)}"
+            )
+    
     def update_competitor(
         self, 
         competitor_id: int, 
@@ -305,6 +372,8 @@ class CompetitorService:
                 update_data['page_id'] = competitor_data.page_id
             if competitor_data.is_active is not None:
                 update_data['is_active'] = competitor_data.is_active
+            if competitor_data.category_id is not None:
+                update_data['category_id'] = competitor_data.category_id
             
             update_data['updated_at'] = datetime.utcnow()
             
@@ -418,7 +487,9 @@ class CompetitorService:
         try:
             search_pattern = f"%{search_term}%"
             
-            competitors = self.db.query(Competitor).filter(
+            competitors = self.db.query(Competitor).options(
+                joinedload(Competitor.category)
+            ).filter(
                 or_(
                     Competitor.name.ilike(search_pattern),
                     Competitor.page_id.ilike(search_pattern)
@@ -439,11 +510,12 @@ class CompetitorService:
                 
                 ads_counts = {comp_id: count for comp_id, count in ads_count_query}
             
-            # Create DTOs from ORM objects and set ads_count manually
+            # Create DTOs from ORM objects and set ads_count and category_name manually
             result = []
             for competitor in competitors:
                 dto = CompetitorResponseDTO.model_validate(competitor)
                 dto.ads_count = ads_counts.get(competitor.id, 0)
+                dto.category_name = competitor.category.name if competitor.category else None
                 result.append(dto)
             return result
             

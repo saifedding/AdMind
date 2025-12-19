@@ -61,6 +61,7 @@ export function useAds(): UseAdsReturn {
       if (searchParams.get('date_from')) params.date_from = searchParams.get('date_from')!;
       if (searchParams.get('date_to')) params.date_to = searchParams.get('date_to')!;
       if (searchParams.get('competitor_id')) params.competitor_id = Number(searchParams.get('competitor_id'));
+      if (searchParams.get('category_id')) params.category_id = Number(searchParams.get('category_id'));
       return params;
     }
 
@@ -135,6 +136,7 @@ export function useAds(): UseAdsReturn {
       if (filters.media_type) safeFilters.media_type = filters.media_type;
       if (filters.is_active !== undefined) safeFilters.is_active = filters.is_active;
       if (filters.competitor_id) safeFilters.competitor_id = filters.competitor_id;
+      if (filters.category_id) safeFilters.category_id = filters.category_id;
       if (filters.min_duration_days !== undefined) safeFilters.min_duration_days = filters.min_duration_days;
       if (filters.max_duration_days !== undefined) safeFilters.max_duration_days = filters.max_duration_days;
       if (filters.min_overall_score !== undefined) safeFilters.min_overall_score = filters.min_overall_score;

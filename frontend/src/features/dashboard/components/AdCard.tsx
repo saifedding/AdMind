@@ -4,6 +4,7 @@ import { AdWithAnalysis, type Creative } from '@/types/ad';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { CategoryBadge } from '@/components/CategoryBadge';
 import { cn, formatAdDuration } from '@/lib/utils';
 import { 
   Play, Image, Eye, DollarSign, Globe2, Loader2, 
@@ -429,7 +430,18 @@ export const AdCard = React.memo(function AdCard({
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{ad.competitor?.name || ad.page_name || 'Unknown'}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                  {ad.competitor?.name || ad.page_name || 'Unknown'}
+                </h4>
+                {ad.competitor?.category_name && (
+                  <CategoryBadge 
+                    categoryName={ad.competitor.category_name} 
+                    size="sm" 
+                    variant="outline"
+                  />
+                )}
+              </div>
               {impressionsText && (
                 <p className="text-xs text-gray-500 flex items-center gap-1"><Eye className="h-3 w-3" />{impressionsText}</p>
               )}

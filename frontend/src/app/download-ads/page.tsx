@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
-import { adsApi, AnalyzeVideoResponse, VeoModel } from "@/lib/api";
+import { adsApi, AnalyzeVideoResponse, VeoModel, createCompetitor } from "@/lib/api";
 import { DashboardLayout } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 
@@ -102,6 +102,20 @@ export default function DownloadAdsPage() {
   const [analysisHistory, setAnalysisHistory] = useState<any>(null);
   const [showAnalysisHistory, setShowAnalysisHistory] = useState<boolean>(false);
   const [selectedAnalysisVersion, setSelectedAnalysisVersion] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [saveResponse, setSaveResponse] = useState<any>(null);
+  const [isSavingCompetitor, setIsSavingCompetitor] = useState<boolean>(false);
+  const [competitorSaveSuccess, setCompetitorSaveSuccess] = useState<boolean>(false);
+  const [competitorName, setCompetitorName] = useState<string>('');
+
+  // Auto-populate competitor name when result changes
+  useEffect(() => {
+    if (result?.page_id && !competitorName) {
+      // For now, use a simple format. Later we can fetch the actual page name
+      setCompetitorName(`Page ${result.page_id}`);
+    }
+  }, [result?.page_id, competitorName]);
 
   const parseId = (value: string): string | null => {
     try {
@@ -111,6 +125,88 @@ export default function DownloadAdsPage() {
       return id;
     } catch {
       return null;
+    }
+  };
+
+  const handleSaveToDatabase = async () => {
+    if (!result?.ad_archive_id) {
+      setError('No ad archive ID available to save');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    
+    try {
+      // Create search params based on the current result
+      const searchParams = {
+        query_string: "",
+        page_id: result.page_id || "",
+        countries: ["ALL"],
+        max_pages: 1,
+        active_status: "ALL",
+        ad_type: "ALL", 
+        media_type: "ALL",
+        min_duration_days: 0,
+        save_to_database: true
+      };
+
+      const saveRequest = {
+        ad_archive_ids: [result.ad_archive_id],
+        search_params: searchParams
+      };
+
+      const response = await adsApi.saveSelectedAds(saveRequest);
+      
+      if (response.success) {
+        setSaveResponse(response);
+        setSaveSuccess(true);
+        setTimeout(() => {
+          setSaveSuccess(false);
+          setSaveResponse(null);
+        }, 5000); // Show for 5 seconds instead of 3
+      } else {
+        setError('Failed to save ad to database');
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      setError('Failed to save ad to database. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAsCompetitor = async () => {
+    if (!result?.page_id) {
+      setError('No page ID available to save as competitor');
+      return;
+    }
+
+    if (!competitorName.trim()) {
+      setError('Please enter a competitor name');
+      return;
+    }
+
+    setIsSavingCompetitor(true);
+    setError(null);
+    
+    try {
+      const competitorData = {
+        name: competitorName.trim(),
+        page_id: result.page_id,
+        is_active: true
+      };
+
+      await createCompetitor(competitorData);
+      
+      setCompetitorSaveSuccess(true);
+      setTimeout(() => setCompetitorSaveSuccess(false), 3000);
+      setCompetitorName(''); // Clear the input
+    } catch (err: any) {
+      console.error('Save competitor error:', err);
+      setError(err.message || 'Failed to save competitor. Please try again.');
+    } finally {
+      setIsSavingCompetitor(false);
     }
   };
 
@@ -1656,6 +1752,22 @@ export default function DownloadAdsPage() {
                             View
                           </a>
                         ) : null}
+                        {/* Open in Ad Library button - only show for Facebook Ad Library content */}
+                        {h.ad_archive_id && !h.ad_archive_id.startsWith('instagram_') && (
+                          <a 
+                            href={`https://www.facebook.com/ads/library/?id=${h.ad_archive_id}`}
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="px-3 py-1.5 border rounded-md text-xs border-neutral-700 hover:bg-neutral-800 flex items-center gap-1"
+                            title="Open in Facebook Ad Library"
+                          >
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clipRule="evenodd" />
+                            </svg>
+                            Ad Library
+                          </a>
+                        )}
                       </div>
                     </div>
                   );
@@ -1665,18 +1777,237 @@ export default function DownloadAdsPage() {
           </div>
         )}
 
+        {saveSuccess && (
+          <div className="border rounded-md p-4 bg-green-900/20 border-green-700 text-green-300 text-sm">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-green-400">✅</span>
+                  <span className="font-semibold">Save Operation Complete!</span>
+                </div>
+                {saveResponse && (
+                  <div className="space-y-1 text-xs">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-green-200">Total Saved:</span>
+                        <span className="ml-2 font-mono font-semibold">{saveResponse.total_saved}</span>
+                      </div>
+                      <div>
+                        <span className="text-green-200">Already Existed:</span>
+                        <span className="ml-2 font-mono font-semibold">{saveResponse.already_existed}</span>
+                      </div>
+                    </div>
+                    {saveResponse.errors > 0 && (
+                      <div className="text-yellow-300">
+                        <span>Errors:</span>
+                        <span className="ml-2 font-mono font-semibold">{saveResponse.errors}</span>
+                      </div>
+                    )}
+                    <div className="text-green-200 mt-2">
+                      {saveResponse.message}
+                    </div>
+                    <div className="text-xs text-green-300 mt-1 font-mono">
+                      Ad Archive ID: {result?.ad_archive_id}
+                    </div>
+                  </div>
+                )}
+                <div className="text-green-200 mt-2">
+                  You can now find the ads in your collection.
+                </div>
+              </div>
+              <div className="ml-4 flex flex-col gap-1 flex-shrink-0">
+                <a 
+                  href="/ads" 
+                  className="px-3 py-1 bg-green-700 hover:bg-green-600 rounded text-xs text-white text-center"
+                >
+                  View All Ads
+                </a>
+                {result?.page_id && (
+                  <a 
+                    href={`/ads?page_id=${result.page_id}`}
+                    className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs text-white text-center"
+                  >
+                    View Page Ads
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {competitorSaveSuccess && (
+          <div className="border rounded-md p-4 bg-blue-900/20 border-blue-700 text-blue-300 text-sm">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-blue-400">✅</span>
+                  <span className="font-semibold">Competitor Added Successfully!</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="text-blue-200">
+                    <span>Name:</span>
+                    <span className="ml-2 font-semibold">{competitorName || `Page ${result?.page_id}`}</span>
+                  </div>
+                  <div className="text-blue-200">
+                    <span>Page ID:</span>
+                    <span className="ml-2 font-mono">{result?.page_id}</span>
+                  </div>
+                  <div className="text-blue-200 mt-2">
+                    You can now track this competitor's ads and performance.
+                  </div>
+                </div>
+              </div>
+              <div className="ml-4 flex flex-col gap-1 flex-shrink-0">
+                <a 
+                  href="/competitors" 
+                  className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-xs text-white text-center"
+                >
+                  View Competitors
+                </a>
+                {result?.page_id && (
+                  <a 
+                    href={`/competitors?page_id=${result.page_id}`}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs text-white text-center"
+                  >
+                    View This Page
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {result && (
           <div className="space-y-4">
             <div className="border rounded-md p-4 bg-neutral-900/40 border-neutral-800">
-              <div className="text-sm">Ad Archive ID: <span className="font-medium">{result.ad_archive_id}</span></div>
-              {result.page_id ? <div className="text-xs text-muted-foreground">Page ID: {result.page_id}</div> : null}
-              <div className="text-xs mt-2">
-                {result.video_hd_urls.length} HD video(s), {result.video_sd_urls.length} SD video(s), {result.image_urls.length} image(s)
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="text-sm flex items-center gap-2">
+                    <span>Ad Archive ID: <span className="font-medium">{result.ad_archive_id}</span></span>
+                    {saveSuccess && (
+                      <span className="px-2 py-0.5 bg-green-600 text-white text-xs rounded-full">
+                        Saved
+                      </span>
+                    )}
+                  </div>
+                  {result.page_id ? (
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      <span>Page ID: {result.page_id}</span>
+                      {competitorSaveSuccess && (
+                        <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                          Added as Competitor
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                  <div className="text-xs mt-2">
+                    {result.video_hd_urls.length} HD video(s), {result.video_sd_urls.length} SD video(s), {result.image_urls.length} image(s)
+                  </div>
+                  {result.save_path && download ? (
+                    <div className="text-xs mt-2 font-mono">Save path: {result.save_path}</div>
+                  ) : null}
+                </div>
+                <div className="ml-4 flex gap-2">
+                  <Button
+                    onClick={handleSaveToDatabase}
+                    disabled={isSaving || saveSuccess}
+                    className={`px-4 py-2 text-sm ${
+                      saveSuccess 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : saveSuccess ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Saved!
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Save to Database
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              {result.save_path && download ? (
-                <div className="text-xs mt-2 font-mono">Save path: {result.save_path}</div>
-              ) : null}
             </div>
+
+            {/* Save as Competitor Section */}
+            {result.page_id && (
+              <div className="border rounded-md p-4 bg-neutral-900/40 border-neutral-800">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Save as Competitor
+                </h3>
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label htmlFor="competitorName" className="block text-xs text-muted-foreground mb-1">
+                      Competitor Name
+                    </label>
+                    <input
+                      id="competitorName"
+                      type="text"
+                      value={competitorName}
+                      onChange={(e) => setCompetitorName(e.target.value)}
+                      placeholder="Enter competitor name..."
+                      className="w-full px-3 py-2 text-sm bg-neutral-800 border border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isSavingCompetitor || competitorSaveSuccess}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSaveAsCompetitor}
+                    disabled={isSavingCompetitor || competitorSaveSuccess || !competitorName.trim()}
+                    className={`px-4 py-2 text-sm ${
+                      competitorSaveSuccess 
+                        ? 'bg-blue-600 hover:bg-blue-700' 
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
+                  >
+                    {isSavingCompetitor ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : competitorSaveSuccess ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Saved!
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.5a2.25 2.25 0 01-2.25-2.25v-1.5a2.25 2.25 0 012.25-2.25h1.5a2.25 2.25 0 012.25 2.25v1.5a2.25 2.25 0 01-2.25 2.25H4z" />
+                        </svg>
+                        Add Competitor
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  Page ID: <span className="font-mono">{result.page_id}</span>
+                </div>
+              </div>
+            )}
 
             {/* Media Grid */}
             {result.media?.length > 0 && (
@@ -1705,6 +2036,22 @@ export default function DownloadAdsPage() {
                         <div className="p-2 flex flex-wrap gap-2">
                           <a href={m.url} download className="px-3 py-1.5 border rounded-md text-sm border-neutral-700">Download</a>
                           <a href={m.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 border rounded-md text-sm border-neutral-700">View</a>
+                          {/* Open in Ad Library button - only show for Facebook Ad Library content */}
+                          {result.ad_archive_id && !result.ad_archive_id.startsWith('instagram_') && (
+                            <a 
+                              href={`https://www.facebook.com/ads/library/?id=${result.ad_archive_id}`}
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="px-3 py-1.5 border rounded-md text-sm border-neutral-700 hover:bg-neutral-800 flex items-center gap-1"
+                              title="Open in Facebook Ad Library"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clipRule="evenodd" />
+                              </svg>
+                              Ad Library
+                            </a>
+                          )}
                           {m.type === 'video' && (
                             <button
                               type="button"

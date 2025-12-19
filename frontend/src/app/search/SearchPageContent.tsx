@@ -8,8 +8,8 @@ import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchStats } from '@/components/search/SearchStats';
 import { SearchResults } from '@/components/search/SearchResults';
 import { FloatingActionBar } from '@/components/search/FloatingActionBar';
-import { useSearchState } from '@/hooks/useSearchState';
-import { useSearchActions } from '@/hooks/useSearchActions';
+import { SearchHistory } from '@/components/search/SearchHistory';
+import { useSearchState, useSearchActions } from '@/features/search';
 import { COUNTRIES_DATA, POPULAR_COUNTRIES } from '@/constants/searchConstants';
 
 export default function SearchPageContent() {
@@ -69,8 +69,34 @@ export default function SearchPageContent() {
     const type = searchParams.get('type');
     const auto = searchParams.get('auto');
     const timestamp = searchParams.get('t');
+    const countriesParam = searchParams.get('countries');
+    const statusParam = searchParams.get('status');
+    const mediaParam = searchParams.get('media');
     
-    // Pre-fill form fields
+    // Check for restored search from history
+    const restoredSearchStr = sessionStorage.getItem('restoredSearch');
+    if (restoredSearchStr) {
+      try {
+        const restoredSearch = JSON.parse(restoredSearchStr);
+        sessionStorage.removeItem('restoredSearch');
+        
+        // Restore the search state
+        setSearchType(restoredSearch.searchType);
+        if (restoredSearch.searchType === 'page') {
+          setPageId(restoredSearch.query);
+        } else {
+          setKeywordQuery(restoredSearch.query);
+        }
+        setActiveStatus(restoredSearch.activeStatus || 'all');
+        setMediaType(restoredSearch.mediaType || 'all');
+        setSearchResult(restoredSearch.result);
+        return; // Don't trigger new search
+      } catch (e) {
+        console.error('Failed to restore search:', e);
+      }
+    }
+    
+    // Pre-fill form fields from URL
     if (query) {
       if (type === 'keyword' || !type) {
         setSearchType('keyword');
@@ -81,6 +107,14 @@ export default function SearchPageContent() {
       }
     }
     
+    // Apply filter parameters
+    if (statusParam) {
+      setActiveStatus(statusParam);
+    }
+    if (mediaParam) {
+      setMediaType(mediaParam);
+    }
+    
     // Auto-trigger search only if we haven't processed this timestamp yet
     if (auto === 'true' && query && timestamp && timestamp !== lastAutoSearchTimestamp.current && !isSearching) {
       lastAutoSearchTimestamp.current = timestamp;
@@ -88,29 +122,39 @@ export default function SearchPageContent() {
       // Clear cached search state to prevent old results from showing
       clearSearchState();
       
+      // Parse countries if provided
+      const countries = countriesParam ? countriesParam.split(',') : [];
+      
       // Small delay to ensure state is cleared and set
       setTimeout(() => {
         if (type === 'page') {
           // Set active status to 'all' to show both active and inactive ads
-          setActiveStatus('all');
+          const status = statusParam || 'all';
+          const media = mediaParam || 'all';
+          setActiveStatus(status);
+          setMediaType(media);
           handleSearch({
             searchType: 'page',
             keywordQuery: '',
             pageId: query,
-            selectedCountries: [],
-            activeStatus: 'all',
-            mediaType: 'all',
+            selectedCountries: countries,
+            activeStatus: status,
+            mediaType: media,
             maxPages: 15, // Get more results for page searches (15 pages * 30 ads = 450 ads max)
             minDurationDays: undefined,
           });
         } else {
+          const status = statusParam || 'all';
+          const media = mediaParam || 'all';
+          setActiveStatus(status);
+          setMediaType(media);
           handleSearch({
             searchType: 'keyword',
             keywordQuery: query,
             pageId: '',
-            selectedCountries: [],
-            activeStatus: 'all',
-            mediaType: 'all',
+            selectedCountries: countries,
+            activeStatus: status,
+            mediaType: media,
             maxPages: 15,
             minDurationDays: undefined,
           });
@@ -190,16 +234,17 @@ export default function SearchPageContent() {
           </p>
         </div>
         
-        {searchResult && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <SearchHistory />
+          {searchResult && (
             <button
               onClick={clearSearchState}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded-md border border-border hover:border-primary/50"
             >
               Clear All
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Search Status Display */}
@@ -336,8 +381,8 @@ export default function SearchPageContent() {
         maxPages={maxPages}
         minDurationDays={minDurationDays}
         onCountryToggle={handleCountryToggle}
-        onActiveStatusChange={setActiveStatus}
-        onMediaTypeChange={setMediaType}
+        onActiveStatusChange={(status) => setActiveStatus(status as 'all' | 'active' | 'inactive')}
+        onMediaTypeChange={(type) => setMediaType(type as 'all' | 'video' | 'image' | 'meme')}
         onMaxPagesChange={setMaxPages}
         onMinDurationDaysChange={setMinDurationDays}
         onClearFilters={handleClearFilters}
